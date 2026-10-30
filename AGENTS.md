@@ -28,7 +28,7 @@ Use PNPM. Never NPM.
 
 ## Coding style
 
-Follow the `coding-style-preferences` skill for indentation, naming, TypeScript settings and backend structure. It is the single place those rules live. The package manager rule stays in Package manager above.
+Follow the `coding-style-preferences` skill for indentation, naming, language settings (plain JavaScript with ESM in this repo) and backend structure. It is the single place those rules live. The package manager rule stays in Package manager above.
 
 ## Communication
 

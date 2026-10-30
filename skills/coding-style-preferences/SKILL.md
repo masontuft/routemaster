@@ -10,7 +10,7 @@ Tell agents how code should look. These are Mason's rules. The Coding style sect
 - Four-space indentation, not two.
 - No shorthand. Write code out in full, for example a full arrow function. Shortening everything gets hard to read.
 - Package manager: "Use PNPM. Never NPM."
-- TypeScript runs in strict mode, with no implicit returns and no implicit `any`.
+- This project uses plain JavaScript as ES modules: `import` and `export`, never CommonJS `require`. No TypeScript here, because the CSE 340 final project is plain Node and Express with ESM. Elsewhere, TypeScript runs in strict mode, with no implicit returns and no implicit `any`.
 - Express.js backends follow strict MVC. Keep code in separate `models/`, `controllers/` and `views/` folders.
 - Name variables in `camelCase` and classes in `PascalCase`.
 
