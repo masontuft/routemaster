@@ -19,6 +19,34 @@ test("GET /health returns 200", async () => {
     assert.strictEqual(res.text, "ok");
 });
 
+test("pages include the reload script when devReload is on", async () => {
+    const res = await request(createApp({ sessionSecret: "test-secret", devReload: true })).get("/");
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /id="dev-reload"/);
+    assert.match(res.text, /\/__dev\/boot/);
+});
+
+test("pages omit the reload script when devReload is off", async () => {
+    const res = await request(createApp({ sessionSecret: "test-secret", devReload: false })).get("/");
+    assert.strictEqual(res.status, 200);
+    assert.doesNotMatch(res.text, /id="dev-reload"/);
+});
+
+test("GET /__dev/boot returns the boot id when devReload is on", async () => {
+    const res = await request(createApp({
+        sessionSecret: "test-secret",
+        devReload: true,
+        devReloadBootId: "boot-1",
+    })).get("/__dev/boot");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.text, "boot-1");
+});
+
+test("GET /__dev/boot is 404 when devReload is off", async () => {
+    const res = await request(createApp({ sessionSecret: "test-secret", devReload: false })).get("/__dev/boot");
+    assert.strictEqual(res.status, 404);
+});
+
 test("an unknown URL renders the 404 page", async () => {
     const res = await request(createApp({ sessionSecret: "test-secret" })).get("/no-such-page");
     assert.strictEqual(res.status, 404);

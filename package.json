@@ -9,6 +9,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "node --watch --watch-path=src --watch-path=public --watch-preserve-output --env-file-if-exists=.env src/server.js",
     "start": "node src/server.js",
     "lint": "eslint .",
     "test": "node --env-file-if-exists=.env --test",

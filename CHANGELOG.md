@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- `pnpm dev` watches `src/` and `public/` with Node's `--watch` and reloads the open page after the server restarts. The reload script is off when `NODE_ENV=production`.
 - Architecture overview, ADRs 0001 to 0011, and the `docs/` tree.
 - Contributing guide, security policy and issue and pull request templates.
 - `package.json`, ESLint config, `node:test` runner, the `TEST_DATABASE_URL` guard with tests, and a GitHub Actions CI workflow.

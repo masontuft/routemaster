@@ -31,7 +31,7 @@ Test account emails (created by `pnpm seed`; the shared password is not listed h
 
 ## Prerequisites and setup
 
-Node 24, pnpm, and a local PostgreSQL. There is no build step. `pnpm start` runs `node src/server.js`, which is not written yet. See [local development](docs/setup/local-development.md).
+Node 24, pnpm, and a local PostgreSQL. There is no build step. `pnpm dev` watches `src/` and `public/` and reloads the open page. `pnpm start` is the production command. See [local development](docs/setup/local-development.md).
 
 ## Environment variables
 
