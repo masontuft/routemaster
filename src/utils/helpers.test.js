@@ -1,8 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { normalizeName, normalizeAddress, normalizePhone } from "./normalize.js";
+import { isProduction } from "./env.js";
 import { generateToken, hashToken } from "./token.js";
 import { validatePreferredDate, parseId, validateIdentity, validateProperty } from "./validation.js";
+
+test("isProduction trims and ignores case", () => {
+    assert.strictEqual(isProduction("production"), true);
+    assert.strictEqual(isProduction("Production"), true);
+    assert.strictEqual(isProduction("PRODUCTION"), true);
+    assert.strictEqual(isProduction(" production "), true);
+    assert.strictEqual(isProduction("development"), false);
+    assert.strictEqual(isProduction("prod"), false);
+    assert.strictEqual(isProduction(""), false);
+    assert.strictEqual(isProduction(undefined), false);
+});
 
 test("names and addresses ignore case, punctuation and extra spaces", () => {
     assert.strictEqual(normalizeName("  Ann   O'Neil "), "ann o neil");

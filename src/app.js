@@ -11,6 +11,7 @@ import sessionMiddleware, { createSessionStore } from "./middleware/session.js";
 import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
+import { isProduction } from "./utils/env.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,7 +36,7 @@ export default function createApp({
     app.set("views", path.join(here, "views"));
     app.locals.db = pool;
     app.locals.sessionStore = store ?? (pool ? createSessionStore(pool) : undefined);
-    app.locals.devReload = devReload ?? (process.env.NODE_ENV !== "production");
+    app.locals.devReload = devReload ?? !isProduction();
     app.locals.devReloadBootId = devReloadBootId ?? Date.now().toString();
 
     app.use(express.static(path.join(here, "..", "public")));

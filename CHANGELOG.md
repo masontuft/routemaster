@@ -5,7 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
-- `pnpm dev` watches `src/` and `public/` with Node's `--watch` and reloads the open page after the server restarts. The reload script is off when `NODE_ENV=production`.
+- `pnpm dev` watches `src/` and `public/` with Node's `--watch` and reloads the open page after the server restarts. The script sets `NODE_ENV=development` so a production value in `.env` cannot disable the reload.
 - Architecture overview, ADRs 0001 to 0011, and the `docs/` tree.
 - Contributing guide, security policy and issue and pull request templates.
 - `package.json`, ESLint config, `node:test` runner, the `TEST_DATABASE_URL` guard with tests, and a GitHub Actions CI workflow.
@@ -20,6 +20,8 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Fixed
 
+- README no longer says the server is unwritten and that `pnpm start` fails.
+- `devReload` treats `NODE_ENV` as production after trim and case-fold, so `Production` or padded values do not leave `/__dev/boot` enabled.
 - The system context diagram renders on GitHub. Dotted edge labels that contained periods now use the pipe form.
 - The test-database guard treats connection strings that name the same host, port, and database as the same database.
 - Setup docs that still said `package.json`, `.node-version`, or CI did not exist.

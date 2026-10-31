@@ -2,7 +2,7 @@
 
 Web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. It is Mason's CSE 340 final project (Option A, design your own).
 
-**Status:** planning. Architecture, docs, and the test-database guard are in place. The server is not written yet, so `pnpm start` fails. `pnpm lint` and `pnpm test` run.
+**Status:** in development. The Express app, authentication, customer service requests, and `pnpm dev` watch/reload are in place. `pnpm start`, `pnpm lint`, and `pnpm test` run.
 
 ## Stack
 

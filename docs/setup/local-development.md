@@ -22,7 +22,7 @@ pnpm dev
 pnpm start
 ```
 
-- `pnpm dev` runs `node --watch` on `src/server.js`, loads `.env` when that file exists, and listens on `PORT` (default 3000), bound to `0.0.0.0`. Pages include a development-only script that polls `/__dev/boot` and reloads the tab when the server process restarts. The script and that route are omitted when `NODE_ENV=production`.
+- `pnpm dev` runs `node --watch` on `src/server.js`, loads `.env` when that file exists, and sets `NODE_ENV=development` for that process so a production value in `.env` cannot disable the reload. It listens on `PORT` (default 3000), bound to `0.0.0.0`. Pages include a development-only script that polls `/__dev/boot` and reloads the tab when the server process restarts. `pnpm start` and a production `NODE_ENV` omit the script and that route. Production is matched after trim and case-fold, so `Production` or padded values count.
 - `pnpm start` runs `node src/server.js` with no watch. Render uses this. It needs `DATABASE_URL` and `SESSION_SECRET` in the process environment.
 - There is no build step.
 - Create a local `.env` (git-ignored) with `DATABASE_URL`, `TEST_DATABASE_URL` and `SESSION_SECRET`; see `.env.example`. `pnpm dev`, `pnpm migrate`, `pnpm seed`, and `pnpm test` load it with `--env-file`.
