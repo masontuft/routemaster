@@ -1,0 +1,30 @@
+<%- include("../partials/head") %>
+<h1>Users</h1>
+<%- include("../partials/errors") %>
+<p><a href="/admin/users/new">Add Staff User</a></p>
+<table>
+    <thead><tr><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
+    <tbody>
+        <% users.forEach((row) => { %>
+            <tr>
+                <td><%= row.email ?? "(signs in by link)" %></td>
+                <td><%= row.role %></td>
+                <td><%= row.created %></td>
+                <td>
+                    <% if (row.email && row.id !== locals.user.id) { %>
+                        <form method="post" action="/admin/users/<%= row.id %>/role">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <select name="role" aria-label="Role for <%= row.email %>">
+                                <% roles.forEach((name) => { %>
+                                    <option value="<%= name %>"<%= name === row.role ? " selected" : "" %>><%= name %></option>
+                                <% }); %>
+                            </select>
+                            <button type="submit">Change Role</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+<%- include("../partials/foot") %>

@@ -13,6 +13,7 @@
             <% if (locals.user) { %>
                 <% if (locals.user.role === "customer") { %><a href="/requests">My Requests</a><% } %>
                 <% if (["owner", "dispatcher"].includes(locals.user.role)) { %><a href="/staff">Staff</a><% } %>
+                <% if (locals.user.role === "owner") { %><a href="/admin/users">Users</a><a href="/admin/service-types">Services</a><% } %>
                 <span><%= locals.user.displayName %></span>
                 <form method="post" action="/logout">
                     <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">

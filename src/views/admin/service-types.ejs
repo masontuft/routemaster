@@ -1,0 +1,17 @@
+<%- include("../partials/head") %>
+<h1>Services</h1>
+<p><a href="/admin/service-types/new">Add Service</a></p>
+<table>
+    <thead><tr><th>Name</th><th>Price</th><th>Active</th><th></th></tr></thead>
+    <tbody>
+        <% types.forEach((type) => { %>
+            <tr>
+                <td><%= type.name %></td>
+                <td><%= formatCents(type.price_cents) %></td>
+                <td><%= type.active ? "Yes" : "No" %></td>
+                <td><a href="/admin/service-types/<%= type.id %>/edit">Edit</a></td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+<%- include("../partials/foot") %>

@@ -5,10 +5,12 @@ import routes from "./routes/index.js";
 import authRoutes from "./routes/auth.js";
 import requestRoutes from "./routes/requests.js";
 import staffRoutes from "./routes/staff.js";
+import adminRoutes from "./routes/admin.js";
 import linkRoutes from "./routes/link.js";
 import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
 import sessionMiddleware, { createSessionStore } from "./middleware/session.js";
+import { formatCents } from "./utils/money.js";
 import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
@@ -34,6 +36,7 @@ export default function createApp({
     // Render terminates TLS in front of the app, so trust exactly one proxy hop.
     app.set("trust proxy", 1);
     app.set("view engine", "ejs");
+    app.locals.formatCents = formatCents;
     app.set("views", path.join(here, "views"));
     app.locals.db = pool;
     app.locals.sessionStore = store ?? (pool ? createSessionStore(pool) : undefined);
@@ -53,6 +56,7 @@ export default function createApp({
     app.use(authRoutes(limit));
     app.use(requestRoutes);
     app.use(staffRoutes);
+    app.use(adminRoutes);
     app.use(linkRoutes(limit));
     app.use(scheduleRoutes(limit));
     app.use(notFound);
