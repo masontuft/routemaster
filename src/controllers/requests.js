@@ -1,5 +1,6 @@
 import * as ServiceRequest from "../models/serviceRequest.js";
 import * as Property from "../models/property.js";
+import * as Review from "../models/review.js";
 import * as ServiceType from "../models/serviceType.js";
 import { notFound } from "../utils/errors.js";
 import { parseId, validatePreferredDate, todayString } from "../utils/validation.js";
@@ -69,8 +70,10 @@ export async function create(req, res) {
 
 export async function show(req, res) {
     const request = await ownedRequest(req);
-    const history = await ServiceRequest.historyFor(req.app.locals.db, request.id);
-    res.render("requests/show", { title: `Request ${request.id}`, request, history });
+    const db = req.app.locals.db;
+    const history = await ServiceRequest.historyFor(db, request.id);
+    const review = request.status === "Completed" ? await Review.findForRequest(db, request.id, req.session.user.customerId) : null;
+    res.render("requests/show", { title: `Request ${request.id}`, request, history, review });
 }
 
 export async function showEdit(req, res) {

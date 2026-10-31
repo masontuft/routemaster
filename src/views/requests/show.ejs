@@ -14,6 +14,20 @@
         <button type="submit">Cancel Request</button>
     </form>
 <% } %>
+<% if (request.status === "Completed") { %>
+    <% if (review) { %>
+        <h2>Your Review</h2>
+        <p><%= review.rating %> of 5<%= review.hidden ? " (hidden by staff)" : "" %></p>
+        <% if (review.body) { %><p><%= review.body %></p><% } %>
+        <p><a href="/requests/<%= request.id %>/review">Edit Review</a></p>
+        <form method="post" action="/requests/<%= request.id %>/review/delete">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit">Delete Review</button>
+        </form>
+    <% } else { %>
+        <p><a href="/requests/<%= request.id %>/review">Leave a Review</a></p>
+    <% } %>
+<% } %>
 <h2>Status History</h2>
 <ol>
     <% history.forEach((entry) => { %>

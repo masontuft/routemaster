@@ -1,0 +1,20 @@
+<%- include("../partials/head") %>
+<h1>Message <%= message.id %></h1>
+<%- include("../partials/errors") %>
+<dl>
+    <dt>From</dt><dd><%= message.name %></dd>
+    <dt>Email</dt><dd><%= message.email %></dd>
+    <% if (message.phone) { %><dt>Phone</dt><dd><%= message.phone %></dd><% } %>
+    <dt>Received</dt><dd><%= message.created %></dd>
+    <dt>Status</dt><dd><%= message.status %><%= message.replied_by_email ? " by " + message.replied_by_email : "" %></dd>
+    <dt>Message</dt><dd><%= message.message %></dd>
+    <% if (message.reply_note) { %><dt>Reply Note</dt><dd><%= message.reply_note %></dd><% } %>
+</dl>
+<form method="post" action="/staff/messages/<%= message.id %>/reply">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="note">How you replied (this is a record; nothing is emailed)</label>
+    <textarea id="note" name="note" rows="4" maxlength="1000" required><%= message.reply_note ?? "" %></textarea>
+    <button type="submit">Mark Replied</button>
+</form>
+<p><a href="/staff/messages">Back to Messages</a></p>
+<%- include("../partials/foot") %>

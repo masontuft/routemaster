@@ -13,7 +13,7 @@
         <li>Value of scheduled jobs: <%= formatCents(stats.scheduled_cents) %></li>
     </ul>
 <% } %>
-<p><a href="/staff/requests">All Requests</a> | <a href="/staff/customers">Customers</a></p>
+<p><a href="/staff/requests">All Requests</a> | <a href="/staff/customers">Customers</a> | <a href="/staff/reviews">Reviews</a> | <a href="/staff/messages">Messages (<%= newMessages %> new)</a></p>
 <h2>Needs Review</h2>
 <% if (review.length === 0) { %>
     <p>Nothing is waiting for review.</p>

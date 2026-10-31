@@ -35,3 +35,19 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 | POST | `/admin/service-types`, `/admin/service-types/:id` | `name`, `price` (dollars), `active` | Add or update a service. Deactivate by unchecking active |
 
 `GET /staff` also shows requests received, completed this month, and the value of scheduled jobs when the viewer is an owner.
+
+## Reviews and contact
+
+| Method | Path | Role | Fields | What it does |
+| --- | --- | --- | --- | --- |
+| GET | `/reviews` | public | | Visible reviews with the average rating; authors shown as "First L." |
+| GET | `/requests/:id/review` | customer | | Review form for the customer's own Completed request (404 otherwise) |
+| POST | `/requests/:id/review` | customer | `rating` (1 to 5), `body` (up to 1000) | Create or edit the review |
+| POST | `/requests/:id/review/delete` | customer | | Delete the customer's own review |
+| GET | `/contact` | public | | Contact form |
+| POST | `/contact` | public, rate limited | `name`, `email`, `phone` (optional), `message` (up to 2000) | Save a message |
+| GET | `/staff/reviews` | owner, dispatcher | | All reviews including hidden |
+| POST | `/staff/reviews/:id/hide`, `/restore` | owner, dispatcher | | Flag or unflag a review |
+| POST | `/staff/reviews/:id/delete` | owner | | Delete a review permanently |
+| GET | `/staff/messages`, `/staff/messages/:id` | owner, dispatcher | | Message list and detail |
+| POST | `/staff/messages/:id/reply` | owner, dispatcher | `note` (up to 1000) | Record a reply and mark the message Replied |

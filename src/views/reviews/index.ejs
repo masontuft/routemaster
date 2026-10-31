@@ -1,0 +1,15 @@
+<%- include("../partials/head") %>
+<h1>Reviews</h1>
+<% if (summary.total === 0) { %>
+    <p>No reviews yet.</p>
+<% } else { %>
+    <p>Average rating: <%= summary.average %> of 5 from <%= summary.total %> review<%= summary.total === 1 ? "" : "s" %></p>
+    <% reviews.forEach((review) => { %>
+        <article>
+            <h2><%= review.rating %> of 5</h2>
+            <% if (review.body) { %><p><%= review.body %></p><% } %>
+            <p><small><%= review.author %>, <%= review.created %></small></p>
+        </article>
+    <% }); %>
+<% } %>
+<%- include("../partials/foot") %>
