@@ -38,4 +38,4 @@ This is a proposal for review, not a decision. Each foreign key's ON DELETE rule
 
 ## Roadmap items
 
-Multi-tenant support, import of expenses, mileage and compressor tabs, two-way spreadsheet sync, and an instructor-hosted database as an optional target for server agents. These are recorded in `docs/product/roadmap.md` in the next phase.
+Multi-tenant support, import of expenses, mileage and compressor tabs, two-way spreadsheet sync, and an instructor-hosted database as an optional target for server agents. These are recorded in [docs/product/roadmap.md](docs/product/roadmap.md).
