@@ -1,5 +1,5 @@
 <% if (errors.length) { %>
-    <ul class="errors" role="alert">
+    <ul class="errors" role="alert" aria-label="There is a problem">
         <% errors.forEach((message) => { %>
             <li><%= message %></li>
         <% }); %>

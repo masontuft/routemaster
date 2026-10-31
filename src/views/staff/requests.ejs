@@ -10,7 +10,8 @@
 <% if (requests.length === 0) { %>
     <p>No requests found.</p>
 <% } else { %>
-    <table>
+    <div class="table-scroll" role="region" aria-label="Requests" tabindex="0">
+<table>
         <thead><tr><th>Customer</th><th>Service</th><th>Address</th><th>Preferred</th><th>Scheduled</th><th>Status</th><th></th></tr></thead>
         <tbody>
             <% requests.forEach((request) => { %>
@@ -26,5 +27,6 @@
             <% }); %>
         </tbody>
     </table>
+</div>
 <% } %>
 <%- include("../partials/foot") %>
