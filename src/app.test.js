@@ -8,19 +8,19 @@ import createApp from "./app.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 test("GET / renders the home page", async () => {
-    const res = await request(createApp()).get("/");
+    const res = await request(createApp({ sessionSecret: "test-secret" })).get("/");
     assert.strictEqual(res.status, 200);
     assert.match(res.text, /<h1>Routemaster<\/h1>/);
 });
 
 test("GET /health returns 200", async () => {
-    const res = await request(createApp()).get("/health");
+    const res = await request(createApp({ sessionSecret: "test-secret" })).get("/health");
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.text, "ok");
 });
 
 test("an unknown URL renders the 404 page", async () => {
-    const res = await request(createApp()).get("/no-such-page");
+    const res = await request(createApp({ sessionSecret: "test-secret" })).get("/no-such-page");
     assert.strictEqual(res.status, 404);
     assert.match(res.text, /Page Not Found/);
 });

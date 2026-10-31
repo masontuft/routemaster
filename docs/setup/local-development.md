@@ -15,6 +15,7 @@ createdb routemaster
 createdb routemaster_test
 pnpm install
 pnpm migrate
+pnpm seed
 pnpm lint
 pnpm test
 pnpm start
@@ -24,6 +25,7 @@ pnpm start
 - There is no build step. Boot smoke testing arrives with the server.
 - Create a local `.env` (git-ignored) with `DATABASE_URL`, `TEST_DATABASE_URL` and `SESSION_SECRET`; see `.env.example`. `pnpm migrate` and `pnpm test` load it with `--env-file`.
 - `pnpm migrate` applies new files from `migrations/` to `DATABASE_URL`. Running it twice applies nothing the second time.
+- `pnpm seed` creates `owner@example.com`, `dispatcher@example.com` and `customer@example.com` using `SEED_PASSWORD`; running it again skips existing accounts. `pnpm start` needs `DATABASE_URL` and `SESSION_SECRET`.
 - CI (`.github/workflows/ci.yml`) runs a frozen install, lint, and test on pull requests and pushes to `main`.
 
 ## Database

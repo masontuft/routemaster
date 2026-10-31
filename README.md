@@ -20,7 +20,7 @@ One server-rendered Express app using MVC (`models/`, `controllers/`, `views/`, 
 | Dispatcher | Move requests through statuses and build routes |
 | Customer | Submit and track requests, leave reviews |
 
-Test account emails: not created yet. They will be listed here without the shared password.
+Test account emails (created by `pnpm seed`; the shared password is not listed here): `owner@example.com`, `dispatcher@example.com`, `customer@example.com`.
 
 ## Repository layout
 

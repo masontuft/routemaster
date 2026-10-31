@@ -8,4 +8,5 @@ Names only. Never commit values. Proposed in [ADR 0010](../adr/0010-deployment-a
 | `SESSION_SECRET` | Signs the session cookie |
 | `NODE_ENV` | `production` on Render |
 | `PORT` | Port the server binds, set by Render |
+| `SEED_PASSWORD` | Password for the seeded test accounts, used only by `pnpm seed` |
 | `TEST_DATABASE_URL` | Throwaway database for tests. Must differ from `DATABASE_URL` |

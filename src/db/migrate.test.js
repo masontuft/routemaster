@@ -40,7 +40,11 @@ async function tempDir(files) {
 
 test("applies the real migrations in order and records them", async () => {
     const applied = await runMigrations(pool, realMigrations);
-    assert.deepStrictEqual(applied, ["001_create_roles.sql", "002_create_users.sql"]);
+    assert.deepStrictEqual(applied, [
+        "001_create_roles.sql",
+        "002_create_users.sql",
+        "003_create_session_table.sql",
+    ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
     assert.deepStrictEqual(roles.rows.map((row) => {

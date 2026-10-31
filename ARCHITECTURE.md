@@ -32,7 +32,7 @@ This is a proposal for review, not a decision. Each foreign key's ON DELETE rule
 
 - Instructor confirmation that an external Postgres on Supabase satisfies the Render requirement (ADR 0007).
 - A spike proving how a public Google Sheet is fetched, and the Excel parsing library (ADR 0009).
-- Whether `connect-pg-simple` imports cleanly in ESM, and the CSRF approach (ADR 0010).
+- Render's IPv6 reachability for the Supabase connection (ADR 0010). `connect-pg-simple` under ESM and the CSRF approach are resolved locally.
 - Whether technicians need logins, and what the Rocky and Skyview referral payout is.
 - Build and start commands, the schema snapshot folder and script, and the branch and commit conventions for `CONTRIBUTING.md`.
 
