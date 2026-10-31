@@ -1,6 +1,6 @@
 # Local Development
 
-Not currently implemented: there is no `package.json` yet. This page lists what is decided and what is missing.
+The app code is not written yet, but the tooling exists: `package.json`, ESLint and `node:test`.
 
 ## Prerequisites
 
@@ -10,7 +10,16 @@ Not currently implemented: there is no `package.json` yet. This page lists what 
 
 ## Commands
 
-Not decided. The run, lint, test and build commands are added when phase 4 creates the scripts.
+```bash
+pnpm install
+pnpm lint
+pnpm test
+pnpm start
+```
+
+- `pnpm start` runs `node src/server.js`. That file does not exist yet, so it fails until the server is written.
+- There is no build step. Boot smoke testing arrives with the server.
+- CI (`.github/workflows/ci.yml`) runs a frozen install, lint and test. It has not run on GitHub yet.
 
 ## Database
 

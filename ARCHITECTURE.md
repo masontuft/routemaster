@@ -1,6 +1,6 @@
 # Architecture
 
-Routemaster is a web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. This file states the answered architecture decisions. Each links to its ADR. Nothing described here is built yet: every item is Not currently implemented until the code exists.
+Routemaster is a web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. This file states the answered architecture decisions. Each links to its ADR. Almost nothing described here is built yet (only the tooling and the test-database guard): every item is Not currently implemented until the code exists.
 
 ## Decisions
 

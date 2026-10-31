@@ -1,0 +1,21 @@
+{
+  "name": "routemaster",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web app for service companies that builds daily routes.",
+  "type": "module",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "lint": "eslint .",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.13.0"
+  }
+}
