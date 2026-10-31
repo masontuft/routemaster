@@ -103,3 +103,45 @@ export function validateIdentity(body) {
 
     return { values: { name, phone, address }, errors };
 }
+
+export function validateReview(body) {
+    const rating = Number(body.rating);
+    const text = String(body.body ?? "").trim();
+    const errors = [];
+
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        errors.push("Choose a rating from 1 to 5.");
+    }
+
+    if (text.length > 1000) {
+        errors.push("Keep your review to 1000 characters.");
+    }
+
+    return { values: { rating, body: text }, errors };
+}
+
+export function validateContact(body) {
+    const name = String(body.name ?? "").trim();
+    const email = normalizeEmail(body.email);
+    const phone = String(body.phone ?? "").trim();
+    const message = String(body.message ?? "").trim();
+    const errors = [];
+
+    if (!name || name.length > 100) {
+        errors.push("Enter your name.");
+    }
+
+    if (!EMAIL_PATTERN.test(email) || email.length > 254) {
+        errors.push("Enter a valid email address.");
+    }
+
+    if (phone.length > 30) {
+        errors.push("Phone number is too long.");
+    }
+
+    if (!message || message.length > 2000) {
+        errors.push("Enter a message of up to 2000 characters.");
+    }
+
+    return { values: { name, email, phone, message }, errors };
+}

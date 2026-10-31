@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireRole } from "../middleware/auth.js";
 import * as staff from "../controllers/staff.js";
+import * as moderation from "../controllers/moderation.js";
 
 const router = Router();
 
@@ -17,5 +18,12 @@ router.get("/staff/customers", staff.listCustomers);
 router.get("/staff/customers/:id", staff.showCustomer);
 router.post("/staff/customers/:id/links", staff.createLink);
 router.post("/staff/customers/:id/links/:linkId/revoke", staff.revokeLink);
+router.get("/staff/reviews", moderation.listReviews);
+router.post("/staff/reviews/:id/hide", moderation.hideReview);
+router.post("/staff/reviews/:id/restore", moderation.restoreReview);
+router.post("/staff/reviews/:id/delete", requireRole("owner"), moderation.deleteReview);
+router.get("/staff/messages", moderation.listMessages);
+router.get("/staff/messages/:id", moderation.showMessage);
+router.post("/staff/messages/:id/reply", moderation.replyMessage);
 
 export default router;

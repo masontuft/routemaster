@@ -1,0 +1,33 @@
+<%- include("../partials/head") %>
+<h1>Reviews</h1>
+<% if (reviews.length === 0) { %>
+    <p>No reviews yet.</p>
+<% } else { %>
+    <table>
+        <thead><tr><th>Customer</th><th>Rating</th><th>Comment</th><th>Date</th><th>Shown</th><th></th></tr></thead>
+        <tbody>
+            <% reviews.forEach((review) => { %>
+                <tr>
+                    <td><%= review.customer_name %></td>
+                    <td><%= review.rating %></td>
+                    <td><%= review.body %></td>
+                    <td><%= review.created %></td>
+                    <td><%= review.hidden ? "Hidden" : "Public" %></td>
+                    <td>
+                        <form method="post" action="/staff/reviews/<%= review.id %>/<%= review.hidden ? "restore" : "hide" %>">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <button type="submit"><%= review.hidden ? "Restore" : "Hide" %></button>
+                        </form>
+                        <% if (locals.user.role === "owner") { %>
+                            <form method="post" action="/staff/reviews/<%= review.id %>/delete">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button type="submit">Delete</button>
+                            </form>
+                        <% } %>
+                    </td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+<% } %>
+<%- include("../partials/foot") %>

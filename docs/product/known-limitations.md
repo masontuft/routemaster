@@ -13,3 +13,6 @@
 - No two-way spreadsheet sync.
 - Free Supabase projects may pause after inactivity (unverified).
 - Technician logins and the Rocky and Skyview referral payout are undecided.
+- Replying to a contact message records a note and sets the status; nothing is emailed.
+- Reviews and contact messages have no spam filter beyond the per-IP rate limit and CSRF token.
+- A review can only be written for a Completed request, so customers who never use the site cannot review.

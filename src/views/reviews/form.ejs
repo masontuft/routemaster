@@ -1,0 +1,19 @@
+<%- include("../partials/head") %>
+<h1><%= review ? "Edit Review" : "Leave a Review" %></h1>
+<p><%= request.service_type %> at <%= request.street %></p>
+<%- include("../partials/errors") %>
+<form method="post" action="/requests/<%= request.id %>/review">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="rating">Rating</label>
+    <select id="rating" name="rating" required>
+        <option value="">Choose</option>
+        <% [5, 4, 3, 2, 1].forEach((n) => { %>
+            <option value="<%= n %>"<%= Number(values.rating) === n ? " selected" : "" %>><%= n %></option>
+        <% }); %>
+    </select>
+    <label for="body">Comments</label>
+    <textarea id="body" name="body" rows="5" maxlength="1000"><%= values.body %></textarea>
+    <button type="submit">Save Review</button>
+</form>
+<p><a href="/requests/<%= request.id %>">Back to Request</a></p>
+<%- include("../partials/foot") %>

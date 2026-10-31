@@ -1,0 +1,21 @@
+<%- include("../partials/head") %>
+<h1>Messages</h1>
+<% if (messages.length === 0) { %>
+    <p>No messages yet.</p>
+<% } else { %>
+    <table>
+        <thead><tr><th>From</th><th>Email</th><th>Date</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+            <% messages.forEach((message) => { %>
+                <tr>
+                    <td><%= message.name %></td>
+                    <td><%= message.email %></td>
+                    <td><%= message.created %></td>
+                    <td><%= message.status %></td>
+                    <td><a href="/staff/messages/<%= message.id %>">Open</a></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+<% } %>
+<%- include("../partials/foot") %>

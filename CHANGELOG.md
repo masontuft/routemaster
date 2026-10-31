@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Customer reviews of completed jobs, a public reviews page, a contact form, and staff moderation (hide, restore, owner delete) and message replies (migrations 013 and 014).
 - Owner admin: manage users and roles, create staff users, edit the service catalog and prices, and owner-only monthly numbers on the staff dashboard.
 - `pnpm dev` watches `src/` and `public/` with Node's `--watch` and reloads the open page after the server restarts. The script sets `NODE_ENV=development` so a production value in `.env` cannot disable the reload.
 - Staff dashboard for owners and dispatchers: request queue, status transitions with history, Needs Review matching, customer search, and link creation and revocation (migration 012).

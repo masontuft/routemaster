@@ -2,6 +2,7 @@ import * as Staff from "../models/staff.js";
 import * as Customer from "../models/customer.js";
 import * as Property from "../models/property.js";
 import * as ServiceRequest from "../models/serviceRequest.js";
+import * as ContactMessage from "../models/contactMessage.js";
 import * as AccessLink from "../models/accessLink.js";
 import { notFound } from "../utils/errors.js";
 import { parseId, validatePreferredDate, validateProperty, todayString } from "../utils/validation.js";
@@ -37,12 +38,13 @@ async function renderRequest(req, res, request, { errors = [], status = 200 } = 
 
 export async function dashboard(req, res) {
     const db = req.app.locals.db;
-    const [counts, review, stats] = await Promise.all([
+    const [counts, review, stats, newMessages] = await Promise.all([
         Staff.countsByStatus(db),
         Staff.listRequests(db, { status: "Needs Review", limit: 5 }),
         req.session.user.role === "owner" ? Staff.stats(db) : null,
+        ContactMessage.countNew(db),
     ]);
-    res.render("staff/index", { title: "Staff Dashboard", counts, review, stats });
+    res.render("staff/index", { title: "Staff Dashboard", counts, review, stats, newMessages });
 }
 
 export async function listRequests(req, res) {
