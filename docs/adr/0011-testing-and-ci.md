@@ -21,7 +21,7 @@ The standing rule in `AGENTS.md` was Jest for unit and integration tests. The pr
 ## Decision
 
 - Unit and integration tests: Node's built-in test runner, `node:test`, with `node:assert` and supertest for HTTP tests. Test files are named `*.test.js`. Every major feature has a matching test file, and the agent judges what counts as major.
-- Tests run only against a throwaway database selected by `TEST_DATABASE_URL`, never the Supabase project. A guard refuses to run when that variable is missing or equals `DATABASE_URL`. Locally this is a second database on Mason's local Postgres. In CI it is a Postgres service container.
+- Tests run only against a throwaway database selected by `TEST_DATABASE_URL`, never the Supabase project. A guard refuses to run when that variable is missing, is not a Postgres URL, or names the same host, port, and database as `DATABASE_URL`. Cosmetic differences in the connection string do not count as a different database. Locally this is a second database on Mason's local Postgres. In CI it is a Postgres service container.
 - End-to-end tests: Playwright, added only after the app starts in a repeatable test mode. First journeys: a customer registers and submits a request; a dispatcher builds a route and moves requests through the statuses; an admin imports a sheet through the preview step.
 - CI: GitHub Actions on pull requests and pushes to the default branch. Steps are install with the frozen lockfile, lint, test against the Postgres container, and a build step defined as a boot smoke test that checks the health check URL returns 200.
 - Lint: ESLint using the shared config from the `spirit-of-the-law-linting` skill.
@@ -39,7 +39,7 @@ The standing rule in `AGENTS.md` was Jest for unit and integration tests. The pr
 - Server or cloud agents cannot reach Mason's local Postgres. They rely on CI for database tests and record unverified database steps in the ledger for the next local agent. An instructor-hosted database as an optional test target is a roadmap item.
 - supertest examples use `require()`, so ESM import use must be checked.
 - Playwright's `webServer` option was not read yet.
-- Nothing is built yet: Not currently implemented.
+- The runner, ESLint, the database guard, and the CI workflow exist. Playwright, the Postgres service container, and the boot smoke test are not implemented yet.
 
 ## References
 

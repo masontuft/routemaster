@@ -1,6 +1,6 @@
 # Routemaster Docs
 
-Routemaster is a server-rendered web app for a service company. Customers submit service requests, dispatchers build daily routes, and the owner manages everything. Nothing is built yet. Every page here separates what is decided from what exists, and anything unbuilt is marked Not currently implemented.
+Routemaster is a server-rendered web app for a service company. Customers submit service requests, dispatchers build daily routes, and the owner manages everything. The server is not built yet. Tooling and the test-database guard exist. Every page here separates what is decided from what exists, and anything unbuilt is marked Not currently implemented.
 
 | Folder | What it holds |
 | --- | --- |

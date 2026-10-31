@@ -4,8 +4,8 @@ Decided in [ADR 0011](../adr/0011-testing-and-ci.md). The runner and one test fi
 
 - Runner: `node:test` with `node:assert`; supertest for HTTP. Files are named `*.test.js`.
 - Rule: any time we add a major feature, there needs to be a test file associated.
-- Database: tests run only against `TEST_DATABASE_URL`, with a guard that refuses to run if it is missing or equals `DATABASE_URL`.
+- Database: tests run only against `TEST_DATABASE_URL`. The guard refuses to run when that URL is missing, is not a Postgres URL, or names the same host, port, and database as `DATABASE_URL`.
 - End-to-end: Playwright later, once the app starts in a repeatable test mode.
-- CI: `.github/workflows/ci.yml` runs frozen install, lint and test. The Postgres service container and boot smoke test are added when the code needs them. Not yet run on GitHub.
+- CI: `.github/workflows/ci.yml` runs a frozen install, lint, and test on pull requests and pushes to `main`. The Postgres service container and boot smoke test are added when the code needs them.
 - Coverage: no threshold until a baseline is measured.
 - Unverified: supertest with ESM imports, `mock.module` in `node:test`, Playwright `webServer`.

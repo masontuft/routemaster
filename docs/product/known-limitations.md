@@ -1,6 +1,6 @@
 # Known Limitations
 
-- Nothing is implemented yet.
+- The server, pages, and database schema are not implemented yet. The test-database guard and the lint and test tooling exist.
 - Single company only; multi-tenant is on the [roadmap](roadmap.md).
 - Import covers jobs, customers and areas. Expenses, mileage and compressor tabs are not imported.
 - Address matching in import is fuzzy; the preview step is mandatory.
