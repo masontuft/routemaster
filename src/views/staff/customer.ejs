@@ -1,0 +1,38 @@
+<%- include("../partials/head") %>
+<h1><%= customer.name %></h1>
+<p><%= customer.phone ?? "" %> <%= customer.email ?? "" %></p>
+<h2>Properties</h2>
+<ul>
+    <% properties.forEach((property) => { %>
+        <li><%= property.street %>, <%= property.city %></li>
+    <% }); %>
+</ul>
+<h2>Requests</h2>
+<ul>
+    <% requests.forEach((item) => { %>
+        <li><a href="/staff/requests/<%= item.id %>"><%= item.service_type %></a> - <%= item.status %></li>
+    <% }); %>
+</ul>
+<h2>Scheduling Links</h2>
+<% if (newLink) { %>
+    <p>New link. Copy it now: it is shown only once.</p>
+    <p><input type="text" readonly value="<%= newLink %>" size="70"></p>
+<% } %>
+<form method="post" action="/staff/customers/<%= customer.id %>/links">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Create Link</button>
+</form>
+<ul>
+    <% links.forEach((link) => { %>
+        <li>
+            <%= link.state %>, expires <%= link.expires_at.toISOString().slice(0, 10) %>
+            <% if (link.state === "Active") { %>
+                <form method="post" action="/staff/customers/<%= customer.id %>/links/<%= link.id %>/revoke">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Revoke</button>
+                </form>
+            <% } %>
+        </li>
+    <% }); %>
+</ul>
+<%- include("../partials/foot") %>

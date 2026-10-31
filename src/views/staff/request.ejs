@@ -1,0 +1,40 @@
+<%- include("../partials/head") %>
+<h1>Request <%= request.id %></h1>
+<%- include("../partials/errors") %>
+<dl>
+    <dt>Status</dt><dd><%= request.status %></dd>
+    <dt>Service</dt><dd><%= request.service_type %></dd>
+    <dt>Preferred Date</dt><dd><%= request.preferred_date %></dd>
+    <% if (request.scheduled_date) { %><dt>Scheduled Date</dt><dd><%= request.scheduled_date %></dd><% } %>
+    <% if (request.customer_id) { %>
+        <dt>Customer</dt><dd><a href="/staff/customers/<%= request.customer_id %>"><%= request.customer_name %></a> <%= request.customer_phone ?? "" %></dd>
+        <dt>Property</dt><dd><%= request.street %>, <%= request.city %></dd>
+    <% } else { %>
+        <dt>Typed Name</dt><dd><%= request.contact_name %></dd>
+        <dt>Typed Phone</dt><dd><%= request.contact_phone %></dd>
+        <dt>Typed Address</dt><dd><%= request.contact_address %></dd>
+    <% } %>
+    <% if (request.notes) { %><dt>Notes</dt><dd><%= request.notes %></dd><% } %>
+</dl>
+<% if (request.status === "Needs Review") { %>
+    <p><a href="/staff/requests/<%= request.id %>/match">Match to a Customer</a></p>
+<% } %>
+<% next.forEach((name) => { %>
+    <form method="post" action="/staff/requests/<%= request.id %>/status">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="status" value="<%= name %>">
+        <% if (name === "Scheduled") { %>
+            <label>Scheduled Date <input type="date" name="scheduledDate" min="<%= today %>" required></label>
+        <% } %>
+        <label>Note <input type="text" name="note" maxlength="500"></label>
+        <button type="submit"><%= name === "Scheduled" && request.status === "Scheduled" ? "Reschedule" : "Mark " + name %></button>
+    </form>
+<% }); %>
+<h2>Status History</h2>
+<ol>
+    <% history.forEach((entry) => { %>
+        <li><%= entry.status %> on <%= entry.changed_at.toISOString().slice(0, 10) %><%= entry.changed_by_email ? " by " + entry.changed_by_email : "" %><%= entry.note ? " - " + entry.note : "" %></li>
+    <% }); %>
+</ol>
+<p><a href="/staff/requests">Back to Requests</a></p>
+<%- include("../partials/foot") %>
