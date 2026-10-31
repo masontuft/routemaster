@@ -16,7 +16,7 @@ export async function findByUserId(pool, userId) {
 }
 
 export async function findById(pool, id) {
-    const { rows } = await pool.query("SELECT id, name, user_id FROM customers WHERE id = $1", [id]);
+    const { rows } = await pool.query("SELECT id, name, phone, email, user_id FROM customers WHERE id = $1", [id]);
     return rows[0] ?? null;
 }
 
@@ -68,4 +68,22 @@ export async function ensureUser(pool, customerId) {
         await client.query("UPDATE customers SET user_id = $1 WHERE id = $2", [created.rows[0].id, customerId]);
         return { id: created.rows[0].id, role: "customer", displayName: customer.name };
     });
+}
+
+// Normalized search terms contain only letters, digits and spaces, so they cannot carry LIKE wildcards.
+// An empty search lists the first 50 customers. A phone term needs 3 digits to count.
+export async function search(pool, term) {
+    const digits = normalizePhone(term);
+    const { rows } = await pool.query(
+        `SELECT DISTINCT customers.id, customers.name, customers.phone
+         FROM customers
+         LEFT JOIN properties ON properties.customer_id = customers.id
+         WHERE customers.name_normalized LIKE $1
+            OR ($2::text IS NOT NULL AND customers.phone_normalized LIKE $2::text)
+            OR properties.address_normalized LIKE $3
+         ORDER BY customers.name, customers.id
+         LIMIT 50`,
+        [`%${normalizeName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`],
+    );
+    return rows;
 }

@@ -1,0 +1,33 @@
+<%- include("../partials/head") %>
+<h1>Match Request <%= request.id %></h1>
+<%- include("../partials/errors") %>
+<p>Typed by the visitor: <%= request.contact_name %>, <%= request.contact_phone %>, <%= request.contact_address %></p>
+<form method="get" action="/staff/requests/<%= request.id %>/match">
+    <label>Search Customers <input type="search" name="q" value="<%= q %>" maxlength="100"></label>
+    <button type="submit">Search</button>
+</form>
+<% if (customers.length === 0) { %>
+    <p>No customers found.</p>
+<% } else { %>
+    <form method="post" action="/staff/requests/<%= request.id %>/match">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% customers.forEach((customer) => { %>
+            <fieldset>
+                <legend><%= customer.name %> <%= customer.phone ?? "" %></legend>
+                <% customer.properties.forEach((property) => { %>
+                    <label><input type="radio" name="propertyId" value="<%= property.id %>"> <%= property.street %>, <%= property.city %></label><br>
+                <% }); %>
+            </fieldset>
+        <% }); %>
+        <button type="submit">Match to Selected Property</button>
+    </form>
+<% } %>
+<h2>Or Create a New Customer</h2>
+<form method="post" action="/staff/requests/<%= request.id %>/match/new">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>City <input type="text" name="city" maxlength="80" required></label>
+    <label>ZIP <input type="text" name="zip" maxlength="10"></label>
+    <button type="submit">Create Customer and Property</button>
+</form>
+<p><a href="/staff/requests/<%= request.id %>">Back to Request</a></p>
+<%- include("../partials/foot") %>

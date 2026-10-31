@@ -11,7 +11,7 @@ const DETAIL_SELECT = `
     JOIN properties ON properties.id = service_requests.property_id
 `;
 
-async function addHistory(client, requestId, statusName, changedBy, note) {
+export async function addHistory(client, requestId, statusName, changedBy, note) {
     await client.query(
         `INSERT INTO status_history (service_request_id, status_id, changed_by, note)
          SELECT $1, id, $2, $3 FROM request_statuses WHERE name = $4`,
