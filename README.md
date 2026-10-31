@@ -2,9 +2,9 @@
 
 Web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. It is Mason's CSE 340 final project (Option A, design your own).
 
-**Status:** planning. Architecture and docs are written; the app is not built yet, so nothing below runs.
+**Status:** planning. Architecture, docs, and the test-database guard are in place. The server is not written yet, so `pnpm start` fails. `pnpm lint` and `pnpm test` run.
 
-## Stack (decided, not yet built)
+## Stack
 
 Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL on Supabase, native CSS, pnpm, `node:test`, deployed to Render. Decisions are in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/adr/](docs/adr/README.md).
 
@@ -31,7 +31,7 @@ Test account emails: not created yet. They will be listed here without the share
 
 ## Prerequisites and setup
 
-Node 24, pnpm and a local PostgreSQL. Commands to run, lint, test and build are not defined yet because there is no `package.json`. See [local development](docs/setup/local-development.md).
+Node 24, pnpm, and a local PostgreSQL. There is no build step. `pnpm start` runs `node src/server.js`, which is not written yet. See [local development](docs/setup/local-development.md).
 
 ## Environment variables
 

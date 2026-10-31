@@ -34,7 +34,7 @@ The course requires Node.js with Express, EJS or Liquid.js, and ES modules with 
 
 - No compile or build step for application code.
 - Layout reuse depends on include partials. A layout helper dependency would need Mason's approval.
-- The Node pin is a decision, not yet implemented. Node's release table marked v22, v24 and v26 as LTS, but its end-of-life column was ambiguous, so end-of-life dates were not confirmed.
+- Node is pinned to 24 in `.node-version` and `package.json` `engines`. Node's release table marked v22, v24 and v26 as LTS, but its end-of-life column was ambiguous, so end-of-life dates were not confirmed.
 - Whether npm's default Express version is 5 was not verified and is checked at install time.
 - Nothing is built yet: Not currently implemented.
 

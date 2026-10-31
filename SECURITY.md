@@ -6,7 +6,7 @@ Report privately. Do not open a public issue and do not post exploit details or 
 
 ## Scope
 
-Routemaster is a student project (CSE 340 final project), not yet built or deployed. The repository holds the app code and docs. Sample data in the repo is non-production and fake.
+Routemaster is a student project (CSE 340 final project). The server is not built or deployed yet. The repository holds the docs and the test-database guard. Sample data in the repo is non-production and fake.
 
 ## Secrets
 

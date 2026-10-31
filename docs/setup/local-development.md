@@ -1,10 +1,10 @@
 # Local Development
 
-The app code is not written yet, but the tooling exists: `package.json`, ESLint and `node:test`.
+The server is not written yet. Tooling exists (`package.json`, ESLint, and `node:test`), and the test-database guard is in `src/config/testDatabase.js`.
 
 ## Prerequisites
 
-- Node 24 (pinned in `.node-version` once created)
+- Node 24 (pinned in `.node-version`)
 - pnpm (never npm)
 - A local PostgreSQL with two databases: one for development and a throwaway one for tests
 
@@ -19,7 +19,7 @@ pnpm start
 
 - `pnpm start` runs `node src/server.js`. That file does not exist yet, so it fails until the server is written.
 - There is no build step. Boot smoke testing arrives with the server.
-- CI (`.github/workflows/ci.yml`) runs a frozen install, lint and test. It has not run on GitHub yet.
+- CI (`.github/workflows/ci.yml`) runs a frozen install, lint, and test on pull requests and pushes to `main`.
 
 ## Database
 

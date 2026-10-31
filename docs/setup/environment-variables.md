@@ -1,6 +1,6 @@
 # Environment Variables
 
-Names only. Never commit values. Proposed in [ADR 0010](../adr/0010-deployment-and-trust-boundary.md); none are read by code yet.
+Names only. Never commit values. Proposed in [ADR 0010](../adr/0010-deployment-and-trust-boundary.md). The test-database guard reads `TEST_DATABASE_URL` and `DATABASE_URL`. The server does not read the others yet.
 
 | Name | Purpose |
 | --- | --- |

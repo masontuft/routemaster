@@ -14,4 +14,10 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Fixed
 
+- The system context diagram renders on GitHub. Dotted edge labels that contained periods now use the pipe form.
+- The test-database guard treats connection strings that name the same host, port, and database as the same database.
+- Setup docs that still said `package.json`, `.node-version`, or CI did not exist.
+
 ### Security
+
+- A cosmetic difference in `TEST_DATABASE_URL` (scheme, default port, credentials, trailing slash, or an ignored query parameter) can no longer point tests at the real database.

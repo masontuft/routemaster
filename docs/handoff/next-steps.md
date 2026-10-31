@@ -10,7 +10,7 @@
 
 - Spike the Google Sheet fetch route and choose the `.xlsx` library.
 - Check `connect-pg-simple` under ESM and decide CSRF protection.
-- Set up the test runner and CI.
+- Add the Postgres service container and a boot smoke test when database tests and the server exist.
 
 ## Optional
 

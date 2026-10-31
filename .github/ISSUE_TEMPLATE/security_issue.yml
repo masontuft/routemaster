@@ -1,6 +1,6 @@
 name: Security issue (non-sensitive only)
 description: Hardening ideas that expose nothing. Real vulnerabilities go private.
-labels: [security]
+# TODO (Mason): add labels: [security] after you create that label. It is not in the repo, so GitHub drops it.
 body:
   - type: markdown
     attributes:

@@ -12,12 +12,12 @@ Write a short imperative summary line, such as "Add login route". Add a body onl
 
 ## Local setup
 
-Not available yet: there is no `package.json`. See [local development](docs/setup/local-development.md). Use pnpm, never npm.
+Node 24 and pnpm. See [local development](docs/setup/local-development.md). Use pnpm, never npm.
 
 ## Pull request checklist
 
 - Tests added or updated. Any major feature has a `*.test.js` file.
-- Lint passes (an ESLint config arrives with the CI phase).
+- Lint passes (`pnpm lint`).
 - A bug fix includes a regression test where practical.
 - Behavior changes update the docs and tests.
 - No secrets, `.env` files, build output or coverage output.
