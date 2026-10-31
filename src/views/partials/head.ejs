@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="enterprise">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title><%= title %> | Routemaster</title>
     <link rel="stylesheet" href="/css/main.css">
 </head>
-<body>
+<body class="<%= locals.pageStyle || "app" %>">
+    <a class="skip-link" href="#main">Skip to Main Content</a>
     <header>
-        <a href="/">Routemaster</a>
-        <nav>
+        <a class="brand" href="/">Routemaster</a>
+        <nav aria-label="Main">
             <a href="/reviews">Reviews</a>
             <a href="/contact">Contact</a>
             <% if (locals.user) { %>
@@ -27,4 +28,4 @@
             <% } %>
         </nav>
     </header>
-    <main>
+    <main id="main">

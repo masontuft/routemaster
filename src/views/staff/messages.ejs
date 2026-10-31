@@ -3,7 +3,8 @@
 <% if (messages.length === 0) { %>
     <p>No messages yet.</p>
 <% } else { %>
-    <table>
+    <div class="table-scroll" role="region" aria-label="Messages" tabindex="0">
+<table>
         <thead><tr><th>From</th><th>Email</th><th>Date</th><th>Status</th><th></th></tr></thead>
         <tbody>
             <% messages.forEach((message) => { %>
@@ -17,5 +18,6 @@
             <% }); %>
         </tbody>
     </table>
+</div>
 <% } %>
 <%- include("../partials/foot") %>

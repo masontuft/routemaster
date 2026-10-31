@@ -1,6 +1,7 @@
 <%- include("../partials/head") %>
 <h1>Services</h1>
 <p><a href="/admin/service-types/new">Add Service</a></p>
+<div class="table-scroll" role="region" aria-label="Services" tabindex="0">
 <table>
     <thead><tr><th>Name</th><th>Price</th><th>Active</th><th></th></tr></thead>
     <tbody>
@@ -14,4 +15,5 @@
         <% }); %>
     </tbody>
 </table>
+</div>
 <%- include("../partials/foot") %>

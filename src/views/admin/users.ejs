@@ -2,6 +2,7 @@
 <h1>Users</h1>
 <%- include("../partials/errors") %>
 <p><a href="/admin/users/new">Add Staff User</a></p>
+<div class="table-scroll" role="region" aria-label="Users" tabindex="0">
 <table>
     <thead><tr><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
     <tbody>
@@ -27,4 +28,5 @@
         <% }); %>
     </tbody>
 </table>
+</div>
 <%- include("../partials/foot") %>

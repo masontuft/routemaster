@@ -3,7 +3,8 @@
 <% if (reviews.length === 0) { %>
     <p>No reviews yet.</p>
 <% } else { %>
-    <table>
+    <div class="table-scroll" role="region" aria-label="Reviews" tabindex="0">
+<table>
         <thead><tr><th>Customer</th><th>Rating</th><th>Comment</th><th>Date</th><th>Shown</th><th></th></tr></thead>
         <tbody>
             <% reviews.forEach((review) => { %>
@@ -29,5 +30,6 @@
             <% }); %>
         </tbody>
     </table>
+</div>
 <% } %>
 <%- include("../partials/foot") %>
