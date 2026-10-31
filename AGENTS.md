@@ -4,7 +4,7 @@ This file is the single source of rules for every AI agent working in this repo 
 
 ## Project
 
-Routemaster is a web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. See `README.md`.
+Routemaster is a web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. See `README.md`. Architecture decisions are in `ARCHITECTURE.md` and `docs/adr/`.
 
 ## Skills
 
@@ -43,14 +43,14 @@ Follow the `coding-style-preferences` skill for indentation, naming, language se
 
 Floors, the shared palette, and anti-slop rules are in `ui-design-foundations`. When a style skill is loaded it is authoritative for its rules. Foundations floors still apply. This file records the choice and points at the skills. It does not copy their rules.
 
-- Base style: TODO (Mason): choose `ui-style-conservative`, `ui-style-futuristic`, or `ui-style-over-the-top`. Do not invent it.
-- Page and section overrides: TODO (Mason): none, or a short map of pages to styles.
-- Palette: TODO (Mason): choose `health`, `premium`, or `enterprise`.
-- Mobile platform layer: TODO (Mason): confirm whether `ui-design-mobile` applies. It combines with the style of the page. It does not replace the base style.
+- Base style: `ui-style-conservative`.
+- Page and section overrides: marketing pages (home, services and pricing, about, contact) use `ui-style-futuristic`. The custom 404 and error pages use `ui-style-over-the-top`.
+- Palette: `enterprise`.
+- Mobile platform layer: `ui-design-mobile` applies as phone-browser responsiveness for this website. It combines with the style of the page. It does not replace the base style. There is no native app in this repo.
 
 ## Testing
 
-- Use Jest for unit and integration tests.
+- Use Node's built-in test runner (`node:test`) for unit and integration tests, with supertest for HTTP tests. Test files are named `*.test.js`. Tests run only against the database named by `TEST_DATABASE_URL`, never against `DATABASE_URL`. See `docs/adr/0011-testing-and-ci.md`.
 - Keep tests easy to run in a CI/CD pipeline: end-to-end tests for critical user flows, linting, and an automated build on every merge.
 - Every major code change must come with a matching test file. The agent judges what counts as major.
 
@@ -66,3 +66,4 @@ Agents share context through the channels below. Use the matching skill for deta
   - Script: `generate schema` (placeholder)
 
   Both are placeholders. They may differ per project, so confirm them with Mason before relying on them.
+- **Server and cloud agents:** They cannot reach Mason's local Postgres. Rely on CI for database tests. Record any database step you could not verify in the ledger so the next local agent picks it up.
