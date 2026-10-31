@@ -2,7 +2,7 @@
 
 Web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. It is Mason's CSE 340 final project (Option A, design your own).
 
-**Status:** planning. Architecture, docs, and the test-database guard are in place. The server is not written yet, so `pnpm start` fails. `pnpm lint` and `pnpm test` run.
+**Status:** in development. The Express app, authentication, customer service requests, and `pnpm dev` watch/reload are in place. `pnpm start`, `pnpm lint`, and `pnpm test` run.
 
 ## Stack
 
@@ -31,7 +31,7 @@ Test account emails (created by `pnpm seed`; the shared password is not listed h
 
 ## Prerequisites and setup
 
-Node 24, pnpm, and a local PostgreSQL. There is no build step. `pnpm start` runs `node src/server.js`, which is not written yet. See [local development](docs/setup/local-development.md).
+Node 24, pnpm, and a local PostgreSQL. There is no build step. `pnpm dev` watches `src/` and `public/` and reloads the open page. `pnpm start` is the production command. See [local development](docs/setup/local-development.md).
 
 ## Environment variables
 

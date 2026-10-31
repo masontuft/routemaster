@@ -1,4 +1,36 @@
     </main>
     <footer><small>Routemaster</small></footer>
+    <% if (locals.devReload) { %>
+    <script id="dev-reload">
+        (() => {
+            let bootId = null;
+
+            async function checkBoot() {
+                try {
+                    const response = await fetch("/__dev/boot", { cache: "no-store" });
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const nextId = await response.text();
+                    if (bootId === null) {
+                        bootId = nextId;
+                        return;
+                    }
+
+                    if (nextId !== bootId) {
+                        window.location.reload();
+                    }
+                } catch {
+                    return;
+                }
+            }
+
+            window.setInterval(() => {
+                checkBoot();
+            }, 500);
+        })();
+    </script>
+    <% } %>
 </body>
 </html>

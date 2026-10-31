@@ -1,10 +1,10 @@
 # Troubleshooting
 
-## `pnpm start` cannot find `src/server.js`
+## `pnpm start` or `pnpm dev` exits because `DATABASE_URL` and `SESSION_SECRET` must be set
 
-**Cause:** The start script is `node src/server.js`, and that file is not written yet.
+**Cause:** Those variables are missing from the process environment. `pnpm start` does not load `.env`. `pnpm dev` loads `.env` only when that file exists.
 
-**Fix:** None until the server exists. `pnpm lint` and `pnpm test` do not need it.
+**Fix:** Copy `.env.example` to `.env` and fill in the values. Use `pnpm dev` locally.
 
 ## Node says the engine is unsupported
 

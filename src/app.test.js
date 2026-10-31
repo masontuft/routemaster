@@ -19,6 +19,70 @@ test("GET /health returns 200", async () => {
     assert.strictEqual(res.text, "ok");
 });
 
+test("pages include the reload script when devReload is on", async () => {
+    const res = await request(createApp({ sessionSecret: "test-secret", devReload: true })).get("/");
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /id="dev-reload"/);
+    assert.match(res.text, /\/__dev\/boot/);
+});
+
+test("pages omit the reload script when devReload is off", async () => {
+    const res = await request(createApp({ sessionSecret: "test-secret", devReload: false })).get("/");
+    assert.strictEqual(res.status, 200);
+    assert.doesNotMatch(res.text, /id="dev-reload"/);
+});
+
+test("GET /__dev/boot returns the boot id when devReload is on", async () => {
+    const res = await request(createApp({
+        sessionSecret: "test-secret",
+        devReload: true,
+        devReloadBootId: "boot-1",
+    })).get("/__dev/boot");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.text, "boot-1");
+});
+
+test("GET /__dev/boot is 404 when devReload is off", async () => {
+    const res = await request(createApp({ sessionSecret: "test-secret", devReload: false })).get("/__dev/boot");
+    assert.strictEqual(res.status, 404);
+});
+
+test("pages omit the reload script when NODE_ENV is a production-like value", async () => {
+    const original = process.env.NODE_ENV;
+    const hadKey = Object.hasOwn(process.env, "NODE_ENV");
+    try {
+        for (const value of ["production", "Production", "PRODUCTION", " production "]) {
+            process.env.NODE_ENV = value;
+            const res = await request(createApp({ sessionSecret: "test-secret" })).get("/");
+            assert.strictEqual(res.status, 200, value);
+            assert.doesNotMatch(res.text, /id="dev-reload"/, value);
+        }
+    } finally {
+        if (hadKey) {
+            process.env.NODE_ENV = original;
+        } else {
+            delete process.env.NODE_ENV;
+        }
+    }
+});
+
+test("pages include the reload script when NODE_ENV is not production", async () => {
+    const original = process.env.NODE_ENV;
+    const hadKey = Object.hasOwn(process.env, "NODE_ENV");
+    try {
+        process.env.NODE_ENV = "development";
+        const res = await request(createApp({ sessionSecret: "test-secret" })).get("/");
+        assert.strictEqual(res.status, 200);
+        assert.match(res.text, /id="dev-reload"/);
+    } finally {
+        if (hadKey) {
+            process.env.NODE_ENV = original;
+        } else {
+            delete process.env.NODE_ENV;
+        }
+    }
+});
+
 test("an unknown URL renders the 404 page", async () => {
     const res = await request(createApp({ sessionSecret: "test-secret" })).get("/no-such-page");
     assert.strictEqual(res.status, 404);

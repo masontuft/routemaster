@@ -12,11 +12,19 @@ import sessionMiddleware, { createSessionStore } from "./middleware/session.js";
 import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
+import { isProduction } from "./utils/env.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 // pool: pg Pool for models and the session store. store: override the session store (tests only).
-export default function createApp({ pool, sessionSecret, store, rateLimitMax = 20 } = {}) {
+export default function createApp({
+    pool,
+    sessionSecret,
+    store,
+    rateLimitMax = 20,
+    devReload,
+    devReloadBootId,
+} = {}) {
     if (!sessionSecret) {
         throw new Error("sessionSecret is required.");
     }
@@ -29,6 +37,8 @@ export default function createApp({ pool, sessionSecret, store, rateLimitMax = 2
     app.set("views", path.join(here, "views"));
     app.locals.db = pool;
     app.locals.sessionStore = store ?? (pool ? createSessionStore(pool) : undefined);
+    app.locals.devReload = devReload ?? !isProduction();
+    app.locals.devReloadBootId = devReloadBootId ?? Date.now().toString();
 
     app.use(express.static(path.join(here, "..", "public")));
     app.use(sessionMiddleware({ secret: sessionSecret, store: app.locals.sessionStore }));
