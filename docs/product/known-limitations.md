@@ -1,7 +1,7 @@
 # Known Limitations
 
 - The server, pages, and database schema are not implemented yet. The test-database guard and the lint and test tooling exist.
-- Customers arrive by link; no screen generates or sends links yet (`pnpm link:create` prints one).
+- Customers arrive by link; no screen generates or sends links yet (`pnpm link:create` prints one). A bulk-send route through Sprinkler Messenger is proposed in [the integration spec](../integrations/sprinkler-messenger.md).
 - Generic-link matching is exact after normalization; typos go to a Needs Review queue that has no screen yet.
 - Login and link throttling is in-memory and per instance.
 - Single company only; multi-tenant is on the [roadmap](roadmap.md).
