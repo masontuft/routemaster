@@ -18,11 +18,13 @@ Planned, not built: customer names, phones, addresses and payment records (perso
 | Cookies | HttpOnly, Secure in production, SameSite=lax |
 | CSRF | `csrf-sync` synchronizer token on every non-GET request; tested |
 | Session fixation | Session ID regenerated at register and login; tested |
+| Link tokens | 32 random bytes, only the SHA-256 hash stored, expiring and revocable; GET changes nothing; tested |
+| Request ownership | Every customer query filters by the session's customer id; another customer's request returns 404; tested |
 | Account enumeration | Same message for unknown email and wrong password; tested for the message, not for response timing |
 
 ## Open
 
-Dependency audit and secret scanning are not wired. Rate limiting on login is not implemented, so password guessing is not throttled. Role-protected pages do not exist yet; `requireRole` is unit-tested only. Behavior on Render (Secure cookie behind its proxy) is unverified. See Findings for the test-database guard and the `minimatch` advisory.
+Dependency audit and secret scanning are not wired. An `express-rate-limit` per-IP limiter (in-memory store) covers login, link redemption and the generic link; it is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). The generic link has no CAPTCHA. Role-protected pages do not exist yet; `requireRole` is unit-tested only. Behavior on Render (Secure cookie behind its proxy) is unverified. See Findings for the test-database guard and the `minimatch` advisory.
 
 ## Findings
 

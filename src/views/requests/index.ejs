@@ -1,0 +1,22 @@
+<%- include("../partials/head") %>
+<h1>My Requests</h1>
+<p><a href="/requests/new">New Request</a> | <a href="/properties/new">Add Property</a></p>
+<% if (requests.length === 0) { %>
+    <p>You have no requests yet.</p>
+<% } else { %>
+    <table>
+        <thead><tr><th>Service</th><th>Property</th><th>Preferred Date</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+            <% requests.forEach((request) => { %>
+                <tr>
+                    <td><%= request.service_type %></td>
+                    <td><%= request.street %>, <%= request.city %></td>
+                    <td><%= request.preferred_date.toISOString().slice(0, 10) %></td>
+                    <td><%= request.status %></td>
+                    <td><a href="/requests/<%= request.id %>">View</a></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+<% } %>
+<%- include("../partials/foot") %>

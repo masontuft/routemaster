@@ -1,0 +1,13 @@
+<%- include("../partials/head") %>
+<h1>Change Request <%= request.id %></h1>
+<%- include("../partials/errors") %>
+<form method="post" action="/requests/<%= request.id %>/edit">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="preferredDate">Preferred Date</label>
+    <input id="preferredDate" name="preferredDate" type="date" min="<%= today %>" value="<%= values.preferredDate %>" required>
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" maxlength="500"><%= values.notes %></textarea>
+    <button type="submit">Save</button>
+</form>
+<p><a href="/requests/<%= request.id %>">Back</a></p>
+<%- include("../partials/foot") %>

@@ -26,6 +26,8 @@ pnpm start
 - Create a local `.env` (git-ignored) with `DATABASE_URL`, `TEST_DATABASE_URL` and `SESSION_SECRET`; see `.env.example`. `pnpm migrate` and `pnpm test` load it with `--env-file`.
 - `pnpm migrate` applies new files from `migrations/` to `DATABASE_URL`. Running it twice applies nothing the second time.
 - `pnpm seed` creates `owner@example.com`, `dispatcher@example.com` and `customer@example.com` using `SEED_PASSWORD`; running it again skips existing accounts. `pnpm start` needs `DATABASE_URL` and `SESSION_SECRET`.
+- `pnpm link:create <user email or customer id>` prints a magic link for local testing (set `BASE_URL` to change the host).
+- The generic scheduling page is `/schedule`.
 - CI (`.github/workflows/ci.yml`) runs a frozen install, lint, and test on pull requests and pushes to `main`.
 
 ## Database

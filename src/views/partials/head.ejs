@@ -11,7 +11,8 @@
         <a href="/">Routemaster</a>
         <nav>
             <% if (locals.user) { %>
-                <span><%= locals.user.email %></span>
+                <% if (locals.user.role === "customer") { %><a href="/requests">My Requests</a><% } %>
+                <span><%= locals.user.displayName %></span>
                 <form method="post" action="/logout">
                     <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
                     <button type="submit">Log Out</button>

@@ -1,0 +1,8 @@
+<%- include("../partials/head") %>
+<h1>Schedule Your Service</h1>
+<p>Continue to choose a date for your service.</p>
+<form method="post" action="/l/<%= token %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Continue</button>
+</form>
+<%- include("../partials/foot") %>
