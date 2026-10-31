@@ -4,6 +4,7 @@ import express from "express";
 import routes from "./routes/index.js";
 import authRoutes from "./routes/auth.js";
 import requestRoutes from "./routes/requests.js";
+import staffRoutes from "./routes/staff.js";
 import linkRoutes from "./routes/link.js";
 import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
@@ -51,6 +52,7 @@ export default function createApp({
     const limit = rateLimit({ windowMs: 15 * 60 * 1000, max: rateLimitMax });
     app.use(authRoutes(limit));
     app.use(requestRoutes);
+    app.use(staffRoutes);
     app.use(linkRoutes(limit));
     app.use(scheduleRoutes(limit));
     app.use(notFound);

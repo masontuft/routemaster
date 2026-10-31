@@ -1,0 +1,30 @@
+<%- include("../partials/head") %>
+<h1>Requests</h1>
+<p>
+    <a href="/staff/requests">All</a>
+    <% statuses.forEach((name) => { %>
+        | <a href="/staff/requests?status=<%= encodeURIComponent(name) %>"><%= name %></a>
+    <% }); %>
+</p>
+<% if (status) { %><p>Showing: <%= status %></p><% } %>
+<% if (requests.length === 0) { %>
+    <p>No requests found.</p>
+<% } else { %>
+    <table>
+        <thead><tr><th>Customer</th><th>Service</th><th>Address</th><th>Preferred</th><th>Scheduled</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+            <% requests.forEach((request) => { %>
+                <tr>
+                    <td><%= request.customer_name %></td>
+                    <td><%= request.service_type %></td>
+                    <td><%= request.street %></td>
+                    <td><%= request.preferred_date %></td>
+                    <td><%= request.scheduled_date ?? "" %></td>
+                    <td><%= request.status %></td>
+                    <td><a href="/staff/requests/<%= request.id %>">Open</a></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+<% } %>
+<%- include("../partials/foot") %>

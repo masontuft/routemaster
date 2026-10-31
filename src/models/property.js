@@ -24,3 +24,11 @@ export async function findForCustomer(pool, id, customerId) {
     );
     return rows[0] ?? null;
 }
+
+export async function listForCustomers(pool, customerIds) {
+    const { rows } = await pool.query(
+        "SELECT id, customer_id, street, city, zip FROM properties WHERE customer_id = ANY($1::int[]) ORDER BY id",
+        [customerIds],
+    );
+    return rows;
+}

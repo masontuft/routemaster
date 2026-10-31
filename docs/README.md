@@ -13,6 +13,7 @@ Routemaster is a server-rendered web app for a service company. Customers submit
 | [operations/](operations/deployment-runbook.md) | Deploy, rollback, incident response |
 | [product/](product/known-limitations.md) | Known limitations, roadmap, backlog labels |
 | [handoff/](handoff/project-summary.md) | Summary, reviewer guide, next steps |
+| [integrations/](integrations/sprinkler-messenger.md) | Specs for other apps (Sprinkler Messenger) |
 | [wireframes/](wireframes/README.md) | Screens (none yet) |
 
 The decisions table is in [../ARCHITECTURE.md](../ARCHITECTURE.md). Agent rules are in [../AGENTS.md](../AGENTS.md).

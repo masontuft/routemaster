@@ -24,3 +24,25 @@ export async function findValid(pool, token) {
 export async function revoke(pool, id) {
     await pool.query("UPDATE access_links SET revoked_at = now() WHERE id = $1", [id]);
 }
+
+// Newest first. Staff see which links are live, expired or revoked, never the tokens themselves.
+export async function listForCustomer(pool, customerId) {
+    const { rows } = await pool.query(
+        `SELECT id, created_at, expires_at, revoked_at,
+                CASE WHEN revoked_at IS NOT NULL THEN 'Revoked'
+                     WHEN expires_at <= now() THEN 'Expired'
+                     ELSE 'Active' END AS state
+         FROM access_links WHERE customer_id = $1 ORDER BY id DESC`,
+        [customerId],
+    );
+    return rows;
+}
+
+// Scoped to the customer in the URL so a link id from another customer's page does nothing.
+export async function revokeForCustomer(pool, id, customerId) {
+    const { rowCount } = await pool.query(
+        "UPDATE access_links SET revoked_at = now() WHERE id = $1 AND customer_id = $2 AND revoked_at IS NULL",
+        [id, customerId],
+    );
+    return rowCount === 1;
+}
