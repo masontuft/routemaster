@@ -6,7 +6,7 @@ Scope: the repository. The server is not built. `src/config/testDatabase.js` is 
 
 Planned, not built: customer names, phones, addresses and payment records (personal); password hashes; session data. Mason's real spreadsheet holds real customer data and must never be committed.
 
-## Planned controls (Not currently implemented)
+## Controls (built in segment 3 unless marked)
 
 | Area | Plan |
 | --- | --- |
@@ -16,10 +16,13 @@ Planned, not built: customer names, phones, addresses and payment records (perso
 | Input | Server-side validation and sanitization; EJS `<%=` escaping |
 | Import | Google Sheets URLs only, strict ID pattern, fixed host path, size-limited `.xlsx` uploads ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)) |
 | Cookies | HttpOnly, Secure in production, SameSite=lax |
+| CSRF | `csrf-sync` synchronizer token on every non-GET request; tested |
+| Session fixation | Session ID regenerated at register and login; tested |
+| Account enumeration | Same message for unknown email and wrong password; tested for the message, not for response timing |
 
 ## Open
 
-CSRF protection is not yet researched. Dependency audit and secret scanning are not wired. See Findings for the test-database guard and the `minimatch` advisory.
+Dependency audit and secret scanning are not wired. Rate limiting on login is not implemented, so password guessing is not throttled. Role-protected pages do not exist yet; `requireRole` is unit-tested only. Behavior on Render (Secure cookie behind its proxy) is unverified. See Findings for the test-database guard and the `minimatch` advisory.
 
 ## Findings
 

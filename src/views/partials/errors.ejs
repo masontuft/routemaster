@@ -1,0 +1,7 @@
+<% if (errors.length) { %>
+    <ul class="errors" role="alert">
+        <% errors.forEach((message) => { %>
+            <li><%= message %></li>
+        <% }); %>
+    </ul>
+<% } %>

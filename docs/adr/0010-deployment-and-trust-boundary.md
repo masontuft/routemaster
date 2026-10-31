@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. Open items: whether `connect-pg-simple` imports cleanly in ESM, the CSRF approach, and Render's IPv6 reachability for the Supabase connection.
+Proposed. Open item: Render's IPv6 reachability for the Supabase connection. The two other open items were resolved locally on 2026-10-31 (see Update below).
 
 ## Date
 
@@ -37,6 +37,13 @@ The course requires a Render deployment with the database connected, environment
 - `connect-pg-simple` takes a `pg.Pool` and can create its table from a provided SQL file. Its page shows only `require()` examples and a CJS badge, so ESM use is unconfirmed and has to be tested. It would be a dependency Mason approves first.
 - CSRF protection is needed for cookie sessions and is not yet researched.
 - Nothing is built yet: Not currently implemented.
+
+## Update 2026-10-31
+
+- `connect-pg-simple` 10.0.0 is a CommonJS package. `import connectPgSimple from "connect-pg-simple"` works under ESM; the sessions test in `src/auth.test.js` stores and reads a session row in Postgres. It was last released in September 2024. Verified locally only.
+- CSRF: `csrf-sync` 4.2.1 (synchronizer token pattern, token kept in the session). It reads the token from a hidden `_csrf` form field via `getTokenFromRequest`; its default is the `x-csrf-token` header. A post without a token returns 403 in tests. The alternative, `csrf-csrf`, uses a double-submit cookie and was not chosen because sessions already exist.
+- The `session` table is created by `migrations/003_create_session_table.sql`.
+- Password hashing: the `bcrypt` package (Mason chose it over Node's built-in scrypt). pnpm 11 reports `bcrypt` as an ignored build script and exits non-zero on install unless `pnpm-workspace.yaml` sets `allowBuilds`; it is set to `false` because bcrypt 6.0.0 loads and hashes without running its install script. Not yet verified on Render.
 
 ## References
 
