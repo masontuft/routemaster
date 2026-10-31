@@ -8,4 +8,5 @@ Decided in [ADR 0011](../adr/0011-testing-and-ci.md). The runner and one test fi
 - End-to-end: Playwright later, once the app starts in a repeatable test mode.
 - CI: `.github/workflows/ci.yml` runs a frozen install, lint, and test on pull requests and pushes to `main`. The Postgres service container and boot smoke test are added when the code needs them.
 - Coverage: no threshold until a baseline is measured.
-- Unverified: supertest with ESM imports, `mock.module` in `node:test`, Playwright `webServer`.
+- Verified locally: supertest imports under ESM (`import request from "supertest"`) and works with `node:test`.
+- Unverified: `mock.module` in `node:test`, Playwright `webServer`.
