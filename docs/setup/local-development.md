@@ -17,7 +17,7 @@ pnpm test
 pnpm start
 ```
 
-- `pnpm start` runs `node src/server.js`. That file does not exist yet, so it fails until the server is written.
+- `pnpm start` runs `node src/server.js` and listens on `PORT` (default 3000), bound to `0.0.0.0`. Routes so far: `/`, `/health`, and a 404 page.
 - There is no build step. Boot smoke testing arrives with the server.
 - CI (`.github/workflows/ci.yml`) runs a frozen install, lint and test. It has not run on GitHub yet.
 

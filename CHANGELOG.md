@@ -9,6 +9,8 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Contributing guide, security policy and issue and pull request templates.
 - `package.json`, ESLint config, `node:test` runner, the `TEST_DATABASE_URL` guard with tests, and a GitHub Actions CI workflow.
 
+- Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
+
 ### Changed
 - Testing rule changed from Jest to `node:test`.
 
