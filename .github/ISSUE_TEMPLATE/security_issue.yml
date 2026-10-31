@@ -1,0 +1,12 @@
+name: Security issue (non-sensitive only)
+description: Hardening ideas that expose nothing. Real vulnerabilities go private.
+labels: [security]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not put secrets or exploit details in this public form. To report a real vulnerability, follow [SECURITY.md](../blob/main/SECURITY.md) and report privately.
+  - type: textarea
+    id: summary
+    attributes: {label: Non-sensitive summary}
+    validations: {required: true}

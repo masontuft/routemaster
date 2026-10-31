@@ -147,3 +147,7 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Customer spreadsheets and exports (real customer data)
+*.xlsx
+*.xls

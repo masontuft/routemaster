@@ -1,0 +1,48 @@
+name: Bug report
+description: Something behaves wrongly
+labels: [bug]
+body:
+  - type: input
+    id: title
+    attributes: {label: Title}
+    validations: {required: true}
+  - type: textarea
+    id: description
+    attributes: {label: Description}
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes: {label: Expected behavior}
+    validations: {required: true}
+  - type: textarea
+    id: actual
+    attributes: {label: Actual behavior}
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes: {label: Steps to reproduce}
+    validations: {required: true}
+  - type: input
+    id: environment
+    attributes: {label: Environment, description: Browser, OS, local or deployed}
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots or logs
+      description: Do not include secrets, passwords or customer data.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [Low, Medium, High]
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Is this a regression?
+      options: ["Yes", "No", "Not sure"]
+  - type: textarea
+    id: acceptance
+    attributes: {label: Acceptance criteria}
+  - type: textarea
+    id: done
+    attributes: {label: Definition of done, description: "Fix, regression test, docs updated if behavior changed."}
