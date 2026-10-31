@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import routes from "./routes/index.js";
 import authRoutes from "./routes/auth.js";
+import requestRoutes from "./routes/requests.js";
+import linkRoutes from "./routes/link.js";
+import scheduleRoutes from "./routes/schedule.js";
+import rateLimit from "./middleware/rateLimit.js";
 import sessionMiddleware, { createSessionStore } from "./middleware/session.js";
 import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
@@ -11,7 +15,7 @@ import errorHandler from "./middleware/errorHandler.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 // pool: pg Pool for models and the session store. store: override the session store (tests only).
-export default function createApp({ pool, sessionSecret, store } = {}) {
+export default function createApp({ pool, sessionSecret, store, rateLimitMax = 20 } = {}) {
     if (!sessionSecret) {
         throw new Error("sessionSecret is required.");
     }
@@ -34,7 +38,11 @@ export default function createApp({ pool, sessionSecret, store } = {}) {
         next();
     });
     app.use(routes);
-    app.use(authRoutes);
+    const limit = rateLimit({ windowMs: 15 * 60 * 1000, max: rateLimitMax });
+    app.use(authRoutes(limit));
+    app.use(requestRoutes);
+    app.use(linkRoutes(limit));
+    app.use(scheduleRoutes(limit));
     app.use(notFound);
     app.use(errorHandler);
 

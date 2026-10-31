@@ -1,0 +1,15 @@
+<%- include("../partials/head") %>
+<h1>Schedule Service</h1>
+<p>Tell us who you are so we can find your appointment.</p>
+<%- include("../partials/errors") %>
+<form method="post" action="/schedule">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="name">Name</label>
+    <input id="name" name="name" value="<%= values.name || "" %>" required maxlength="100" autocomplete="name">
+    <label for="phone">Phone</label>
+    <input id="phone" name="phone" type="tel" value="<%= values.phone || "" %>" required autocomplete="tel">
+    <label for="address">Street Address</label>
+    <input id="address" name="address" value="<%= values.address || "" %>" required maxlength="160" autocomplete="street-address">
+    <button type="submit">Continue</button>
+</form>
+<%- include("../partials/foot") %>

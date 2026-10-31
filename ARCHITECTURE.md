@@ -16,6 +16,7 @@ Routemaster is a web app for service companies that builds daily routes and pair
 | Schema definition | Numbered plain SQL migration files applied by a small runner | [0008](docs/adr/0008-schema-as-numbered-sql-migrations.md) |
 | Spreadsheet import | Staged: link or `.xlsx` import with tab picker, column mapping and preview; then export; two-way sync is a stretch goal | [0009](docs/adr/0009-spreadsheet-import-and-sync.md) |
 | Deployment and trust boundary | One Render web service, same origin, Postgres-backed `express-session` cookies, no CORS | [0010](docs/adr/0010-deployment-and-trust-boundary.md) |
+| Customer access | Customers schedule by magic link or generic identification link; passwords stay for owner, dispatcher and the graded customer account | [0012](docs/adr/0012-customer-access-by-link.md) |
 | Testing and CI | `node:test` and supertest, throwaway test database, Playwright later, GitHub Actions | [0011](docs/adr/0011-testing-and-ci.md) |
 
 ## Rule

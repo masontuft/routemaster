@@ -19,7 +19,7 @@ export async function register(req, res) {
 
         if (user) {
             await regenerateSession(req);
-            req.session.user = { id: user.id, email: user.email, role: user.role };
+            req.session.user = { id: user.id, email: user.email, role: user.role, displayName: user.email };
             return res.redirect("/");
         }
 
@@ -37,9 +37,9 @@ export async function login(req, res) {
     const email = normalizeEmail(req.body.email);
     const password = String(req.body.password ?? "");
     const user = await User.findByEmail(req.app.locals.db, email);
-    const valid = await verifyPassword(password, user ? user.password_hash : DUMMY_HASH);
+    const valid = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH);
 
-    if (!user || !valid) {
+    if (!user || !user.password_hash || !valid) {
         return res.status(401).render("login", {
             title: "Log In",
             errors: ["Invalid email or password."],
@@ -48,7 +48,7 @@ export async function login(req, res) {
     }
 
     await regenerateSession(req);
-    req.session.user = { id: user.id, email: user.email, role: user.role };
+    req.session.user = { id: user.id, email: user.email, role: user.role, displayName: user.email };
     res.redirect("/");
 }
 

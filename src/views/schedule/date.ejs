@@ -1,0 +1,16 @@
+<%- include("../partials/head") %>
+<h1>Choose a Date</h1>
+<%- include("../partials/errors") %>
+<form method="post" action="/schedule/date">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="serviceTypeId">Service</label>
+    <select id="serviceTypeId" name="serviceTypeId" required>
+        <% types.forEach((type) => { %>
+            <option value="<%= type.id %>" <%= Number(values.serviceTypeId) === type.id ? "selected" : "" %>><%= type.name %></option>
+        <% }); %>
+    </select>
+    <label for="preferredDate">Preferred Date</label>
+    <input id="preferredDate" name="preferredDate" type="date" min="<%= today %>" value="<%= values.preferredDate || "" %>" required>
+    <button type="submit">Request This Date</button>
+</form>
+<%- include("../partials/foot") %>

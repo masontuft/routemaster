@@ -1,0 +1,24 @@
+<%- include("../partials/head") %>
+<h1>Request <%= request.id %></h1>
+<dl>
+    <dt>Service</dt><dd><%= request.service_type %></dd>
+    <dt>Property</dt><dd><%= request.street %>, <%= request.city %></dd>
+    <dt>Preferred Date</dt><dd><%= request.preferred_date.toISOString().slice(0, 10) %></dd>
+    <dt>Status</dt><dd><%= request.status %></dd>
+    <% if (request.notes) { %><dt>Notes</dt><dd><%= request.notes %></dd><% } %>
+</dl>
+<% if (request.status === "Requested") { %>
+    <p><a href="/requests/<%= request.id %>/edit">Change Date or Notes</a></p>
+    <form method="post" action="/requests/<%= request.id %>/cancel">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit">Cancel Request</button>
+    </form>
+<% } %>
+<h2>Status History</h2>
+<ol>
+    <% history.forEach((entry) => { %>
+        <li><%= entry.status %> on <%= entry.changed_at.toISOString().slice(0, 10) %><%= entry.note ? " - " + entry.note : "" %></li>
+    <% }); %>
+</ol>
+<p><a href="/requests">Back to My Requests</a></p>
+<%- include("../partials/foot") %>

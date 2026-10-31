@@ -1,0 +1,16 @@
+<%- include("../partials/head") %>
+<h1>Add Property</h1>
+<%- include("../partials/errors") %>
+<form method="post" action="/properties">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="street">Street Address</label>
+    <input id="street" name="street" value="<%= values.street || "" %>" required maxlength="120">
+    <label for="city">City</label>
+    <input id="city" name="city" value="<%= values.city || "" %>" required maxlength="80">
+    <label for="zip">ZIP Code</label>
+    <input id="zip" name="zip" value="<%= values.zip || "" %>" maxlength="10">
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" maxlength="500"><%= values.notes || "" %></textarea>
+    <button type="submit">Save Property</button>
+</form>
+<%- include("../partials/foot") %>

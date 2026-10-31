@@ -1,5 +1,5 @@
-const VIEWS = { 403: "403", 404: "404" };
-const TITLES = { 403: "Access denied", 404: "Not found" };
+const VIEWS = { 403: "403", 404: "404", 429: "429" };
+const TITLES = { 403: "Access denied", 404: "Not found", 429: "Too many requests" };
 
 // The one place errors are handled. Never send error details to the browser.
 export default function errorHandler(error, req, res, next) {
