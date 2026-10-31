@@ -19,3 +19,19 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET | `/staff/customers/:id` | | Properties, requests and links |
 | POST | `/staff/customers/:id/links` | | Create a link, shown once in the response |
 | POST | `/staff/customers/:id/links/:linkId/revoke` | | Revoke a link |
+
+## Owner pages (owner only)
+
+A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every POST needs `_csrf`.
+
+| Method | Path | Fields | What it does |
+| --- | --- | --- | --- |
+| GET | `/admin/users` | | Users with role and a role selector |
+| POST | `/admin/users/:id/role` | `role` | Change a role. Refused for yourself, a link-only customer, an unknown role, or the last owner |
+| GET | `/admin/users/new` | | Staff user form |
+| POST | `/admin/users` | `email`, `role` (owner or dispatcher), `password`, `confirm` | Create a staff user |
+| GET | `/admin/service-types` | | Services with price and active flag |
+| GET | `/admin/service-types/new`, `/admin/service-types/:id/edit` | | Service form |
+| POST | `/admin/service-types`, `/admin/service-types/:id` | `name`, `price` (dollars), `active` | Add or update a service. Deactivate by unchecking active |
+
+`GET /staff` also shows requests received, completed this month, and the value of scheduled jobs when the viewer is an owner.

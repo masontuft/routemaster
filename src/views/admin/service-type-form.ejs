@@ -1,0 +1,14 @@
+<%- include("../partials/head") %>
+<h1><%= type ? "Edit Service" : "New Service" %></h1>
+<%- include("../partials/errors") %>
+<form method="post" action="<%= type ? "/admin/service-types/" + type.id : "/admin/service-types" %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="name">Name</label>
+    <input id="name" name="name" type="text" value="<%= values.name %>" maxlength="80" required>
+    <label for="price">Price in Dollars</label>
+    <input id="price" name="price" type="text" inputmode="decimal" value="<%= values.price %>" required>
+    <label><input type="checkbox" name="active"<%= values.active ? " checked" : "" %>> Active (customers can choose it)</label>
+    <button type="submit">Save</button>
+</form>
+<p><a href="/admin/service-types">Back to Services</a></p>
+<%- include("../partials/foot") %>

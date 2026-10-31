@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Owner admin: manage users and roles, create staff users, edit the service catalog and prices, and owner-only monthly numbers on the staff dashboard.
 - `pnpm dev` watches `src/` and `public/` with Node's `--watch` and reloads the open page after the server restarts. The script sets `NODE_ENV=development` so a production value in `.env` cannot disable the reload.
 - Staff dashboard for owners and dispatchers: request queue, status transitions with history, Needs Review matching, customer search, and link creation and revocation (migration 012).
 - Architecture overview, ADRs 0001 to 0011, and the `docs/` tree.

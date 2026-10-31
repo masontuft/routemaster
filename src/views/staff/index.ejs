@@ -5,6 +5,14 @@
         <li><a href="/staff/requests?status=<%= encodeURIComponent(row.status) %>"><%= row.status %></a>: <%= row.total %></li>
     <% }); %>
 </ul>
+<% if (stats) { %>
+    <h2>This Month</h2>
+    <ul>
+        <li>Requests received: <%= stats.requested_this_month %></li>
+        <li>Completed: <%= stats.completed_this_month %></li>
+        <li>Value of scheduled jobs: <%= formatCents(stats.scheduled_cents) %></li>
+    </ul>
+<% } %>
 <p><a href="/staff/requests">All Requests</a> | <a href="/staff/customers">Customers</a></p>
 <h2>Needs Review</h2>
 <% if (review.length === 0) { %>

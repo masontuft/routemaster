@@ -180,3 +180,19 @@ export async function matchAsNew(pool, id, { city, zip }, changedBy) {
         return { ok: true };
     });
 }
+
+// Owner numbers. Month boundaries use the database time zone. Scheduled value uses today's catalog prices.
+export async function stats(pool) {
+    const { rows } = await pool.query(
+        `SELECT
+            count(*) FILTER (WHERE service_requests.created_at >= date_trunc('month', now()))::int AS requested_this_month,
+            count(*) FILTER (WHERE request_statuses.name = 'Completed'
+                              AND service_requests.updated_at >= date_trunc('month', now()))::int AS completed_this_month,
+            COALESCE(sum(service_types.price_cents) FILTER (WHERE request_statuses.name = 'Scheduled'), 0)::int
+                AS scheduled_cents
+         FROM service_requests
+         JOIN request_statuses ON request_statuses.id = service_requests.status_id
+         JOIN service_types ON service_types.id = service_requests.service_type_id`,
+    );
+    return rows[0];
+}

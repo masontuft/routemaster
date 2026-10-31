@@ -37,11 +37,12 @@ async function renderRequest(req, res, request, { errors = [], status = 200 } = 
 
 export async function dashboard(req, res) {
     const db = req.app.locals.db;
-    const [counts, review] = await Promise.all([
+    const [counts, review, stats] = await Promise.all([
         Staff.countsByStatus(db),
         Staff.listRequests(db, { status: "Needs Review", limit: 5 }),
+        req.session.user.role === "owner" ? Staff.stats(db) : null,
     ]);
-    res.render("staff/index", { title: "Staff Dashboard", counts, review });
+    res.render("staff/index", { title: "Staff Dashboard", counts, review, stats });
 }
 
 export async function listRequests(req, res) {
