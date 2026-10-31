@@ -1,0 +1,16 @@
+<%- include("../partials/head") %>
+<h1>Customers</h1>
+<form method="get" action="/staff/customers">
+    <label>Search by Name, Phone or Address <input type="search" name="q" value="<%= q %>" maxlength="100"></label>
+    <button type="submit">Search</button>
+</form>
+<% if (customers.length === 0) { %>
+    <p>No customers found.</p>
+<% } else { %>
+    <ul>
+        <% customers.forEach((customer) => { %>
+            <li><a href="/staff/customers/<%= customer.id %>"><%= customer.name %></a> <%= customer.phone ?? "" %></li>
+        <% }); %>
+    </ul>
+<% } %>
+<%- include("../partials/foot") %>

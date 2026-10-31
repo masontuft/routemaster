@@ -1,0 +1,19 @@
+<%- include("../partials/head") %>
+<h1>Staff Dashboard</h1>
+<ul>
+    <% counts.forEach((row) => { %>
+        <li><a href="/staff/requests?status=<%= encodeURIComponent(row.status) %>"><%= row.status %></a>: <%= row.total %></li>
+    <% }); %>
+</ul>
+<p><a href="/staff/requests">All Requests</a> | <a href="/staff/customers">Customers</a></p>
+<h2>Needs Review</h2>
+<% if (review.length === 0) { %>
+    <p>Nothing is waiting for review.</p>
+<% } else { %>
+    <ul>
+        <% review.forEach((request) => { %>
+            <li><a href="/staff/requests/<%= request.id %>"><%= request.customer_name %> - <%= request.street %></a></li>
+        <% }); %>
+    </ul>
+<% } %>
+<%- include("../partials/foot") %>

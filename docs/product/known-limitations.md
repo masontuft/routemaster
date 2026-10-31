@@ -1,8 +1,10 @@
 # Known Limitations
 
 - The server, pages, and database schema are not implemented yet. The test-database guard and the lint and test tooling exist.
-- Customers arrive by link; no screen generates or sends links yet (`pnpm link:create` prints one).
-- Generic-link matching is exact after normalization; typos go to a Needs Review queue that has no screen yet.
+- Customers arrive by link. Staff create and revoke links on the customer page and copy them by hand; nothing sends them by email or text yet.
+- Generic-link matching is exact after normalization; typos go to the Needs Review queue, where staff match them by hand.
+- Matching a Needs Review request cannot edit the name, phone or street the visitor typed; a new customer is created exactly as typed plus the city and ZIP staff enter.
+- Status changes have no undo: Completed and Cancelled are final.
 - Login and link throttling is in-memory and per instance.
 - Single company only; multi-tenant is on the [roadmap](roadmap.md).
 - Import covers jobs, customers and areas. Expenses, mileage and compressor tabs are not imported.
