@@ -17,8 +17,8 @@ flowchart LR
   O[Owner] --> B
   B -- TLS --> R[Render web service: Express + EJS]
   R -- TLS --> S[(Supabase PostgreSQL)]
-  O -. link or .xlsx upload .-> R
-  R -. fixed docs.google.com path .-> G[Google Sheets]
+  O -.->|link or .xlsx upload| R
+  R -.->|fixed docs.google.com path| G[Google Sheets]
 ```
 
 ## Containers and components (all Not currently implemented)
