@@ -1,5 +1,6 @@
 <%- include("../partials/head") %>
 <h1>Contact Us</h1>
+<p class="lead">Send us a message. Our staff read every one.</p>
 <%- include("../partials/errors") %>
 <form method="post" action="/contact">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">

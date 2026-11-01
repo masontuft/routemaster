@@ -40,6 +40,7 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 
 | Method | Path | Role | Fields | What it does |
 | --- | --- | --- | --- | --- |
+| GET | `/services` | public | | Active services; a price shows only when above $0, otherwise "Contact us for pricing" |
 | GET | `/reviews` | public | | Visible reviews with the average rating; authors shown as "First L." |
 | GET | `/requests/:id/review` | customer | | Review form for the customer's own Completed request (404 otherwise) |
 | POST | `/requests/:id/review` | customer | `rating` (1 to 5), `body` (up to 1000) | Create or edit the review |

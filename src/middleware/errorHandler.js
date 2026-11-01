@@ -13,5 +13,7 @@ export default function errorHandler(error, req, res, next) {
         console.error(error);
     }
 
-    res.status(status).render(VIEWS[status] ?? "error", { title: TITLES[status] ?? "Error" });
+    const pageStyle = status === 403 || status === 429 ? "app" : "loud";
+
+    res.status(status).render(VIEWS[status] ?? "error", { title: TITLES[status] ?? "Error", pageStyle });
 }

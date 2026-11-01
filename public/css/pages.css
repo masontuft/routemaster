@@ -1,0 +1,208 @@
+/* Pages: futuristic marketing (home, services, contact) and over-the-top 404 and error pages.
+   The base stays conservative; only these body classes change the look. */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+    padding: var(--space-2) var(--space-5);
+    border: var(--border-width) solid var(--color-brand);
+    border-radius: 999px;
+    background: var(--color-brand);
+    color: var(--color-on-brand);
+    font-weight: var(--weight-strong);
+    text-decoration: none;
+}
+
+.button.secondary {
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+/* Marketing: glass nav, airy spacing, fluid type, rounded solid tiles */
+:root:has(body.marketing) {
+    scroll-padding-block-start: calc(var(--target-min) * 2);
+}
+
+body.marketing > header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    background: color-mix(in oklch, var(--color-bg) 72%, transparent);
+    backdrop-filter: blur(24px) saturate(1.4);
+    border-block-end: 0;
+    box-shadow: inset 0 -1px 0 color-mix(in oklch, var(--color-text) 18%, transparent);
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    body.marketing > header {
+        background: var(--color-bg);
+        backdrop-filter: none;
+    }
+}
+
+body.marketing main {
+    padding-block-start: var(--space-8);
+}
+
+body.marketing .lead {
+    font-size: var(--text-lg);
+    max-inline-size: 40ch;
+}
+
+.hero {
+    position: relative;
+    isolation: isolate;
+    padding-block: var(--space-8) var(--space-9);
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0 0 auto auto;
+    inline-size: min(36rem, 90vw);
+    block-size: 18rem;
+    background: radial-gradient(closest-side, color-mix(in oklch, var(--color-accent) 40%, transparent), transparent);
+}
+
+.hero::after {
+    content: "";
+    display: block;
+    inline-size: 6rem;
+    block-size: 0.5rem;
+    margin-block-start: var(--space-7);
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-brand), var(--color-accent));
+}
+
+.hero h1 {
+    font-size: clamp(2.074rem, 7vw + 0.5rem, 4.2rem);
+    letter-spacing: -0.02em;
+}
+
+.bento {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-4);
+}
+
+.bento > li {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: 20px;
+    padding: var(--space-6);
+    margin: 0;
+}
+
+.bento h2 {
+    margin-block-start: 0;
+}
+
+.bento .price {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-strong);
+}
+
+@media (min-width: 48rem) {
+    .bento {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .bento > li {
+        grid-column: span 3;
+    }
+
+    .bento:not(.services) > li:first-child {
+        grid-column: span 4;
+    }
+
+    .bento:not(.services) > li:nth-child(2) {
+        grid-column: span 2;
+    }
+
+    .bento:not(.services) > li:nth-child(3):last-child {
+        grid-column: span 6;
+    }
+}
+
+/* Dark marketing: a deeper, less saturated navy than the app pages, tiles a clear step lighter, pink as the
+   loud element. Same hue as the enterprise palette. */
+@media (prefers-color-scheme: dark) {
+    body.marketing {
+        --color-bg: oklch(0.2000 0.0600 264.05);
+        --color-surface: oklch(0.2600 0.0700 264.05);
+    }
+
+    body.marketing .bento > li {
+        border-color: color-mix(in oklch, var(--color-border) 45%, transparent);
+    }
+
+    body.marketing .button:not(.secondary) {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: var(--color-on-accent);
+    }
+
+    body.marketing .hero::before {
+        background: radial-gradient(closest-side, color-mix(in oklch, var(--color-accent) 22%, transparent), transparent);
+    }
+}
+
+/* Over the top: hard corners, thick ink border, hard offset shadow, pink fill, heavy type */
+.shout {
+    max-inline-size: 40rem;
+    margin: var(--space-7) auto;
+    padding: var(--space-6);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border: 3px solid var(--color-text);
+    border-radius: 0;
+    box-shadow: 8px 8px 0 var(--color-text);
+}
+
+.shout .code {
+    margin: 0;
+    font-family: "Arial Black", Impact, system-ui, sans-serif;
+    font-size: clamp(4rem, 24vw, 9rem);
+    line-height: 1;
+}
+
+.shout h1 {
+    font-family: "Arial Black", Impact, system-ui, sans-serif;
+    font-size: clamp(1.728rem, 8vw, 3rem);
+    text-transform: uppercase;
+}
+
+.shout a {
+    color: var(--color-on-accent);
+    font-weight: var(--weight-strong);
+    min-block-size: var(--target-min);
+    display: inline-flex;
+    align-items: center;
+}
+
+.shout :focus-visible {
+    outline-color: var(--color-on-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .shout {
+        animation: pop 220ms var(--ease-standard) both;
+    }
+}
+
+@keyframes pop {
+    from {
+        transform: translate(8px, 8px);
+        box-shadow: 0 0 0 var(--color-text);
+    }
+}

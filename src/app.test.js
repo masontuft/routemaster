@@ -10,7 +10,7 @@ import errorHandler from "./middleware/errorHandler.js";
 test("GET / renders the home page", async () => {
     const res = await request(createApp({ sessionSecret: "test-secret" })).get("/");
     assert.strictEqual(res.status, 200);
-    assert.match(res.text, /<h1>Routemaster<\/h1>/);
+    assert.match(res.text, /<h1 id="hero-title">Schedule Your Service<\/h1>/);
 });
 
 test("GET /health returns 200", async () => {

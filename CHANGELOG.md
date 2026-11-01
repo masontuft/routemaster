@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Futuristic marketing pages: home ("Schedule Your Service" hero and tiles), a public services and pricing page, and the contact page in the same layout; over-the-top 404 and error pages; Services nav link (the owner link is now "Manage Services").
 - Styling foundation: enterprise palette tokens with light and dark, a conservative base for every app page, cascade-layered CSS, a skip link, safe-area padding, scrolling table regions, and a test that checks view headings against modified Chicago case.
 - Customer reviews of completed jobs, a public reviews page, a contact form, and staff moderation (hide, restore, owner delete) and message replies (migrations 013 and 014).
 - Owner admin: manage users and roles, create staff users, edit the service catalog and prices, and owner-only monthly numbers on the staff dashboard.
