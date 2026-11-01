@@ -100,6 +100,7 @@ body.marketing .lead {
     border: var(--border-width) solid var(--color-border);
     border-radius: 20px;
     padding: var(--space-6);
+    margin: 0;
 }
 
 .bento h2 {
@@ -130,6 +131,29 @@ body.marketing .lead {
 
     .bento:not(.services) > li:nth-child(3):last-child {
         grid-column: span 6;
+    }
+}
+
+/* Dark marketing: a deeper, less saturated navy than the app pages, tiles a clear step lighter, pink as the
+   loud element. Same hue as the enterprise palette. */
+@media (prefers-color-scheme: dark) {
+    body.marketing {
+        --color-bg: oklch(0.2000 0.0600 264.05);
+        --color-surface: oklch(0.2600 0.0700 264.05);
+    }
+
+    body.marketing .bento > li {
+        border-color: color-mix(in oklch, var(--color-border) 45%, transparent);
+    }
+
+    body.marketing .button:not(.secondary) {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: var(--color-on-accent);
+    }
+
+    body.marketing .hero::before {
+        background: radial-gradient(closest-side, color-mix(in oklch, var(--color-accent) 22%, transparent), transparent);
     }
 }
 
