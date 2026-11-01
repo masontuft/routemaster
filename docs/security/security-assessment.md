@@ -1,22 +1,22 @@
 # Security Assessment
 
-Scope: the repository. The server is not built. `src/config/testDatabase.js` is implemented and covered by tests. Findings lists the guard's remaining limits and the ESLint advisory. The table below is planned design.
+Scope: the repository on the current `main` branch. The Express server is built and covered by tests. It is not deployed. Findings lists the test-database guard's remaining limits and the `minimatch` advisory.
 
 ## Data classification
 
-Planned, not built: customer names, phones, addresses and payment records (personal); password hashes; session data. Mason's real spreadsheet holds real customer data and must never be committed.
+Stored in Postgres: customer names, phones, and addresses; password hashes; session rows; service requests; reviews; contact messages. Payment records are not stored. Mason's real spreadsheet holds real customer data and must never be committed.
 
-## Controls (built in segment 3 unless marked)
+## Controls
 
-| Area | Plan |
+| Area | What the code does |
 | --- | --- |
-| Authentication | bcrypt hashes, `express-session`, Postgres store ([ADR 0010](../adr/0010-deployment-and-trust-boundary.md)) |
-| Access control | Role checks in middleware on every protected route |
-| Injection | Parameterized queries only |
-| Input | Server-side validation and sanitization; EJS `<%=` escaping |
-| Import | Google Sheets URLs only, strict ID pattern, fixed host path, size-limited `.xlsx` uploads ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)) |
-| Cookies | HttpOnly, Secure in production, SameSite=lax |
-| CSRF | `csrf-sync` synchronizer token on every non-GET request; tested |
+| Authentication | bcrypt hashes, `express-session`, Postgres store via `connect-pg-simple` ([ADR 0010](../adr/0010-deployment-and-trust-boundary.md)) |
+| Access control | `requireRole` on `/admin` (owner), `/staff` (owner and dispatcher), and `/requests` and `/properties` (customer). HTTP tests cover denied cases. Deleting a review is owner-only. |
+| Injection | Models use parameterized `pg` queries |
+| Input | Server-side validation; EJS `<%=` escaping |
+| Import | Not built. Planned: Google Sheets URLs only, strict ID pattern, fixed host path, size-limited `.xlsx` uploads ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md), [#33](https://github.com/masontuft/routemaster/issues/33)) |
+| Cookies | `httpOnly`, `sameSite: "lax"`, and `secure` when `NODE_ENV` is exactly `production` (`src/middleware/session.js`) |
+| CSRF | `csrf-sync` synchronizer token. `src/app.js` runs `src/middleware/csrf.js` on every request. The token is read from the `_csrf` field. A post without a token returns 403 in tests. |
 | Session fixation | Session ID regenerated at register and login; tested |
 | Link tokens | 32 random bytes, only the SHA-256 hash stored, expiring and revocable; GET changes nothing; tested |
 | Request ownership | Every customer query filters by the session's customer id; another customer's request returns 404; tested |
@@ -24,7 +24,7 @@ Planned, not built: customer names, phones, addresses and payment records (perso
 
 ## Open
 
-Dependency audit and secret scanning are not wired. An `express-rate-limit` per-IP limiter (in-memory store) covers login, link redemption and the generic link; it is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). The generic link has no CAPTCHA. Role-protected pages do not exist yet; `requireRole` is unit-tested only. Behavior on Render (Secure cookie behind its proxy) is unverified. See Findings for the test-database guard and the `minimatch` advisory.
+Dependency audit and secret scanning are not wired ([#26](https://github.com/masontuft/routemaster/issues/26)). An `express-rate-limit` per-IP limiter (in-memory store) covers login, magic-link redemption, the generic `/schedule` posts, and the contact form. It is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). Reviews, the contact form, and the generic link have no CAPTCHA ([#36](https://github.com/masontuft/routemaster/issues/36)). Behavior on Render (the Secure cookie behind its proxy) is unverified ([#21](https://github.com/masontuft/routemaster/issues/21)). `src/app.js` sets `trust proxy` to 1. See Findings for the test-database guard and the `minimatch` advisory.
 
 ## Findings
 
@@ -32,6 +32,6 @@ The test-database guard refuses a missing `TEST_DATABASE_URL`, a value that is n
 
 Still open:
 
-- Hostnames are not resolved. `localhost` and `127.0.0.1` count as different servers. Keyword/value connection strings are rejected. See the `TODO (Mason)` in `src/config/testDatabase.js`.
-- `pnpm audit` reports [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1, moderate, dev-only through ESLint). See [dependency management](dependency-management.md).
-- Secret scanning is not wired. No committed secret was found in this audit.
+- Hostnames are not resolved. `localhost` and `127.0.0.1` count as different servers. Keyword/value connection strings are rejected. See the `TODO (Mason)` in `src/config/testDatabase.js` ([#31](https://github.com/masontuft/routemaster/issues/31)).
+- `pnpm audit` reports [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1, moderate, dev-only through ESLint). See [dependency management](dependency-management.md) and [issue 32](https://github.com/masontuft/routemaster/issues/32).
+- Secret scanning is not wired ([#26](https://github.com/masontuft/routemaster/issues/26)).

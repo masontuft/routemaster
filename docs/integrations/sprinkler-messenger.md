@@ -1,6 +1,6 @@
 # Sprinkler Messenger Integration Spec
 
-Status: Proposed. Nothing in this document is built, in Routemaster or in Sprinkler Messenger.
+Status: Proposed. Nothing in this document is built, in Routemaster or in Sprinkler Messenger. The open questions are [issue 37](https://github.com/masontuft/routemaster/issues/37).
 
 This file is written to be handed to the Sprinkler Messenger project (React Native). It describes the feature from both sides so the mobile app can be built against it. Anything about Sprinkler Messenger's current code is an assumption to verify; it was written from a description of the app, not from reading its code.
 
