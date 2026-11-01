@@ -37,7 +37,8 @@ The UI style rules live in the skills: `ui-design-foundations` and the three `ui
 - The foundations floors and the shared palette apply on every page, including the loud ones.
 - Each extra style is another ruleset to follow and review.
 - Mason read the "separate project" note on mobile as: this repo is a website, so the mobile layer is only about phone browsers. Revisit if a native app appears.
-- Nothing is built yet: Not currently implemented.
+- Built (segments 8a and 8b): the base, the futuristic marketing pages (home, services, contact) and the over-the-top 404 and error pages. The 403 and 429 pages stay conservative. Fonts are the system stack only, so no font files or external requests; the loud pages use "Arial Black" or Impact when installed.
+- Not built: the About page, which waits for copy from Mason.
 
 ## References
 

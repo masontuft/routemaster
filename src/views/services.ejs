@@ -1,0 +1,23 @@
+<%- include("partials/head") %>
+<h1>Services and Pricing</h1>
+<% if (services.length === 0) { %>
+    <p>Our services are not listed yet. <a href="/contact">Contact us</a> for details.</p>
+<% } else { %>
+    <ul class="bento services">
+        <% services.forEach((service) => { %>
+            <li>
+                <h2><%= service.name %></h2>
+                <% if (service.price_cents > 0) { %>
+                    <p class="price"><%= formatCents(service.price_cents) %></p>
+                <% } else { %>
+                    <p>Contact us for pricing.</p>
+                <% } %>
+            </li>
+        <% }) %>
+    </ul>
+<% } %>
+<p class="actions">
+    <a class="button" href="/schedule">Schedule Your Service</a>
+    <a class="button secondary" href="/contact">Ask a Question</a>
+</p>
+<%- include("partials/foot") %>

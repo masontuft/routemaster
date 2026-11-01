@@ -45,7 +45,7 @@ Floors, the shared palette, and anti-slop rules are in `ui-design-foundations`. 
 
 - Base style: `ui-style-conservative`.
 - Page and section overrides: marketing pages (home, services and pricing, about, contact) use `ui-style-futuristic`. The custom 404 and error pages use `ui-style-over-the-top`.
-- Palette: `enterprise`.
+- Palette: `enterprise`. Brand choice (Mason, 2026-10-31): pink accent is the one loud element, system fonts only, no invented stats or testimonials on marketing pages.
 - Mobile platform layer: `ui-design-mobile` applies as phone-browser responsiveness for this website. It combines with the style of the page. It does not replace the base style. There is no native app in this repo.
 
 ## Testing
