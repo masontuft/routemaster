@@ -1,0 +1,23 @@
+<%- include("../partials/head") %>
+<h1>Import Spreadsheet</h1>
+<%- include("../partials/errors") %>
+<form method="post" action="/admin/import">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="link">Public Google Sheet Link</label>
+    <input id="link" name="link" type="url" required maxlength="2048" autocomplete="off">
+    <button type="submit">Read Spreadsheet</button>
+</form>
+<% if (sheets) { %>
+    <h2>Sheets Found</h2>
+    <div class="table-scroll" role="region" aria-label="Sheets found" tabindex="0">
+    <table>
+        <thead><tr><th>Sheet</th><th>Rows</th><th>Columns</th></tr></thead>
+        <tbody>
+            <% sheets.forEach((sheet) => { %>
+                <tr><td><%= sheet.name %></td><td><%= sheet.rowCount %></td><td><%= sheet.columnCount %></td></tr>
+            <% }); %>
+        </tbody>
+    </table>
+    </div>
+<% } %>
+<%- include("../partials/foot") %>

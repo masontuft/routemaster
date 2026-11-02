@@ -64,6 +64,8 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 | POST | `/admin/users` | `email`, `role` (owner or dispatcher), `password`, `confirm` | Create a staff user |
 | GET | `/admin/service-types` | | Services with price and active flag |
 | GET | `/admin/service-types/new`, `/admin/service-types/:id/edit` | | Service form |
+| GET | `/admin/import` | | Form for a public Google Sheet link (owner only) |
+| POST | `/admin/import` | `link` | Download and parse the sheet, then list each tab with its row and column counts. Nothing is saved. Owner only, CSRF, shared per-IP limit. Bad input returns 400, a Google or network failure returns 502 |
 | POST | `/admin/service-types`, `/admin/service-types/:id` | `name`, `price` (dollars), `active` | Add or update a service. Deactivate by unchecking active |
 
 `GET /staff` also shows requests received, completed this month, and the value of scheduled jobs when the viewer is an owner.

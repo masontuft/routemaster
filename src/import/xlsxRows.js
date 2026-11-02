@@ -1,8 +1,9 @@
-// Reads an .xlsx buffer into plain rows. No route calls this yet.
+// Reads an .xlsx buffer into plain rows. The owner import route calls this.
 
 import ExcelJS from "exceljs";
 import { SpreadsheetImportError } from "./errors.js";
 import { SPREADSHEET_LIMITS } from "./limits.js";
+import { assertZipWithinLimits } from "./zipLimits.js";
 
 const XLSX_SIGNATURE = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
 const TOO_LARGE_MESSAGE = "That spreadsheet is larger than the size limit.";
@@ -119,6 +120,8 @@ export async function readXlsxRows(input, options = {}) {
     if (hasXlsxSignature(bytes) === false) {
         throw new SpreadsheetImportError("invalid_workbook", INVALID_WORKBOOK_MESSAGE);
     }
+
+    assertZipWithinLimits(bytes, options);
 
     const workbook = new ExcelJS.Workbook();
     try {

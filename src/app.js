@@ -8,6 +8,7 @@ import staffRoutes from "./routes/staff.js";
 import adminRoutes from "./routes/admin.js";
 import reviewRoutes from "./routes/reviews.js";
 import contactRoutes from "./routes/contact.js";
+import importRoutes from "./routes/import.js";
 import linkRoutes from "./routes/link.js";
 import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
@@ -18,6 +19,7 @@ import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { isProduction } from "./utils/env.js";
+import { fetchPublicGoogleSheet } from "./import/googleSheet.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,6 +29,7 @@ export default function createApp({
     sessionSecret,
     store,
     rateLimitMax = 20,
+    fetchSheet = fetchPublicGoogleSheet,
     devReload,
     devReloadBootId,
 } = {}) {
@@ -43,6 +46,7 @@ export default function createApp({
     app.set("views", path.join(here, "views"));
     app.locals.db = pool;
     app.locals.sessionStore = store ?? (pool ? createSessionStore(pool) : undefined);
+    app.locals.fetchSheet = fetchSheet;
     app.locals.devReload = devReload ?? !isProduction();
     app.locals.devReloadBootId = devReloadBootId ?? Date.now().toString();
 
@@ -62,6 +66,7 @@ export default function createApp({
     app.use(requestRoutes);
     app.use(staffRoutes);
     app.use(adminRoutes);
+    app.use(importRoutes(limit));
     app.use(reviewRoutes);
     app.use(linkRoutes(limit));
     app.use(scheduleRoutes(limit));
