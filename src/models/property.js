@@ -9,6 +9,43 @@ export async function create(pool, customerId, { street, city, zip, notes }) {
     return rows[0].id;
 }
 
+export async function findById(pool, id) {
+    const { rows } = await pool.query(
+        "SELECT id, customer_id, street, city, zip, notes FROM properties WHERE id = $1",
+        [id],
+    );
+    return rows[0] ?? null;
+}
+
+// Changes only the fields given: { street, city, zip, notes }. A new street also gets a new normalized address,
+// which the import and the scheduling form match on. A blank city, ZIP or note becomes NULL.
+export async function update(pool, id, fields) {
+    const values = [id];
+    const sets = [];
+    const set = (column, value) => {
+        values.push(value);
+        sets.push(`${column} = $${values.length}`);
+    };
+
+    if ("street" in fields) {
+        set("street", fields.street);
+        set("address_normalized", normalizeAddress(fields.street));
+    }
+
+    for (const column of ["city", "zip", "notes"]) {
+        if (column in fields) {
+            set(column, fields[column] || null);
+        }
+    }
+
+    if (sets.length === 0) {
+        return false;
+    }
+
+    const result = await pool.query(`UPDATE properties SET ${sets.join(", ")} WHERE id = $1`, values);
+    return result.rowCount === 1;
+}
+
 export async function listForCustomer(pool, customerId) {
     const { rows } = await pool.query(
         "SELECT id, street, city, zip FROM properties WHERE customer_id = $1 ORDER BY id",

@@ -20,6 +20,39 @@ export async function findById(pool, id) {
     return rows[0] ?? null;
 }
 
+// Changes only the fields given: { name, phone, email }. The normalized columns that matching reads are
+// recomputed with them, or the customer would stop matching the new spelling. A blank phone or email becomes NULL.
+// Column names are fixed strings below; only values are parameters.
+export async function update(pool, id, fields) {
+    const values = [id];
+    const sets = [];
+    const set = (column, value) => {
+        values.push(value);
+        sets.push(`${column} = $${values.length}`);
+    };
+
+    if ("name" in fields) {
+        set("name", fields.name);
+        set("name_normalized", normalizeName(fields.name));
+    }
+
+    if ("phone" in fields) {
+        set("phone", fields.phone || null);
+        set("phone_normalized", fields.phone ? normalizePhone(fields.phone) : null);
+    }
+
+    if ("email" in fields) {
+        set("email", fields.email || null);
+    }
+
+    if (sets.length === 0) {
+        return false;
+    }
+
+    const result = await pool.query(`UPDATE customers SET ${sets.join(", ")} WHERE id = $1`, values);
+    return result.rowCount === 1;
+}
+
 // Name, phone and street must all match. Returns the customer and that property, or null.
 export async function findByContact(pool, { name, phone, address }) {
     const { rows } = await pool.query(
