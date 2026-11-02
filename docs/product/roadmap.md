@@ -9,6 +9,7 @@ Post-course or optional.
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
 - An instructor-hosted database as an optional target for server agents.
 - Technician logins. Planned, not a commitment. See [Technician Logins](#technician-logins).
+- Spam control on public forms. Planned, not a commitment. See [Spam Control](#spam-control).
 
 ## Branded Business Workspaces
 
@@ -42,3 +43,17 @@ The flow being mirrored is the public service sign-up a customer uses today: the
 **Status:** Planned. Future work, and not a commitment. Not currently implemented. This page does not change the decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md) and [ADR 0008](../adr/0008-schema-as-numbered-sql-migrations.md): technicians do not get their own logins for now. The dispatcher manages their routes.
 
 A later technician role would let a technician see their own route and mark jobs done. The owner, dispatcher, and customer roles stay as they are until that work is built.
+
+## Spam Control
+
+**Status:** Planned. Future work, and not a commitment. Not currently implemented.
+
+Spam protection is not being built now. The public forms in scope are reviews, contact, and the generic sign-up (`/schedule`).
+
+The planned approach is three layers on those forms:
+
+- A hidden honeypot field.
+- Per-IP rate limiting. An in-memory limiter already covers login, magic-link redemption, `/schedule`, and contact. It is per instance and resets on restart. Reviews are not rate limited.
+- Cloudflare Turnstile. Mason would create the Turnstile account and keys.
+
+Login and magic-link redemption stay on the current limiter. This item does not add them to the three public forms.

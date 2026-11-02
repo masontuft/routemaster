@@ -43,4 +43,4 @@ Still a draft, with no migration: `subdivisions`, `routes`, `route_stops`, `paym
 
 ## Roadmap items
 
-Branded business workspaces (multi-tenant), technician logins, import of expenses, mileage and compressor tabs, two-way spreadsheet sync, and an instructor-hosted database as an optional target for server agents. These are recorded in [docs/product/roadmap.md](docs/product/roadmap.md).
+Branded business workspaces (multi-tenant), technician logins, spam control on public forms, import of expenses, mileage and compressor tabs, two-way spreadsheet sync, and an instructor-hosted database as an optional target for server agents. These are recorded in [docs/product/roadmap.md](docs/product/roadmap.md).

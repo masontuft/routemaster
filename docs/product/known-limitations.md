@@ -16,5 +16,5 @@
 - Referral payouts are handled outside the app. Staff record who referred the job on the request page.
 - The seeded service types start at 0 cents. Until real prices are entered, the public services page says "Contact us for pricing." and owner money stats for those catalog prices read $0.00 ([#23](https://github.com/masontuft/routemaster/issues/23)).
 - Replying to a contact message records a note and sets the status; nothing is emailed.
-- Reviews, contact messages, and the generic link have no spam filter beyond the per-IP rate limit and CSRF token ([#36](https://github.com/masontuft/routemaster/issues/36)).
+- Spam control is not built now. Reviews have no rate limit. Contact and the generic `/schedule` link have the in-memory per-IP limiter and CSRF. Three layers (a hidden honeypot, per-IP rate limiting, and Cloudflare Turnstile) are planned on the [roadmap](roadmap.md#spam-control) and are not a commitment.
 - A review can only be written for a Completed request, so customers who never use the site cannot review.
