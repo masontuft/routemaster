@@ -6,7 +6,7 @@ Planned per [ADR 0010](../adr/0010-deployment-and-trust-boundary.md). The server
 | --- | --- | --- |
 | Deployable | One Render web service | No |
 | Runtime | Node 24 from `.node-version` | CI installs that file. Not checked on Render |
-| Build and start commands | In `render.yaml`: `corepack enable && pnpm install --frozen-lockfile`, then `pnpm migrate && pnpm start`. There is no application build step. Corepack on Render is unconfirmed ([#38](https://github.com/masontuft/routemaster/issues/38)) | No |
+| Build and start commands | Build: `corepack enable && pnpm install --frozen-lockfile` ([ADR 0003](../adr/0003-package-manager-pnpm.md)). Start stays `pnpm start` (`node src/server.js`). `render.yaml` runs `pnpm migrate` first, then `pnpm start`. There is no application build step. The first Render build has not been run ([#21](https://github.com/masontuft/routemaster/issues/21)) | No |
 | Database | Supabase session pooler, port 5432 | No. Render IPv6 reachability unchecked |
 | Port | Bind `0.0.0.0` on `PORT` | Server code binds this way; not tested on Render |
 | Health check | `GET /health` returns 200, or 503 when `SELECT 1` fails | Tested locally; not set on Render |

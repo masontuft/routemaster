@@ -38,7 +38,6 @@ Still a draft, with no migration: `subdivisions`, `routes`, `route_stops`, `paym
 - Instructor confirmation that an external Postgres on Supabase satisfies the Render requirement ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md), [#19](https://github.com/masontuft/routemaster/issues/19)). This ADR stays Proposed.
 - A spike proving how a public Google Sheet is fetched, and the Excel parsing library ([ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md), [#33](https://github.com/masontuft/routemaster/issues/33)).
 - Render's IPv6 reachability for the Supabase connection ([ADR 0010](docs/adr/0010-deployment-and-trust-boundary.md), [#21](https://github.com/masontuft/routemaster/issues/21)). `connect-pg-simple` under ESM and CSRF (`csrf-sync` in `src/middleware/csrf.js`, wired in `src/app.js`) are in the code.
-- The Render build command, and whether that build uses Corepack ([#38](https://github.com/masontuft/routemaster/issues/38)). `pnpm start` runs `node src/server.js`. There is no application build step.
 - The schema snapshot folder and script. `AGENTS.md` still names the placeholders `docs/schemas` and `generate schema` ([#39](https://github.com/masontuft/routemaster/issues/39)).
 
 ## Roadmap items

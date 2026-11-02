@@ -5,7 +5,7 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 ## Required
 
 - Ask the instructor whether an external Postgres on Supabase satisfies the Render requirement. [ADR 0007](../adr/0007-persistence-postgres-on-supabase.md) stays Proposed ([#19](https://github.com/masontuft/routemaster/issues/19)).
-- Nothing is deployed. Render's IPv6 reachability for Supabase is unchecked ([#21](https://github.com/masontuft/routemaster/issues/21)). The Render build command and Corepack choice are open ([#38](https://github.com/masontuft/routemaster/issues/38)). `pnpm start` is `node src/server.js`, and there is no application build step.
+- Nothing is deployed. Render's IPv6 reachability for Supabase is unchecked ([#21](https://github.com/masontuft/routemaster/issues/21)). The Render build command is `corepack enable && pnpm install --frozen-lockfile`. `pnpm start` is `node src/server.js`, and there is no application build step.
 - The course ERD image is not in the repo. The schema is migrations 001 through 015 ([#29](https://github.com/masontuft/routemaster/issues/29)). Confirming the public contact email and the course README and commit-count requirements is [issue 30](https://github.com/masontuft/routemaster/issues/30).
 
 ## Recommended

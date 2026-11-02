@@ -25,4 +25,4 @@ Render's pre-deploy command is paid-only (Render deploys docs). With one instanc
 
 - Server exits with "SESSION_SECRET must be at least 32 characters": the production secret check; set a long random value.
 - `/health` returns 503: the database is unreachable. Check `DATABASE_URL`, the pooler host and the TLS setting above.
-- Build fails on `corepack enable` or pnpm: unconfirmed on Render. Fallback build command: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`. Tracked in [#38](https://github.com/masontuft/routemaster/issues/38).
+- Build fails on `corepack enable` or pnpm: the decided build command is `corepack enable && pnpm install --frozen-lockfile` ([ADR 0003](../adr/0003-package-manager-pnpm.md)). It has not been run on Render ([#21](https://github.com/masontuft/routemaster/issues/21)). Fallback if Corepack fails there: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.

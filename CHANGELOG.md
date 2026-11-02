@@ -24,6 +24,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
 
 ### Changed
+- The Render build command is `corepack enable && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.
 - The Sprinkler Messenger bulk send is parked. The seven open questions in the integration spec stay unanswered.
 - Spam control is not built now. A honeypot, per-IP rate limiting, and Cloudflare Turnstile on reviews, contact, and the generic sign-up are a planned roadmap item, not a commitment.
 - Technicians do not get logins for now. The dispatcher manages their routes. A technician role that can see their own route and mark jobs done is a planned roadmap item, not a commitment.
