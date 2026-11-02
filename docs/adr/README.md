@@ -13,7 +13,7 @@ One file per decision, numbered, named for the decision. Status is "Accepted" on
 | [0007](0007-persistence-postgres-on-supabase.md) | Persistence | Accepted |
 | [0008](0008-schema-as-numbered-sql-migrations.md) | How the schema is defined | Accepted |
 | [0009](0009-spreadsheet-import-and-sync.md) | Spreadsheet import and sync | Proposed |
-| [0010](0010-deployment-and-trust-boundary.md) | Deployment and trust boundary | Proposed |
+| [0010](0010-deployment-and-trust-boundary.md) | Deployment and trust boundary | Accepted |
 | [0011](0011-testing-and-ci.md) | Testing and CI | Accepted |
 | [0012](0012-customer-access-by-link.md) | Customer access by link | Accepted |
 

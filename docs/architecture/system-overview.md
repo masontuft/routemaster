@@ -1,14 +1,14 @@
 # System Overview
 
-Status: the Express app in this diagram is built and runs locally. The Render web service, the Supabase database, and the Google Sheet import path are the planned deploy and are not built ([#21](https://github.com/masontuft/routemaster/issues/21), [#33](https://github.com/masontuft/routemaster/issues/33)). ADR 0007 is Accepted. Supabase is not deployed.
+Status: the Express app in this diagram is built. Mason reported on 2026-11-02 that the Render web service is deployed and `/health` responds through the Supabase session pooler. The Google Sheet import path is not built ([#33](https://github.com/masontuft/routemaster/issues/33)). ADR 0007 and ADR 0010 are Accepted.
 
 ## System context
 
 - **People:** customers (submit and track requests, leave reviews), dispatchers (move requests through statuses, match Needs Review, create and revoke links), the owner (those staff actions, plus users, roles, and the service catalog). Building a daily route and spreadsheet import are not built.
-- **App:** one server-side rendered Express app. The planned host is one Render web service, and that deploy is not done.
-- **Data store:** PostgreSQL through `DATABASE_URL`. Sessions are rows in the same database (`session`). Supabase is the proposed production host and is not set up.
+- **App:** one server-side rendered Express app. The host is one Render web service. Mason reported on 2026-11-02 that it is deployed and `/health` responds.
+- **Data store:** PostgreSQL through `DATABASE_URL`. Sessions are rows in the same database (`session`). Supabase is the production host. `pnpm migrate` has been run, and Render reaches it through the session pooler.
 - **External inputs:** a public Google Sheet link or an uploaded `.xlsx` file, supplied only by the owner. Not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
-- **Trust boundaries (planned deploy):** browser to Render over TLS; Render to Supabase over TLS; admin-supplied links and files entering the import.
+- **Trust boundaries:** browser to Render over TLS; Render to Supabase over TLS; admin-supplied links and files entering the import. The import path is not built.
 
 ```mermaid
 flowchart LR

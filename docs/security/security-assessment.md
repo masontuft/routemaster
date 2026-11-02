@@ -1,6 +1,6 @@
 # Security Assessment
 
-Scope: the repository on the current `main` branch. The Express server is built and covered by tests. It is not deployed. Findings lists the test-database guard's remaining limits.
+Scope: the repository on the current `main` branch. The Express server is built and covered by tests. Mason reported on 2026-11-02 that it is deployed on Render and `/health` responds through the Supabase session pooler. Findings lists the test-database guard's remaining limits.
 
 ## Data classification
 
@@ -24,7 +24,7 @@ Stored in Postgres: customer names, phones, and addresses; password hashes; sess
 
 ## Open
 
-Dependency audit and secret scanning are not wired ([#26](https://github.com/masontuft/routemaster/issues/26)). An `express-rate-limit` per-IP limiter (in-memory store) covers login, magic-link redemption, the generic `/schedule` posts, and the contact form. It is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). Spam control on reviews, the contact form, and the generic link is planned and not built ([roadmap](../product/roadmap.md#spam-control), [#36](https://github.com/masontuft/routemaster/issues/36)). Behavior on Render (the Secure cookie behind its proxy) is unverified ([#21](https://github.com/masontuft/routemaster/issues/21)). `src/app.js` sets `trust proxy` to 1. See Findings for the test-database guard.
+Dependency audit and secret scanning are not wired ([#26](https://github.com/masontuft/routemaster/issues/26)). An `express-rate-limit` per-IP limiter (in-memory store) covers login, magic-link redemption, the generic `/schedule` posts, and the contact form. It is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). Spam control on reviews, the contact form, and the generic link is planned and not built ([roadmap](../product/roadmap.md#spam-control), [#36](https://github.com/masontuft/routemaster/issues/36)). The Secure cookie behind Render's proxy was not part of the 2026-11-02 deploy report. `src/app.js` sets `trust proxy` to 1. See Findings for the test-database guard.
 
 ## Findings
 

@@ -4,7 +4,7 @@ Lightweight STRIDE. A mitigation marked built is in the current code. Render dep
 
 Assets: customer personal data, password hashes, sessions, reviews, contact messages, the database. Entry points that exist: forms, login, magic links, and the generic `/schedule` link. The import link and file upload are not built.
 
-The diagram is the planned deploy. The app runs locally against `DATABASE_URL`. Supabase and Render are not deployed.
+The diagram is the deploy. Mason reported on 2026-11-02 that the Render service is deployed and `/health` responds through the Supabase session pooler.
 
 ```mermaid
 flowchart LR
@@ -15,7 +15,7 @@ flowchart LR
 
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Stolen or guessed session | Built: `httpOnly` and `sameSite: "lax"` cookies, `secure` when `NODE_ENV` is exactly `production`, bcrypt, secret from the environment. Render is unverified ([#21](https://github.com/masontuft/routemaster/issues/21)). |
+| Spoofing | Stolen or guessed session | Built: `httpOnly` and `sameSite: "lax"` cookies, `secure` when `NODE_ENV` is exactly `production`, bcrypt, secret from the environment. The Secure cookie behind Render's proxy was not part of the 2026-11-02 deploy report. |
 | Tampering | SQL injection, forged form post | Built: parameterized queries, and `csrf-sync` in `src/middleware/csrf.js` (wired in `src/app.js`) |
 | Repudiation | Disputed status change | Built: `status_history` records who changed what (`changed_by`) and an optional note |
 | Information disclosure | Customer reads another's data, stack trace shown | Built: ownership checks, and the global error handler does not send error details to the browser |

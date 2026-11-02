@@ -6,7 +6,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Added
 - Staff and owners can record who referred a job. `service_requests.referred_by` (migration 015) stores the name only. Referral payouts are handled outside the app.
-- Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook. Nothing is deployed.
+- Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook.
 - Roadmap entry for branded business workspaces: a planned, uncommitted sign-up where each business gets a workspace and a branded mirror of the service sign-up, plus a customization layer. Open questions are marked `TODO (Mason)`.
 - Futuristic marketing pages: home ("Schedule Your Service" hero and tiles), a public services and pricing page, and the contact page in the same layout; over-the-top 404 and error pages; Services nav link (the owner link is now "Manage Services").
 - Styling foundation: enterprise palette tokens with light and dark, a conservative base for every app page, cascade-layered CSS, a skip link, safe-area padding, scrolling table regions, and a test that checks view headings against modified Chicago case.
@@ -24,7 +24,8 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
 
 ### Changed
-- ADR 0007 is Accepted. The instructor confirmed on 2026-11-02 that an external Supabase Postgres satisfies the course's Render database requirement. Supabase is not deployed.
+- ADR 0007 is Accepted. The instructor confirmed on 2026-11-02 that an external Supabase Postgres satisfies the course's Render database requirement.
+- Mason reported on 2026-11-02 that Supabase is set up, `pnpm migrate` has been run, and the Render web service is deployed. `/health` responds through the session pooler. Resume the Supabase project before grading.
 - The Enterprise palette (deep blue, white, and bubblegum pink) is confirmed as Routemaster's palette.
 - The Render build command is `corepack enable && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.
 - The Sprinkler Messenger bulk send is parked. The seven open questions in the integration spec stay unanswered.
