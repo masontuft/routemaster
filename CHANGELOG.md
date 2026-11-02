@@ -24,6 +24,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
 
 ### Changed
+- The Sprinkler Messenger bulk send is parked. The seven open questions in the integration spec stay unanswered.
 - Spam control is not built now. A honeypot, per-IP rate limiting, and Cloudflare Turnstile on reviews, contact, and the generic sign-up are a planned roadmap item, not a commitment.
 - Technicians do not get logins for now. The dispatcher manages their routes. A technician role that can see their own route and mark jobs done is a planned roadmap item, not a commitment.
 - Docs that still described the server, CSRF, role-protected pages, installed dependencies, CI's Postgres 16 service, or the branch and commit rules as unbuilt or undecided now match the code. Open decisions stay open and link their issues. Branch names and commit messages are recorded as decided in `CONTRIBUTING.md`.
