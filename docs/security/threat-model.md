@@ -23,4 +23,4 @@ flowchart LR
 | Elevation of privilege | Customer reaches an owner route | Built: `requireRole` on `/admin`, `/staff`, `/requests`, and `/properties`, with tests for denied cases |
 | SSRF | Import link pointing at an internal host | Not built. Planned: only a fixed `docs.google.com` path ([#33](https://github.com/masontuft/routemaster/issues/33)) |
 
-Residual risk that is still open: the rate limit is per process ([#36](https://github.com/masontuft/routemaster/issues/36) for CAPTCHA or another spam control), magic links are bearer tokens, the test-database guard does not resolve DNS (it treats `localhost`, `127.0.0.1`, and `::1` as the same server and compares every other host as written), and the `minimatch` advisory is unresolved ([#32](https://github.com/masontuft/routemaster/issues/32)).
+Residual risk that is still open: the rate limit is per process ([#36](https://github.com/masontuft/routemaster/issues/36) for CAPTCHA or another spam control), magic links are bearer tokens, and the test-database guard does not resolve DNS (it treats `localhost`, `127.0.0.1`, and `::1` as the same server and compares every other host as written).

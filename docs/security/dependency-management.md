@@ -10,4 +10,4 @@ Not installed: `multer`, an `.xlsx` parser, and Playwright. The parser is undeci
 
 A dependency audit command is not wired into CI.
 
-TODO (Mason): `pnpm audit` reports GHSA-g3hv-75wg-m249 (`minimatch` before 11.0.1, moderate, dev-only through ESLint). ESLint 10 still requires `minimatch` 10. Approve an override to `minimatch` 11, or wait until ESLint depends on a patched release ([#32](https://github.com/masontuft/routemaster/issues/32)). Do not force the override without that approval; a major bump can break lint.
+`pnpm-workspace.yaml` overrides `minimatch` to `^11.0.1`. That is the 11.x line that includes the fix for [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1, moderate, dev-only through ESLint 10, which still depends on `minimatch` 10). pnpm 11 reads overrides from that file. Remove the override once ESLint depends on a patched `minimatch`.

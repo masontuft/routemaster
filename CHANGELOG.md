@@ -36,5 +36,6 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Security
 
+- `minimatch` is overridden to `^11.0.1` so the ESLint 10 tree is not on the release named by GHSA-g3hv-75wg-m249. Remove the override once ESLint depends on a patched `minimatch`.
 - The test-database guard treats `localhost`, `127.0.0.1`, and `::1` (including bracketed `[::1]`) as the same server.
 - A cosmetic difference in `TEST_DATABASE_URL` (scheme, default port, credentials, trailing slash, or an ignored query parameter) can no longer point tests at the real database.
