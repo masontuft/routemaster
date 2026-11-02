@@ -1,6 +1,6 @@
 # Security Assessment
 
-Scope: the repository on the current `main` branch. The Express server is built and covered by tests. It is not deployed. Findings lists the test-database guard's remaining limits and the `minimatch` advisory.
+Scope: the repository on the current `main` branch. The Express server is built and covered by tests. Mason reported on 2026-11-02 that it is deployed on Render and `/health` responds through the Supabase session pooler. Findings lists the test-database guard's remaining limits.
 
 ## Data classification
 
@@ -24,14 +24,15 @@ Stored in Postgres: customer names, phones, and addresses; password hashes; sess
 
 ## Open
 
-Dependency audit and secret scanning are not wired ([#26](https://github.com/masontuft/routemaster/issues/26)). An `express-rate-limit` per-IP limiter (in-memory store) covers login, magic-link redemption, the generic `/schedule` posts, and the contact form. It is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). Reviews, the contact form, and the generic link have no CAPTCHA ([#36](https://github.com/masontuft/routemaster/issues/36)). Behavior on Render (the Secure cookie behind its proxy) is unverified ([#21](https://github.com/masontuft/routemaster/issues/21)). `src/app.js` sets `trust proxy` to 1. See Findings for the test-database guard and the `minimatch` advisory.
+Dependency audit and secret scanning are not wired ([#26](https://github.com/masontuft/routemaster/issues/26)). An `express-rate-limit` per-IP limiter (in-memory store) covers login, magic-link redemption, the generic `/schedule` posts, and the contact form. It is per instance and resets on restart. Magic links are bearer tokens (ADR 0012). Spam control on reviews, the contact form, and the generic link is planned and not built ([roadmap](../product/roadmap.md#spam-control), [#36](https://github.com/masontuft/routemaster/issues/36)). The Secure cookie behind Render's proxy was not part of the 2026-11-02 deploy report. `src/app.js` sets `trust proxy` to 1. See Findings for the test-database guard.
 
 ## Findings
 
-The test-database guard refuses a missing `TEST_DATABASE_URL`, a value that is not a `postgres://` or `postgresql://` URL, and a URL that names the same host, port, and database as `DATABASE_URL`. User, password, and parameters such as `sslmode` are ignored, so those differences cannot point tests at the real database.
+The test-database guard refuses a missing `TEST_DATABASE_URL`, a value that is not a `postgres://` or `postgresql://` URL, and a URL that names the same host, port, and database as `DATABASE_URL`. `localhost`, `127.0.0.1`, and `::1` (including bracketed `[::1]`) count as the same host. User, password, and parameters such as `sslmode` are ignored, so those differences cannot point tests at the real database.
+
+`minimatch` is overridden to `^11.0.1` in `pnpm-workspace.yaml`, so the ESLint 10 tree is not on the release named by [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249). Remove that override once ESLint depends on a patched `minimatch`. See [dependency management](dependency-management.md).
 
 Still open:
 
-- Hostnames are not resolved. `localhost` and `127.0.0.1` count as different servers. Keyword/value connection strings are rejected. See the `TODO (Mason)` in `src/config/testDatabase.js` ([#31](https://github.com/masontuft/routemaster/issues/31)).
-- `pnpm audit` reports [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1, moderate, dev-only through ESLint). See [dependency management](dependency-management.md) and [issue 32](https://github.com/masontuft/routemaster/issues/32).
+- Hostnames are not resolved. Hosts other than `localhost`, `127.0.0.1`, and `::1` are compared as written. Keyword/value connection strings are rejected.
 - Secret scanning is not wired ([#26](https://github.com/masontuft/routemaster/issues/26)).

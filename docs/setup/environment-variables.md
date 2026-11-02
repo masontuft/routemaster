@@ -1,6 +1,6 @@
 # Environment Variables
 
-Names only. Never commit values. Proposed production hosting is in [ADR 0010](../adr/0010-deployment-and-trust-boundary.md) and is not deployed ([#21](https://github.com/masontuft/routemaster/issues/21)). Supabase as the production database stays Proposed until the instructor confirms it ([#19](https://github.com/masontuft/routemaster/issues/19)). In production the server refuses to start if `SESSION_SECRET` is shorter than 32 characters or is a placeholder.
+Names only. Never commit values. Production hosting is in [ADR 0010](../adr/0010-deployment-and-trust-boundary.md). Mason reported on 2026-11-02 that the Render service is deployed. Supabase is the production database ([ADR 0007](../adr/0007-persistence-postgres-on-supabase.md)). The instructor confirmed that on 2026-11-02, `pnpm migrate` has been run, and `/health` responds through the session pooler. No connection string is written here. In production the server refuses to start if `SESSION_SECRET` is shorter than 32 characters or is a placeholder.
 
 | Name | Purpose | Read by |
 | --- | --- | --- |

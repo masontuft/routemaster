@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. Open item: Render's IPv6 reachability for the Supabase connection. The two other open items were resolved locally on 2026-10-31 (see Update below).
+Accepted
 
 ## Date
 
@@ -36,7 +36,7 @@ The course requires a Render deployment with the database connected, environment
 
 - `connect-pg-simple` takes a `pg.Pool`. When this ADR was written, its page showed only `require()` examples, so ESM use was unconfirmed. The update below records that the ESM import works.
 - CSRF protection was an open research item when this ADR was written. The update below records the choice (`csrf-sync`).
-- Sessions, the cookie flags, `trust proxy`, and role checks are in the code. Render deployment, and the Secure cookie behind Render's proxy, are unverified ([#21](https://github.com/masontuft/routemaster/issues/21)).
+- Sessions, the cookie flags, `trust proxy`, and role checks are in the code. The Secure cookie behind Render's proxy was not part of the 2026-11-02 report.
 
 ## Update 2026-10-31
 
@@ -50,7 +50,12 @@ The course requires a Render deployment with the database connected, environment
 - Built and tested locally: pool `error` listener (an idle drop no longer kills the process), `/health` runs `SELECT 1` and returns 503 on failure, production refuses a `SESSION_SECRET` under 32 characters or equal to a placeholder, hand-written security headers (CSP with a per-request nonce and no `unsafe-inline`, `nosniff`, frame denial, referrer, permissions, and HSTS in production only), and `X-Powered-By` removed. No dependency was added.
 - `render.yaml` names the build command, start command, health path and variables. Migrations run at the start of the start command because Render's pre-deploy command is paid-only (https://render.com/docs/deploys). `pnpm migrate` now uses `--env-file-if-exists` so it works with no `.env`.
 - TLS to Supabase: `pg-connection-string` 2.14.1 treats `sslmode=require` as `verify-full` and warns. Whether Supabase's certificate chain passes is unverified; the runbook gives `sslmode=no-verify` as the fallback to try.
-- Still unverified: everything on Render, IPv6 reachability, Corepack for pnpm on Render. This ADR stays Proposed.
+- Still not reported: which TLS mode the connection string uses, and whether the Secure cookie behaves behind Render's proxy.
+
+## Update 2026-11-02
+
+- Mason reported that Supabase is set up, `pnpm migrate` has been run, and the Render web service is deployed. `/health` responds through the Supabase session pooler. That resolves the IPv6 reachability item: Render reaches Postgres through the pooler. The direct connection was not the path used, and no URL or service name was recorded.
+- This ADR was Proposed while that reachability item was open. It is Accepted. The two earlier open items (`connect-pg-simple` under ESM, and CSRF) were already resolved locally on 2026-10-31.
 
 ## References
 

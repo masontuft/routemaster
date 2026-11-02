@@ -24,7 +24,7 @@ The UI style rules live in the skills: `ui-design-foundations` and the three `ui
   - Marketing pages (home, services and pricing, about, contact) use `ui-style-futuristic`.
   - The custom 404 and error pages use `ui-style-over-the-top`.
   - Everything else (login, register, request form, customer dashboard, dispatcher routes, owner and admin dashboards, reviews) uses the base style.
-- Palette: `enterprise`.
+- Palette: `enterprise`. Settled for Routemaster: deep blue, white, and bubblegum pink.
 - Mobile platform layer: `ui-design-mobile` applies as phone-browser responsiveness for this website only. There is no native app in this repo.
 
 ## Alternatives considered
@@ -35,6 +35,7 @@ The UI style rules live in the skills: `ui-design-foundations` and the three `ui
 ## Consequences
 
 - The foundations floors and the shared palette apply on every page, including the loud ones.
+- The Enterprise palette is confirmed (Mason, 2026-11-02): deep blue, white, and bubblegum pink. `health` and `premium` stay the rejected alternatives for this project.
 - Each extra style is another ruleset to follow and review.
 - Mason read the "separate project" note on mobile as: this repo is a website, so the mobile layer is only about phone browsers. Revisit if a native app appears.
 - Built (segments 8a and 8b): the base, the futuristic marketing pages (home, services, contact) and the over-the-top 404 and error pages. The 403 and 429 pages stay conservative. Fonts are the system stack only, so no font files or external requests; the loud pages use "Arial Black" or Impact when installed.

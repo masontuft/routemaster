@@ -3,13 +3,13 @@
 Post-course or optional.
 
 - Email or text delivery of customer links. The staff pages already create and revoke links and work the Needs Review queue.
-- Send customer links in bulk through Sprinkler Messenger, the companion React Native app, using a deep link that opens the app and its mass-text feature on the dispatcher's phone. Viability is not confirmed: it depends on Messenger sending a different message to each customer and on iOS and carrier limits. Spec: [docs/integrations/sprinkler-messenger.md](../integrations/sprinkler-messenger.md). Open questions: [issue 37](https://github.com/masontuft/routemaster/issues/37).
+- Send customer links in bulk through Sprinkler Messenger. Parked. Future work, and not a commitment. Nothing is built until the open questions are answered. A deep link would open the companion React Native app and its mass-text feature on the dispatcher's phone. Viability is not confirmed: it depends on Messenger sending a different message to each customer and on iOS and carrier limits. Spec: [docs/integrations/sprinkler-messenger.md](../integrations/sprinkler-messenger.md). All seven open questions stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
 - Branded business workspaces (multi-tenant). Planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
 - Import of expenses, mileage and compressor schedule tabs.
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
 - An instructor-hosted database as an optional target for server agents.
-- Referral payout model for Rocky and Skyview, once the rule is understood ([#35](https://github.com/masontuft/routemaster/issues/35)).
-- Technician logins, if wanted ([#34](https://github.com/masontuft/routemaster/issues/34)).
+- Technician logins. Planned, not a commitment. See [Technician Logins](#technician-logins).
+- Spam control on public forms. Planned, not a commitment. See [Spam Control](#spam-control).
 
 ## Branded Business Workspaces
 
@@ -36,4 +36,24 @@ The flow being mirrored is the public service sign-up a customer uses today: the
 - TODO (Mason): What a business can customize. Logo, colors, and copy are examples, not a decided list.
 - TODO (Mason): How a workspace interacts with the existing owner admin and the owner, dispatcher, and customer roles. Whether each business has its own owner, and whether Routemaster needs an operator role above those owners, is open.
 - TODO (Mason): Whether the mirror stops at the customer-facing service sign-up, or a workspace also includes staff and owner screens.
-- TODO (Mason): What [ADR 0007](../adr/0007-persistence-postgres-on-supabase.md) and [ADR 0010](../adr/0010-deployment-and-trust-boundary.md) allow. The course grades one repository and one Render deployment with a connected PostgreSQL database. ADR 0007 is one Supabase Postgres behind `DATABASE_URL` (free-plan size and pause behavior are recorded there, and instructor confirmation is still open). ADR 0010 is one Render web service, same origin, no CORS, with sessions stored in that database. Whether branded workspaces, including a custom hostname, can stay inside that single service and database is open.
+- TODO (Mason): What [ADR 0007](../adr/0007-persistence-postgres-on-supabase.md) and [ADR 0010](../adr/0010-deployment-and-trust-boundary.md) allow. The course grades one repository and one Render deployment with a connected PostgreSQL database. ADR 0007 is one Supabase Postgres behind `DATABASE_URL` (free-plan size and pause behavior are recorded there, and the instructor confirmed on 2026-11-02 that this satisfies the course). ADR 0010 is one Render web service, same origin, no CORS, with sessions stored in that database. Whether branded workspaces, including a custom hostname, can stay inside that single service and database is open.
+
+## Technician Logins
+
+**Status:** Planned. Future work, and not a commitment. Not currently implemented. This page does not change the decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md) and [ADR 0008](../adr/0008-schema-as-numbered-sql-migrations.md): technicians do not get their own logins for now. The dispatcher manages their routes.
+
+A later technician role would let a technician see their own route and mark jobs done. The owner, dispatcher, and customer roles stay as they are until that work is built.
+
+## Spam Control
+
+**Status:** Planned. Future work, and not a commitment. Not currently implemented.
+
+Spam protection is not being built now. The public forms in scope are reviews, contact, and the generic sign-up (`/schedule`).
+
+The planned approach is three layers on those forms:
+
+- A hidden honeypot field.
+- Per-IP rate limiting. An in-memory limiter already covers login, magic-link redemption, `/schedule`, and contact. It is per instance and resets on restart. Reviews are not rate limited.
+- Cloudflare Turnstile. Mason would create the Turnstile account and keys.
+
+Login and magic-link redemption stay on the current limiter. This item does not add them to the three public forms.
