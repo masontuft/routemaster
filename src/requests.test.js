@@ -222,7 +222,7 @@ test("a generic-link match and a miss show the visitor exactly the same pages", 
     await post(missed, "/schedule", "/schedule", { name: "Zed Zed", phone: "2085550000", address: "1 Elm St" });
 
     const strip = (html) => {
-        return html.replace(/value="[^"]*"/g, "");
+        return html.replace(/value="[^"]*"/g, "").replace(/nonce="[^"]*"/g, "");
     };
     assert.strictEqual(strip((await matched.get("/schedule/date")).text), strip((await missed.get("/schedule/date")).text));
     const a = await post(matched, "/schedule/date", "/schedule/date", { serviceTypeId: 1, preferredDate: FUTURE });

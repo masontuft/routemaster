@@ -1,7 +1,7 @@
     </main>
     <footer><small>Routemaster</small></footer>
     <% if (locals.devReload) { %>
-    <script id="dev-reload">
+    <script id="dev-reload" nonce="<%= locals.cspNonce %>">
         (() => {
             let bootId = null;
 

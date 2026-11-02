@@ -45,6 +45,13 @@ The course requires a Render deployment with the database connected, environment
 - The `session` table is created by `migrations/003_create_session_table.sql`.
 - Password hashing: the `bcrypt` package (Mason chose it over Node's built-in scrypt). pnpm 11 reports `bcrypt` as an ignored build script and exits non-zero on install unless `pnpm-workspace.yaml` sets `allowBuilds`; it is set to `false` because bcrypt 6.0.0 loads and hashes without running its install script. Not yet verified on Render.
 
+## Update 2026-10-31 (segment 9, deploy preparation)
+
+- Built and tested locally: pool `error` listener (an idle drop no longer kills the process), `/health` runs `SELECT 1` and returns 503 on failure, production refuses a `SESSION_SECRET` under 32 characters or equal to a placeholder, hand-written security headers (CSP with a per-request nonce and no `unsafe-inline`, `nosniff`, frame denial, referrer, permissions, and HSTS in production only), and `X-Powered-By` removed. No dependency was added.
+- `render.yaml` names the build command, start command, health path and variables. Migrations run at the start of the start command because Render's pre-deploy command is paid-only (https://render.com/docs/deploys). `pnpm migrate` now uses `--env-file-if-exists` so it works with no `.env`.
+- TLS to Supabase: `pg-connection-string` 2.14.1 treats `sslmode=require` as `verify-full` and warns. Whether Supabase's certificate chain passes is unverified; the runbook gives `sslmode=no-verify` as the fallback to try.
+- Still unverified: everything on Render, IPv6 reachability, Corepack for pnpm on Render. This ADR stays Proposed.
+
 ## References
 
 - Render web services: https://render.com/docs/web-services

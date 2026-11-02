@@ -13,6 +13,7 @@ import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
 import sessionMiddleware, { createSessionStore } from "./middleware/session.js";
 import { formatCents } from "./utils/money.js";
+import securityHeaders from "./middleware/securityHeaders.js";
 import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
@@ -45,6 +46,8 @@ export default function createApp({
     app.locals.devReload = devReload ?? !isProduction();
     app.locals.devReloadBootId = devReloadBootId ?? Date.now().toString();
 
+    app.disable("x-powered-by");
+    app.use(securityHeaders);
     app.use(express.static(path.join(here, "..", "public")));
     app.use(sessionMiddleware({ secret: sessionSecret, store: app.locals.sessionStore }));
     app.use(express.urlencoded({ extended: false }));
