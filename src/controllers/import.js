@@ -171,7 +171,7 @@ function contextOf(sheetId, mapping) {
 }
 
 function skippedBy(plan) {
-    const counts = { blocked: 0, flagged: 0, missing_city: 0 };
+    const counts = { blocked: 0, flagged: 0 };
     for (const entry of plan.skipped) {
         counts[entry.reason] += 1;
     }

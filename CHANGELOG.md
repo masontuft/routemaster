@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- A spreadsheet import no longer skips a row for lacking a city. The street is saved, the property's city is left empty (migration 017 drops `NOT NULL` on `properties.city`), and the preview and result page say how many properties have no city. Lists show just the street for those. Properties made by hand still require a city. The import page now asks for a name, street, city and ZIP on every row.
 - Staff and owners can record who referred a job. `service_requests.referred_by` (migration 015) stores the name only. Referral payouts are handled outside the app.
 - Owners can paste a public Google Sheet link at `/admin/import` and see each tab with its row and column counts. Nothing is saved yet. A zip that declares more than 50 MiB uncompressed or 200 entries is refused before parsing.
 - Owners can confirm a spreadsheet import. The preview now takes a service type, a status and a default city, and a Confirm Import button writes the new customers, properties and past jobs in one transaction. A changed sheet or database refuses and writes nothing; confirming the same sheet twice changes nothing; imported jobs are dated by their own day. Migration 016 adds `import_batches`, `import_mappings`, `subdivisions`, `service_requests.amount_cents`, and an `import_batch_id` on customers, properties and service requests.

@@ -1,6 +1,8 @@
 <%- include("../partials/head") %>
 <h1>Import Spreadsheet</h1>
 <%- include("../partials/errors") %>
+<p>For the best results, give each row a customer name, a street address, a city and a ZIP code. The name and street
+    are required. A row with no city is still imported, but its property is saved without one.</p>
 <form method="post" action="/admin/import">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <label for="link">Public Google Sheet Link</label>

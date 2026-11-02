@@ -9,5 +9,9 @@
     <li><%= batch.jobs_existing %> jobs were already on file</li>
     <li><%= batch.rows_skipped %> rows were skipped</li>
 </ul>
+<% if (batch.properties_without_city > 0) { %>
+    <p><strong><%= batch.properties_without_city %> of the new properties have no city.</strong> Their streets are saved,
+        and the city can be added later.</p>
+<% } %>
 <p><a href="/staff">Staff Dashboard</a> · <a href="/admin/import">Import Another Sheet</a></p>
 <%- include("../partials/foot") %>

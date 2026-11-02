@@ -363,10 +363,8 @@ test("the preview says what confirming would do and offers a confirm form with t
     assert.strictEqual(res.status, 200);
     assert.match(res.text, /2 new customers and 2 new properties/);
     assert.match(res.text, /3 jobs, each dated by its own day and marked Completed/);
-    assert.match(
-        res.text,
-        /Skipped: 1 with no name or street, 1 on another customer(?:'|&#39;)s street,\s+0 with no city/,
-    );
+    assert.match(res.text, /Skipped: 1 with no name or street, 1 on another customer(?:'|&#39;)s street/);
+    assert.doesNotMatch(res.text, /have no city/);
     assert.match(res.text, /action="\/admin\/import\/confirm"/);
     assert.ok(res.text.includes('name="serviceTypeId" value="1"'));
     assert.ok(res.text.includes('name="defaultCity" value="Testville"'));
@@ -413,6 +411,23 @@ test("confirming writes the import and redirects to a result page that survives 
         assert.match(page.text, /owner@example\.com/);
         assert.strictEqual(page.headers["cache-control"], "no-store");
     }
+});
+
+test("a sheet with no city is flagged on the preview, imported with the street alone, and flagged again after", async () => {
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+    const fields = { ...MAPPING, defaultCity: "" };
+
+    const preview = await stepPost(agent, "/admin/import/preview", fields);
+    assert.match(preview.text, /4 new properties have no city/);
+
+    const res = await stepPost(agent, "/admin/import/confirm", { ...fields, planHash: hashFrom(preview) });
+    assert.strictEqual(res.status, 303);
+
+    const cityless = await pool.query("SELECT count(*)::int AS n FROM properties WHERE city IS NULL");
+    assert.strictEqual(cityless.rows[0].n, 4);
+    const page = await agent.get(res.headers.location);
+    assert.match(page.text, /4 of the new properties have no city/);
 });
 
 test("confirming from a stale preview writes nothing and shows a fresh preview", async () => {

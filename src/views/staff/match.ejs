@@ -15,7 +15,7 @@
             <fieldset>
                 <legend><%= customer.name %> <%= customer.phone ?? "" %></legend>
                 <% customer.properties.forEach((property) => { %>
-                    <label><input type="radio" name="propertyId" value="<%= property.id %>"> <%= property.street %>, <%= property.city %></label><br>
+                    <label><input type="radio" name="propertyId" value="<%= property.id %>"> <%= formatAddress(property.street, property.city) %></label><br>
                 <% }); %>
             </fieldset>
         <% }); %>

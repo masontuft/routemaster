@@ -1,11 +1,11 @@
 # Next Steps
 
-The Express server, authentication, service requests, staff dashboard, owner admin, reviews, contact, moderation, migrations 001 through 016, and `pnpm seed` are in the repo. CSRF is `csrf-sync`, wired in `src/app.js`. CI (`.github/workflows/ci.yml`) runs a `postgres:16` service. The items below are still open.
+The Express server, authentication, service requests, staff dashboard, owner admin, reviews, contact, moderation, migrations 001 through 017, and `pnpm seed` are in the repo. CSRF is `csrf-sync`, wired in `src/app.js`. CI (`.github/workflows/ci.yml`) runs a `postgres:16` service. The items below are still open.
 
 ## Required
 
 - The Render web service is deployed. Mason reported on 2026-11-02 that `/health` responds through the Supabase session pooler, and that `pnpm migrate` has been run. Resume the Supabase project before grading ([deployment runbook](../operations/deployment-runbook.md)). The Render build command is `corepack enable && pnpm install --frozen-lockfile`. `pnpm start` is `node src/server.js`, and there is no application build step.
-- The course ERD image is not in the repo. The schema is migrations 001 through 016 ([#29](https://github.com/masontuft/routemaster/issues/29)). Confirming the public contact email and the course README and commit-count requirements is [issue 30](https://github.com/masontuft/routemaster/issues/30).
+- The course ERD image is not in the repo. The schema is migrations 001 through 017 ([#29](https://github.com/masontuft/routemaster/issues/29)). Confirming the public contact email and the course README and commit-count requirements is [issue 30](https://github.com/masontuft/routemaster/issues/30).
 
 ## Recommended
 

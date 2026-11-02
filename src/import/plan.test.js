@@ -30,22 +30,48 @@ function plan(rows, options = OPTIONS) {
     return buildPlan(rows, options, CONTEXT);
 }
 
-test("blocked, flagged, and cityless new rows are skipped with a reason", () => {
+test("blocked and flagged rows are skipped with a reason", () => {
     const result = plan([
         row(2, {}, { kind: "blocked", customerId: null, propertyId: null }),
         row(3, {}, { kind: "flagged", customerId: 7, propertyId: 8 }),
-        row(4, { city: null }),
-        row(5, { city: null }, { kind: "new_property", customerId: 7, propertyId: null }),
     ]);
 
     assert.deepStrictEqual(result.skipped, [
         { rowNumber: 2, reason: "blocked" },
         { rowNumber: 3, reason: "flagged" },
-        { rowNumber: 4, reason: "missing_city" },
-        { rowNumber: 5, reason: "missing_city" },
     ]);
-    assert.strictEqual(result.summary.rowsSkipped, 4);
+    assert.strictEqual(result.summary.rowsSkipped, 2);
     assert.deepStrictEqual([result.customers, result.properties, result.jobs], [[], [], []]);
+});
+
+test("a row with no city anywhere is imported, its property has a null city, and it is counted", () => {
+    const result = plan([
+        row(2, { city: null }),
+        row(3, { name: "Bob New", phone: "801-555-0111", street: "2 Test St", city: null }, { kind: "new_property", customerId: 7, propertyId: null }),
+        row(4, { name: "Cy Sheet", phone: "801-555-0122", street: "3 Test St", city: "Sheetville" }),
+    ]);
+
+    assert.deepStrictEqual(result.skipped, []);
+    assert.deepStrictEqual(result.properties.map((property) => {
+        return property.city;
+    }), [null, null, "Sheetville"]);
+    assert.strictEqual(result.summary.propertiesWithoutCity, 2);
+    assert.strictEqual(result.jobs.length, 3);
+});
+
+test("a later row for the same property supplies the city an earlier row lacked", () => {
+    const result = plan([row(2, { city: null }), row(3, { city: "Sheetville", date: "2025-10-21" })]);
+
+    assert.strictEqual(result.properties.length, 1);
+    assert.strictEqual(result.properties[0].city, "Sheetville");
+    assert.strictEqual(result.summary.propertiesWithoutCity, 0);
+});
+
+test("the plan hash changes when a property gains or loses its city", () => {
+    const without = plan([row(2, { city: null })]);
+    const withCity = plan([row(2, { city: null })], { ...OPTIONS, defaultCity: "Defaultville" });
+
+    assert.notStrictEqual(without.hash, withCity.hash);
 });
 
 test("a row on a property already on file needs no city and creates nothing but the job", () => {

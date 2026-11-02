@@ -12,19 +12,14 @@ function refId(ref) {
     return ref.id === undefined ? `key:${ref.key}` : `id:${ref.id}`;
 }
 
-// Why a row is left out. A row that matched an existing property needs no city, because nothing new is made.
-function skipReason(row, options) {
+// Why a row is left out. A missing city is not a reason: the property is saved with the street and no city.
+function skipReason(row) {
     if (row.match.kind === "blocked") {
         return "blocked";
     }
 
     if (row.match.kind === "flagged") {
         return "flagged";
-    }
-
-    const makesProperty = row.match.kind === "new" || row.match.kind === "new_property";
-    if (makesProperty && (row.city ?? options.defaultCity) === "") {
-        return "missing_city";
     }
 
     return null;
@@ -104,7 +99,7 @@ export function buildPlan(rows, options, context) {
     const live = [];
 
     for (const row of rows) {
-        const reason = skipReason(row, options);
+        const reason = skipReason(row);
         if (reason === null) {
             live.push(row);
         } else {
@@ -198,6 +193,9 @@ export function buildPlan(rows, options, context) {
             propertiesToCreate: plan.properties.length,
             jobsToCreate: plan.jobs.length,
             rowsSkipped: skipped.length,
+            propertiesWithoutCity: plan.properties.filter((property) => {
+                return property.city === null;
+            }).length,
         },
         hash: hashPlan(plan, context, options),
     };

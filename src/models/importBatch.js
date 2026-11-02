@@ -23,7 +23,10 @@ export async function find(pool, id) {
         `SELECT import_batches.id, import_batches.sheet_name, import_batches.season_year,
                 import_batches.customers_created, import_batches.properties_created,
                 import_batches.jobs_created, import_batches.jobs_existing, import_batches.rows_skipped,
-                import_batches.created_at, users.email AS created_by_email
+                import_batches.created_at, users.email AS created_by_email,
+                (SELECT count(*)::int FROM properties
+                 WHERE properties.import_batch_id = import_batches.id AND properties.city IS NULL)
+                    AS properties_without_city
          FROM import_batches
          LEFT JOIN users ON users.id = import_batches.created_by
          WHERE import_batches.id = $1`,

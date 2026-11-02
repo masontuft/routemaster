@@ -133,6 +133,15 @@ test("an import writes customers, properties and dated jobs, all pointing at the
     assert.deepStrictEqual((await ImportBatch.findMapping(pool, "sheet-1", "Fall")).columns, { name: 0, street: 2 });
 });
 
+test("a property with no city is stored with a null city, and the batch counts it", async () => {
+    await runImport([candidate(2, { city: null }), candidate(3, { name: "Bob New", phone: "801-555-0111", street: "2 Test Street", city: null })]);
+
+    const { rows } = await pool.query("SELECT street, city FROM properties ORDER BY street");
+    assert.deepStrictEqual(rows, [{ street: "1 Test Street", city: null }, { street: "2 Test Street", city: null }]);
+    const batch = await ImportBatch.find(pool, (await pool.query("SELECT id FROM import_batches")).rows[0].id);
+    assert.strictEqual(batch.properties_without_city, 2);
+});
+
 test("running the same import again creates nothing new", async () => {
     await runImport(SEASON);
     const before = await totals();

@@ -2,6 +2,7 @@
 <h1>Map Columns</h1>
 <%- include("../partials/errors") %>
 <p>Sheet: <strong><%= sheetName %></strong>. Pick which column holds each field. Leave a field on "Not Used" to skip it.</p>
+<p>Map Street Address, City and ZIP each to their own column when the sheet has them. Only the name and street are required.</p>
 <form method="post" action="/admin/import/preview">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <input type="hidden" name="sheetId" value="<%= sheetId %>">
@@ -31,7 +32,7 @@
 
     <label for="defaultCity">Default City</label>
     <input id="defaultCity" name="defaultCity" type="text" maxlength="100" value="<%= optionValues.defaultCity %>">
-    <p>Used for a row with no city. A row that needs a new property and has no city at all is skipped.</p>
+    <p>Used for a row with no city. A property with no city at all is still saved with its street, and flagged on the preview.</p>
 
     <% fields.forEach((field) => { %>
         <label for="col_<%= field.key %>"><%= field.label %><%= field.required ? " (required)" : "" %></label>
