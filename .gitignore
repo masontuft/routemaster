@@ -151,3 +151,6 @@ vite.config.ts.timestamp-*
 # Customer spreadsheets and exports (real customer data)
 *.xlsx
 *.xls
+
+# Claude Code local config (preview launch settings)
+.claude/
