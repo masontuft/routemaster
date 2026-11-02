@@ -9,7 +9,7 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 
 ## Recommended
 
-- Finish the spreadsheet import on `src/import/`. The owner link page at `/admin/import` lists the tabs with counts. Next are the tab picker, column mapping, preview, and the confirmed write. ExcelJS 4.4.0 and the public export URL are recorded in [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md) ([#33](https://github.com/masontuft/routemaster/issues/33)).
+- Finish the spreadsheet import on `src/import/`. The owner link page at `/admin/import` lists the tabs with counts. The tab picker, column mapping and read-only preview are built. Next are the confirmed write (`import_batches`, `import_mappings`, a transaction, a plan hash so confirm refuses if the sheet changed), a picker that maps each distinct status value, and the `subdivisions` write for the Area column. ExcelJS 4.4.0 and the public export URL are recorded in [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md) ([#33](https://github.com/masontuft/routemaster/issues/33)).
 - `connect-pg-simple` imports under ESM and stores sessions in Postgres. CSRF is the `csrf-sync` synchronizer token in `src/middleware/csrf.js`. Both are covered by tests.
 - Add the boot smoke test from [ADR 0011](../adr/0011-testing-and-ci.md) (the health check returns 200). The Postgres 16 service container is already in the workflow.
 

@@ -32,3 +32,13 @@ export async function listForCustomers(pool, customerIds) {
     );
     return rows;
 }
+
+// Read-only lookup for the import preview: every property on any of these normalized streets, in one query.
+export async function listByNormalizedAddresses(pool, addresses) {
+    const { rows } = await pool.query(
+        `SELECT id, customer_id, address_normalized FROM properties
+         WHERE address_normalized = ANY($1::text[]) ORDER BY id`,
+        [addresses],
+    );
+    return rows;
+}

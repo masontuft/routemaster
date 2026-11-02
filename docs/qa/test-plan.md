@@ -6,5 +6,5 @@ Not covered yet:
 
 - Session cookie flags (`httpOnly`, `Secure`, `SameSite`) are set in `src/middleware/session.js` and have no assertion in the tests.
 - Daily routes: assigning and ordering stops. Those tables are not built.
-- Import screens: tab picker, mapping, preview, confirm. Not built ([#33](https://github.com/masontuft/routemaster/issues/33)). `src/import/` tests the download with a mocked network, and parses a fake `.xlsx` fixture, including the size and row limits.
+- Import screens: tab picker, mapping, and a read-only preview are tested in `src/import.test.js` (roles, CSRF, tampered fields, outcomes, nothing written, escaping, no-store) and in `src/import/*.test.js` (mapping, dates, amounts, matching). Confirm is not built ([#33](https://github.com/masontuft/routemaster/issues/33)). `src/import/` tests the download with a mocked network, and parses a fake `.xlsx` fixture, including the size and row limits.
 - Playwright journeys from [ADR 0011](../adr/0011-testing-and-ci.md).

@@ -66,6 +66,8 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 | GET | `/admin/service-types/new`, `/admin/service-types/:id/edit` | | Service form |
 | GET | `/admin/import` | | Form for a public Google Sheet link (owner only) |
 | POST | `/admin/import` | `link` | Download and parse the sheet, then list each tab with its row and column counts. Nothing is saved. Owner only, CSRF, shared per-IP limit. Bad input returns 400, a Google or network failure returns 502 |
+| POST | `/admin/import/mapping` | `sheetId`, `sheet`, `headerRow` (optional), plus `seasonYear` and `col_<field>` to keep earlier choices | Download the sheet again and show the column mapping form for one tab. Owner only, CSRF, shared per-IP limit |
+| POST | `/admin/import/preview` | `sheetId`, `sheet`, `headerRow`, `seasonYear`, `col_name`, `col_street` (required), `col_phone`, `col_city`, `col_zip`, `col_date`, `col_amount`, `col_area`, `col_notes` | Download the sheet again, apply the mapping, and show what an import would add or flag. Reads the database and writes nothing. Bad input returns 400 with a fixed message. Every `/admin/import` response is `Cache-Control: no-store` |
 | POST | `/admin/service-types`, `/admin/service-types/:id` | `name`, `price` (dollars), `active` | Add or update a service. Deactivate by unchecking active |
 
 `GET /staff` also shows requests received, completed this month, and the value of scheduled jobs when the viewer is an owner.

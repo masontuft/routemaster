@@ -42,7 +42,7 @@ The bullets below are the 2026-10-30 proposal. The update is the spike result, a
 - ExcelJS appeared as a candidate, but its ESM support and release status were not confirmed. No library is chosen.
 - Real customer data must never be committed. Test data is fake.
 - Multi-tenant import, expenses, mileage and compressor tabs are on the roadmap, not in scope.
-- Fetch and parse live in `src/import/` and are covered by tests. The owner-only `POST /admin/import` page lists a pasted sheet's tabs with counts. The mapping and preview screens, the upload route, and the database writes are not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
+- Fetch and parse live in `src/import/` and are covered by tests. The owner-only pages list a pasted sheet's tabs, map columns, and show a read-only preview. The upload route, the status mapping, and the database writes are not built. Each step re-downloads the sheet and carries only the sheet id; the confirm step must recompute the plan and refuse if it differs from the preview. Cell text can start with `=`, `+`, `-` or `@`: the export stage must neutralize those so a spreadsheet does not run them as formulas ([#33](https://github.com/masontuft/routemaster/issues/33)).
 
 ## Update 2026-11-02
 

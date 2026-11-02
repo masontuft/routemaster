@@ -8,8 +8,8 @@
 - Status changes have no undo: Completed and Cancelled are final.
 - Login, magic-link redemption, the generic `/schedule` posts, and the contact form are rate limited in memory, per instance. The counts reset on restart.
 - Single company only. Branded business workspaces are planned on the [roadmap](roadmap.md#branded-business-workspaces) and are not a commitment.
-- Spreadsheet import screens are not built ([#33](https://github.com/masontuft/routemaster/issues/33)). Fetch and `.xlsx` parsing exist in `src/import/`. The decided scope is jobs, customers and areas. Expenses, mileage and compressor tabs are outside that scope.
-- When import is built, address matching is fuzzy and the preview step is mandatory ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
+- Spreadsheet import has a tab list, column mapping, and a read-only preview, but no confirm step, so nothing is saved and there are no upload or status mapping yet ([#33](https://github.com/masontuft/routemaster/issues/33)). Fetch and `.xlsx` parsing exist in `src/import/`. The decided scope is jobs, customers and areas. Expenses, mileage and compressor tabs are outside that scope.
+- Import matching uses the normalized street only, not the city, so two towns with a street of the same name can collide. The preview is mandatory for that reason; a street that belongs to a different customer is flagged, never merged. See [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md).
 - No two-way spreadsheet sync.
 - Free Supabase projects may pause after inactivity. Resume the project before grading. See the [deployment runbook](../operations/deployment-runbook.md).
 - Technicians do not get logins for now. The dispatcher manages their routes. A technician role is planned on the [roadmap](roadmap.md#technician-logins) and is not a commitment.

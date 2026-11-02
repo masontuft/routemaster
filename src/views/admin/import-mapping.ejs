@@ -1,0 +1,31 @@
+<%- include("../partials/head") %>
+<h1>Map Columns</h1>
+<%- include("../partials/errors") %>
+<p>Sheet: <strong><%= sheetName %></strong>. Pick which column holds each field. Leave a field on "Not Used" to skip it.</p>
+<form method="post" action="/admin/import/preview">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="sheetId" value="<%= sheetId %>">
+    <input type="hidden" name="sheet" value="<%= sheetName %>">
+
+    <label for="headerRow">Header Row</label>
+    <input id="headerRow" name="headerRow" type="number" min="1" step="1" value="<%= headerRow %>" required>
+    <button type="submit" formaction="/admin/import/mapping">Update Columns</button>
+
+    <label for="seasonYear">Season Year</label>
+    <input id="seasonYear" name="seasonYear" type="text" inputmode="numeric" maxlength="4" value="<%= seasonYear %>" required>
+
+    <% fields.forEach((field) => { %>
+        <label for="col_<%= field.key %>"><%= field.label %><%= field.required ? " (required)" : "" %></label>
+        <select id="col_<%= field.key %>" name="col_<%= field.key %>">
+            <option value="">Not Used</option>
+            <% columns.forEach((column) => { %>
+                <option value="<%= column.index %>"<%= picked[field.key] === String(column.index) ? " selected" : "" %>>
+                    <%= column.label %>: <%= column.name %><%= column.samples.length ? " (" + column.samples.join(", ") + ")" : "" %>
+                </option>
+            <% }); %>
+        </select>
+    <% }); %>
+    <button type="submit">Preview Import</button>
+</form>
+<p><a href="/admin/import">Start Over</a></p>
+<%- include("../partials/foot") %>

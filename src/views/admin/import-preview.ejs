@@ -1,0 +1,66 @@
+<%- include("../partials/head") %>
+<h1>Import Preview</h1>
+<p><strong>Nothing has been saved.</strong> This shows what an import of <strong><%= sheetName %></strong> would do. Confirming an import comes in a later step.</p>
+
+<h2>Summary</h2>
+<ul>
+    <li><%= summary.total %> rows read, <%= skippedEmpty %> empty rows skipped</li>
+    <li><%= summary.blocked %> cannot be imported (no name or no street)</li>
+    <li><%= summary.flagged %> need a decision (the street belongs to a different customer)</li>
+    <li><%= summary.new_property %> are known customers at a new street</li>
+    <li><%= summary.new %> are new customers</li>
+    <li><%= summary.existing %> match a customer and street already on file</li>
+    <li><%= summary.properties %> distinct streets, <%= summary.warnings %> rows with warnings</li>
+</ul>
+
+<% const labels = {
+    blocked: "Cannot Import",
+    flagged: "Needs a Decision",
+    new_property: "Known Customer, New Street",
+    new: "New Customer",
+    existing: "Already on File",
+}; %>
+<% groups.forEach((group) => { %>
+    <% if (group.total > 0) { %>
+        <h2><%= labels[group.kind] %> (<%= group.total %>)</h2>
+        <% if (group.total > group.shown.length) { %>
+            <p>Showing the first <%= group.shown.length %> of <%= group.total %>.</p>
+        <% } %>
+        <div class="table-scroll" role="region" aria-label="<%= labels[group.kind] %>" tabindex="0">
+        <table>
+            <thead><tr>
+                <th>Row</th><th>Name</th><th>Phone</th><th>Street</th><th>City</th><th>Date</th><th>Amount</th><th>Area</th><th>Notes</th>
+            </tr></thead>
+            <tbody>
+                <% group.shown.forEach((row) => { %>
+                    <tr>
+                        <td><%= row.rowNumber %></td>
+                        <td><%= row.name %></td>
+                        <td><%= row.phone %></td>
+                        <td><%= row.street %></td>
+                        <td><%= row.city %></td>
+                        <td><%= row.date %></td>
+                        <td><%= row.amountCents === null ? "" : formatCents(row.amountCents) %></td>
+                        <td><%= row.area %></td>
+                        <td><%= row.issues.join(" ") %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+        </div>
+    <% } %>
+<% }); %>
+
+<form method="post" action="/admin/import/mapping">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="sheetId" value="<%= sheetId %>">
+    <input type="hidden" name="sheet" value="<%= sheetName %>">
+    <input type="hidden" name="headerRow" value="<%= headerRow %>">
+    <input type="hidden" name="seasonYear" value="<%= seasonYear %>">
+    <% fields.forEach((field) => { %>
+        <input type="hidden" name="col_<%= field.key %>" value="<%= picked[field.key] %>">
+    <% }); %>
+    <button type="submit">Change Mapping</button>
+</form>
+<p><a href="/admin/import">Start Over</a></p>
+<%- include("../partials/foot") %>
