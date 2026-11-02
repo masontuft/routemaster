@@ -11,7 +11,7 @@ Routemaster is a server-rendered web app for a service company. Customers submit
 | [qa/](qa/test-strategy.md) | Test strategy, test plan, accessibility, performance |
 | [security/](security/security-assessment.md) | Assessment, threat model, secrets, dependencies |
 | [operations/](operations/deployment-runbook.md) | Deploy, rollback, incident response |
-| [product/](product/known-limitations.md) | Known limitations, roadmap, backlog labels |
+| [product/](product/known-limitations.md) | Known limitations, [roadmap](product/roadmap.md), backlog labels |
 | [handoff/](handoff/project-summary.md) | Summary, reviewer guide, next steps |
 | [integrations/](integrations/sprinkler-messenger.md) | Specs for other apps (Sprinkler Messenger) |
 | [wireframes/](wireframes/README.md) | No wireframe files. Pages are EJS views in `src/views/` |
