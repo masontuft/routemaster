@@ -6,6 +6,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Added
 - Staff and owners can record who referred a job. `service_requests.referred_by` (migration 015) stores the name only. Referral payouts are handled outside the app.
+- Owners can paste a public Google Sheet link at `/admin/import` and see each tab with its row and column counts. Nothing is saved yet. A zip that declares more than 50 MiB uncompressed or 200 entries is refused before parsing.
 - Spreadsheet import spike: download a public Google Sheet from a fixed `docs.google.com` export URL, and parse `.xlsx` rows with ExcelJS 4.4.0, with size and row limits (`src/import/`). No import screen yet.
 - Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook.
 - Roadmap entry for branded business workspaces: a planned, uncommitted sign-up where each business gets a workspace and a branded mirror of the service sign-up, plus a customization layer. Open questions are marked `TODO (Mason)`.

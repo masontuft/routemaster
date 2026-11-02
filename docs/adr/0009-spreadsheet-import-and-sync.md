@@ -42,7 +42,7 @@ The bullets below are the 2026-10-30 proposal. The update is the spike result, a
 - ExcelJS appeared as a candidate, but its ESM support and release status were not confirmed. No library is chosen.
 - Real customer data must never be committed. Test data is fake.
 - Multi-tenant import, expenses, mileage and compressor tabs are on the roadmap, not in scope.
-- Fetch and parse live in `src/import/` and are covered by tests. The import screens, the upload route, and the database writes are not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
+- Fetch and parse live in `src/import/` and are covered by tests. The owner-only `POST /admin/import` page lists a pasted sheet's tabs with counts. The mapping and preview screens, the upload route, and the database writes are not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
 
 ## Update 2026-11-02
 
@@ -65,7 +65,7 @@ Parse, in `src/import/xlsxRows.js`:
 - The package is CommonJS (`main` is `excel.js`, and that file sets `module.exports`). The README Importing section shows `require("exceljs")` only. There is no `exports` map. `import ExcelJS from "exceljs"` works on Node 24.22.2 because Node uses `module.exports` as the default export. The parser tests load the package that way.
 - `workbook.xlsx.load` reads the buffer. Values that leave the module are strings, finite numbers, booleans, ISO date strings, or null. Formula, rich-text, and hyperlink objects are reduced to those.
 - The same caps as the fetch: 5 MiB, 40 sheets, 20,000 rows, and 64 columns. A 17-tab job sheet fits under the sheet cap. The checked-in fixture is `src/import/fixtures/tiny.xlsx` (fake rows only). `.gitignore` still ignores `*.xlsx` except that file.
-- ExcelJS expands the zip in memory before the row cap runs. A small compressed file can still expand. The byte cap is the control this spike has. A streaming read, or a cap on the uncompressed size, should land before an owner route is exposed.
+- ExcelJS expands the zip in memory before the row cap runs. A small compressed file can still expand. `src/import/zipLimits.js` reads the zip's central directory first and refuses more than 200 entries or 50 MiB declared uncompressed. Those sizes are the archive's own claim and a hostile file can lie, so a streaming read or a worker with a memory cap should land with the upload route.
 
 `pnpm audit` reports two moderate advisories. No new override was added. Mason approves dependency changes.
 

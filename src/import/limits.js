@@ -7,4 +7,6 @@ export const SPREADSHEET_LIMITS = {
     maxSheets: 40,
     maxRows: 20000,
     maxColumns: 64,
+    maxZipEntries: 200,
+    maxUncompressedBytes: 50 * 1024 * 1024,
 };
