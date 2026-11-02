@@ -6,6 +6,8 @@ Manual checklist: keyboard-only use, visible focus, form labels, contrast, headi
 
 ## Contrast of the enterprise palette
 
+The Enterprise palette is settled for Routemaster: deep blue, white, and bubblegum pink ([ADR 0006](../adr/0006-ui-style-and-palette.md)).
+
 Computed with the WCAG relative-luminance formula after converting each OKLCH token to sRGB (script in the segment 8a pull request description, not committed). Body text needs 4.5:1 and non-text 3:1.
 
 | Pair | Light | Dark |

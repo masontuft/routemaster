@@ -5,8 +5,9 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Staff and owners can record who referred a job. `service_requests.referred_by` (migration 015) stores the name only. Referral payouts are handled outside the app.
 - Spreadsheet import spike: download a public Google Sheet from a fixed `docs.google.com` export URL, and parse `.xlsx` rows with ExcelJS 4.4.0, with size and row limits (`src/import/`). No import screen yet.
-- Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook. Nothing is deployed.
+- Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook.
 - Roadmap entry for branded business workspaces: a planned, uncommitted sign-up where each business gets a workspace and a branded mirror of the service sign-up, plus a customization layer. Open questions are marked `TODO (Mason)`.
 - Futuristic marketing pages: home ("Schedule Your Service" hero and tiles), a public services and pricing page, and the contact page in the same layout; over-the-top 404 and error pages; Services nav link (the owner link is now "Manage Services").
 - Styling foundation: enterprise palette tokens with light and dark, a conservative base for every app page, cascade-layered CSS, a skip link, safe-area padding, scrolling table regions, and a test that checks view headings against modified Chicago case.
@@ -24,6 +25,13 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
 
 ### Changed
+- ADR 0007 is Accepted. The instructor confirmed on 2026-11-02 that an external Supabase Postgres satisfies the course's Render database requirement.
+- Mason reported on 2026-11-02 that Supabase is set up, `pnpm migrate` has been run, and the Render web service is deployed. `/health` responds through the session pooler. Resume the Supabase project before grading.
+- The Enterprise palette (deep blue, white, and bubblegum pink) is confirmed as Routemaster's palette.
+- The Render build command is `corepack enable && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.
+- The Sprinkler Messenger bulk send is parked. The seven open questions in the integration spec stay unanswered.
+- Spam control is not built now. A honeypot, per-IP rate limiting, and Cloudflare Turnstile on reviews, contact, and the generic sign-up are a planned roadmap item, not a commitment.
+- Technicians do not get logins for now. The dispatcher manages their routes. A technician role that can see their own route and mark jobs done is a planned roadmap item, not a commitment.
 - Docs that still described the server, CSRF, role-protected pages, installed dependencies, CI's Postgres 16 service, or the branch and commit rules as unbuilt or undecided now match the code. Open decisions stay open and link their issues. Branch names and commit messages are recorded as decided in `CONTRIBUTING.md`.
 - Testing rule changed from Jest to `node:test`.
 
@@ -37,5 +45,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Security
 
+- `minimatch` is overridden to `^11.0.1` so the ESLint 10 tree is not on the release named by GHSA-g3hv-75wg-m249. Remove the override once ESLint depends on a patched `minimatch`.
+- The test-database guard treats `localhost`, `127.0.0.1`, and `::1` (including bracketed `[::1]`) as the same server.
 - A pasted Google Sheet link cannot choose the download host. Redirects stay on Google's export path, cookies are not forwarded, and a body over 5 MiB is refused.
 - A cosmetic difference in `TEST_DATABASE_URL` (scheme, default port, credentials, trailing slash, or an ignored query parameter) can no longer point tests at the real database.

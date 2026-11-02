@@ -1,5 +1,7 @@
 # Render Blueprint. Names only; secret values are set in the Render dashboard. Not yet used or verified.
+# Build command (decided): corepack enable && pnpm install --frozen-lockfile.
 # Migrations run at the start of the start command because Render's pre-deploy command is paid-only.
+# The process start stays `pnpm start` (`node src/server.js`). There is no application build step.
 services:
   - type: web
     name: routemaster

@@ -67,10 +67,10 @@ Parse, in `src/import/xlsxRows.js`:
 - The same caps as the fetch: 5 MiB, 40 sheets, 20,000 rows, and 64 columns. A 17-tab job sheet fits under the sheet cap. The checked-in fixture is `src/import/fixtures/tiny.xlsx` (fake rows only). `.gitignore` still ignores `*.xlsx` except that file.
 - ExcelJS expands the zip in memory before the row cap runs. A small compressed file can still expand. The byte cap is the control this spike has. A streaming read, or a cap on the uncompressed size, should land before an owner route is exposed.
 
-`pnpm audit` reports two moderate advisories. No override was added. Mason approves dependency changes.
+`pnpm audit` reports two moderate advisories. No new override was added. Mason approves dependency changes.
 
 - [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq) (`uuid` before 11.1.1). It comes through `exceljs@4.4.0`. The advisory title is a missing buffer bounds check in v3, v5, and v6 when `buf` is provided. ExcelJS calls `uuidv4()` with no buffer, in `lib/xlsx/xform/sheet/cf-ext/cf-rule-ext-xform.js`, so this parse path does not pass that argument.
-- [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1). The ESLint path was already recorded ([#32](https://github.com/masontuft/routemaster/issues/32)). ExcelJS adds a production path through `archiver` and `unzipper`.
+- [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1). The ESLint path is covered by the `^11.0.1` override from [#32](https://github.com/masontuft/routemaster/issues/32). ExcelJS adds a production path that the override does not reach in the lockfile (`minimatch` 3.1.5 and 5.1.9) through `archiver` and `unzipper`.
 
 ## References
 

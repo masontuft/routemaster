@@ -28,7 +28,7 @@ Use pnpm for all installs and scripts.
 ## Consequences
 
 - Mason confirmed that pnpm has deployed successfully on Render in earlier projects. That is his experience, not a statement in Render's documentation: Render's Node version page does not mention pnpm.
-- A Render article suggests setting the `packageManager` field and enabling Corepack. pnpm's own CI guide says not to use Corepack. This conflict was seen in search results only. The Render build command is still open ([#38](https://github.com/masontuft/routemaster/issues/38)). `package.json` sets `packageManager` to pnpm 11.24.0. `pnpm start` is `node src/server.js`.
+- The Render build command is `corepack enable && pnpm install --frozen-lockfile` (Mason, 2026-11-02). The start command stays `pnpm start`, which runs `node src/server.js`. There is no application build step. `render.yaml` runs `pnpm migrate` and then `pnpm start`, because Render's pre-deploy command is paid-only. `package.json` already sets `packageManager` to `pnpm@11.24.0`, the version CI installs and the lockfile was written with. A Render article suggests `packageManager` plus Corepack. pnpm's own CI guide says not to use Corepack. That conflict was seen in search results only. Mason chose the Corepack build command. A Render deploy exists and `/health` responds (Mason, 2026-11-02). The dashboard's exact command string was not copied back.
 - Verify the first Render build before relying on it.
 - Installed dependencies: `express`, `ejs`, `pg`, `express-session`, `connect-pg-simple`, `bcrypt`, `csrf-sync`, and `express-rate-limit`. Installed devDependencies: `eslint`, `@eslint/js`, `@stylistic/eslint-plugin`, and `supertest`.
 

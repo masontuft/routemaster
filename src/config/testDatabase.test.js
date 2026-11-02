@@ -206,6 +206,140 @@ test("refuses matching IPv6 hosts written with and without a port", () => {
     }, /equals DATABASE_URL/);
 });
 
+test("refuses when localhost and 127.0.0.1 name the same database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://localhost:5432/routemaster",
+        DATABASE_URL: "postgres://127.0.0.1:5432/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, (error) => {
+        assert.strictEqual(error.message.includes("postgres://"), false);
+        assert.strictEqual(error.message.includes("127.0.0.1"), false);
+        assert.strictEqual(error.message.includes("localhost"), false);
+        assert.match(error.message, /equals DATABASE_URL/);
+        return true;
+    });
+});
+
+test("refuses when 127.0.0.1 and localhost name the same database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://127.0.0.1/routemaster",
+        DATABASE_URL: "postgresql://localhost/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("refuses when localhost and a bracketed ::1 name the same database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://localhost/routemaster",
+        DATABASE_URL: "postgres://[::1]/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("refuses when a bracketed ::1 and localhost name the same database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://[::1]:5432/routemaster",
+        DATABASE_URL: "postgres://localhost/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("refuses when 127.0.0.1 and a bracketed ::1 name the same database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://127.0.0.1:5432/routemaster",
+        DATABASE_URL: "postgres://[::1]/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("refuses when a bracketed ::1 and 127.0.0.1 name the same database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://[::1]/routemaster",
+        DATABASE_URL: "postgres://127.0.0.1/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("refuses when a bracketed host query parameter is the IPv6 loopback alias", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://db.example/routemaster?host=[::1]",
+        DATABASE_URL: "postgres://127.0.0.1/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("allows localhost and 127.0.0.1 when the database names differ", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://127.0.0.1:5432/routemaster_test",
+        DATABASE_URL: "postgres://localhost:5432/routemaster",
+    };
+    assert.strictEqual(getTestDatabaseUrl(env), "postgres://127.0.0.1:5432/routemaster_test");
+});
+
+test("allows localhost and ::1 when the ports differ", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://[::1]:5433/routemaster",
+        DATABASE_URL: "postgres://localhost:5432/routemaster",
+    };
+    assert.strictEqual(getTestDatabaseUrl(env), "postgres://[::1]:5433/routemaster");
+});
+
+test("allows the same database name on two different non-loopback hosts", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://db.example:5432/routemaster",
+        DATABASE_URL: "postgres://other.example:5432/routemaster",
+    };
+    assert.strictEqual(getTestDatabaseUrl(env), "postgres://db.example:5432/routemaster");
+});
+
+test("refuses when two non-loopback URLs name the same host, port, and database", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://db.example:5432/routemaster",
+        DATABASE_URL: "postgresql://db.example/routemaster",
+    };
+    assert.throws(() => {
+        return getTestDatabaseUrl(env);
+    }, /equals DATABASE_URL/);
+});
+
+test("does not treat a lookalike host as a loopback alias", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://localhost.example/routemaster",
+        DATABASE_URL: "postgres://127.0.0.1/routemaster",
+    };
+    assert.strictEqual(getTestDatabaseUrl(env), "postgres://localhost.example/routemaster");
+});
+
+test("does not treat another address in 127.0.0.0/8 as the 127.0.0.1 alias", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://127.0.0.2/routemaster",
+        DATABASE_URL: "postgres://localhost/routemaster",
+    };
+    assert.strictEqual(getTestDatabaseUrl(env), "postgres://127.0.0.2/routemaster");
+});
+
+test("does not treat a different IPv6 address as the ::1 alias", () => {
+    const env = {
+        TEST_DATABASE_URL: "postgres://[::2]/routemaster",
+        DATABASE_URL: "postgres://[::1]/routemaster",
+    };
+    assert.strictEqual(getTestDatabaseUrl(env), "postgres://[::2]/routemaster");
+});
+
 test("refuses a non-Postgres URL", () => {
     assert.throws(() => {
         return getTestDatabaseUrl({ TEST_DATABASE_URL: "mysql://localhost/routemaster_test" });

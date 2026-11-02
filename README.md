@@ -6,7 +6,7 @@ Web app for service companies that builds daily routes and pairs well with Sprin
 
 ## Stack
 
-Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL through `pg` and `DATABASE_URL`, native CSS, pnpm, and `node:test`. Supabase and Render are the planned production host and are not deployed ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) stays Proposed). Decisions are in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/adr/](docs/adr/README.md).
+Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL through `pg` and `DATABASE_URL`, native CSS, pnpm, and `node:test`. Supabase and Render are the production host. Mason reported on 2026-11-02 that Supabase is set up, `pnpm migrate` has been run, and the Render service is deployed with `/health` responding through the session pooler ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md), [ADR 0010](docs/adr/0010-deployment-and-trust-boundary.md)). Decisions are in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/adr/](docs/adr/README.md).
 
 ## Architecture summary
 
@@ -39,11 +39,11 @@ Names are in [.env.example](.env.example) and [docs/setup/environment-variables.
 
 ## Database diagram
 
-ERD image: not exported yet. The schema is migrations `001` through `014` ([#29](https://github.com/masontuft/routemaster/issues/29)).
+ERD image: not exported yet. The schema is migrations `001` through `015` ([#29](https://github.com/masontuft/routemaster/issues/29)).
 
 ## Deployment
 
-Planned: one Render web service with a Supabase database. Unverified ([#21](https://github.com/masontuft/routemaster/issues/21)). See [docs/architecture/deployment.md](docs/architecture/deployment.md).
+One Render web service with a Supabase database. Mason reported on 2026-11-02 that it is deployed and `/health` responds through the session pooler. See [docs/architecture/deployment.md](docs/architecture/deployment.md).
 
 ## Known limitations
 

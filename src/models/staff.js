@@ -42,6 +42,7 @@ export async function findRequest(pool, id) {
     const { rows } = await pool.query(
         `SELECT service_requests.id, service_requests.customer_id, service_requests.notes,
                 service_requests.contact_name, service_requests.contact_phone, service_requests.contact_address,
+                service_requests.referred_by,
                 request_statuses.name AS status, service_types.name AS service_type,
                 to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS preferred_date,
                 to_char(service_requests.scheduled_date, 'YYYY-MM-DD') AS scheduled_date,
@@ -56,6 +57,15 @@ export async function findRequest(pool, id) {
         [id],
     );
     return rows[0] ?? null;
+}
+
+// referredBy is already trimmed. Null clears the name. Payout amounts are not stored.
+export async function setReferrer(pool, id, referredBy) {
+    const { rowCount } = await pool.query(
+        `UPDATE service_requests SET referred_by = $2, updated_at = now() WHERE id = $1`,
+        [id, referredBy],
+    );
+    return rowCount === 1;
 }
 
 export async function historyFor(pool, id) {
