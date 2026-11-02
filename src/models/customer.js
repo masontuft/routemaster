@@ -87,3 +87,29 @@ export async function search(pool, term) {
     );
     return rows;
 }
+
+// Read-only lookups for the import preview. Each is one query for the whole list.
+export async function listNormalizedByIds(pool, ids) {
+    const { rows } = await pool.query(
+        "SELECT id, name_normalized, phone_normalized FROM customers WHERE id = ANY($1::int[])",
+        [ids],
+    );
+    return rows;
+}
+
+// pairs: [{ name, phone }] already normalized. Returns customers whose name and phone both match one pair.
+export async function listByNamePhonePairs(pool, pairs) {
+    const { rows } = await pool.query(
+        `SELECT customers.id, customers.name_normalized, customers.phone_normalized
+         FROM customers
+         JOIN unnest($1::text[], $2::text[]) AS wanted(name, phone)
+           ON customers.name_normalized = wanted.name AND customers.phone_normalized = wanted.phone
+         ORDER BY customers.id`,
+        [pairs.map((pair) => {
+            return pair.name;
+        }), pairs.map((pair) => {
+            return pair.phone;
+        })],
+    );
+    return rows;
+}
