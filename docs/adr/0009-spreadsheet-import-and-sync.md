@@ -40,7 +40,7 @@ Security rules: link imports accept only Google Sheets URLs, extract the sheet I
 - ExcelJS appeared as a candidate, but its ESM support and release status were not confirmed. No library is chosen.
 - Real customer data must never be committed. Test data is fake.
 - Multi-tenant import, expenses, mileage and compressor tabs are on the roadmap, not in scope.
-- Nothing is built yet: Not currently implemented.
+- Nothing is built yet: Not currently implemented ([#33](https://github.com/masontuft/routemaster/issues/33)).
 
 ## References
 

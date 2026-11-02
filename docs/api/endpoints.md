@@ -1,6 +1,37 @@
 # Endpoints
 
-No JSON API exists. Page routes are not designed yet, so none are listed. When routes are built, list each with method, path, required role, and the form fields it accepts. Not currently implemented.
+No JSON API exists. The tables are the HTML routes that exist. Every POST needs the `_csrf` field. Routes that are not in a later table are in the two sections below.
+
+## Public and account pages
+
+| Method | Path | Role | Fields | What it does |
+| --- | --- | --- | --- | --- |
+| GET | `/` | public | | Home |
+| GET | `/health` | public | | Body `ok` |
+| GET | `/__dev/boot` | dev reload only | | Boot id as text. 404 when dev reload is off |
+| GET, POST | `/register` | public | `email`, `password`, `confirm` | Creates a customer and starts a session |
+| GET, POST | `/login` | public | `email`, `password` | POST is rate limited |
+| POST | `/logout` | any visitor | | Ends the session and redirects home |
+| GET | `/l/:token` | public | | Continue button. GET does not log anyone in |
+| POST | `/l/:token` | public, rate limited | | Redeems the magic link |
+| GET, POST | `/schedule` | public | `name`, `phone`, `address` | Identify. POST is rate limited |
+| GET, POST | `/schedule/date` | public | `serviceTypeId`, `preferredDate` | Pick a service and date. POST is rate limited |
+| GET | `/schedule/thanks` | public | | Confirmation |
+
+## Customer pages
+
+A visitor is redirected to `/login`. Another role gets a 403. `requireRole("customer")` and `ensureCustomer` cover `/requests` and `/properties`.
+
+| Method | Path | Fields | What it does |
+| --- | --- | --- | --- |
+| GET | `/requests` | | The customer's requests |
+| GET | `/requests/new` | | New-request form |
+| POST | `/requests` | `serviceTypeId`, `propertyId`, `preferredDate`, `notes` | Create a request |
+| GET | `/requests/:id` | | One request, including its review |
+| GET, POST | `/requests/:id/edit` | `preferredDate`, `notes` | Edit while the request is still Requested |
+| POST | `/requests/:id/cancel` | | Cancel while the request is still Requested |
+| GET | `/properties/new` | | New-property form |
+| POST | `/properties` | `street`, `city`, `zip`, `notes` | Add a property |
 
 ## Staff pages (owner and dispatcher)
 

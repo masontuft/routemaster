@@ -40,5 +40,5 @@ The company has thousands of customers and will message each one a link to sched
 - A generic link can be used to submit spam requests. The limiter and Needs Review status contain it; there is no CAPTCHA.
 - The limiter's counts live in memory (the package's default store), so they reset on restart and are per instance. A shared store would be needed for several instances.
 - Matching is exact after normalization (case, punctuation, common street words, phone digits). Typos and nicknames will not match and will go to Needs Review.
-- No screen creates or sends links yet. `pnpm link:create` prints one for testing. A dispatcher screen for generating, revoking and sending links is Not currently implemented.
+- Staff create and revoke links on `/staff/customers/:id`. The new link is shown once in that response. Nothing sends a link by email or text. `pnpm link:create` prints one for local testing.
 - Verified locally only.
