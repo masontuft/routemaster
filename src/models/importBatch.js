@@ -50,3 +50,16 @@ export async function findMapping(pool, sheetId, sheetName) {
     );
     return rows[0] ?? null;
 }
+
+// The batch row is created first, so the rows it creates can point at it, and its counts are set at the end.
+export async function setCounts(client, id, counts) {
+    await client.query(
+        `UPDATE import_batches
+         SET customers_created = $2, properties_created = $3, jobs_created = $4, jobs_existing = $5, rows_skipped = $6
+         WHERE id = $1`,
+        [
+            id, counts.customersCreated, counts.propertiesCreated,
+            counts.jobsCreated, counts.jobsExisting, counts.rowsSkipped,
+        ],
+    );
+}
