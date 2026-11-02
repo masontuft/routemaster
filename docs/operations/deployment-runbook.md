@@ -4,7 +4,7 @@ Nothing is deployed. The repo is prepared: `render.yaml`, a database-aware healt
 
 ## Before the first deploy (Mason)
 
-1. Confirm with the instructor that an external Supabase database satisfies the Render database requirement.
+1. The instructor confirmed on 2026-11-02 that an external Supabase database satisfies the Render database requirement ([ADR 0007](../adr/0007-persistence-postgres-on-supabase.md)).
 2. In Supabase, copy the **session pooler** connection string (the direct connection can be IPv6-only).
 3. Decide how the connection string handles TLS. `pg` 8 reads `sslmode` from the URL. `sslmode=require` is treated as `verify-full` and prints a warning, so the Supabase certificate chain may be rejected. If it is, try `sslmode=no-verify` in `DATABASE_URL` and record the result in the ledger. No code change is needed either way.
 

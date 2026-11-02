@@ -1,6 +1,6 @@
 # System Overview
 
-Status: the Express app in this diagram is built and runs locally. The Render web service, the Supabase database, and the Google Sheet import path are the planned deploy and are not built ([#21](https://github.com/masontuft/routemaster/issues/21), [#33](https://github.com/masontuft/routemaster/issues/33)). ADR 0007 stays Proposed.
+Status: the Express app in this diagram is built and runs locally. The Render web service, the Supabase database, and the Google Sheet import path are the planned deploy and are not built ([#21](https://github.com/masontuft/routemaster/issues/21), [#33](https://github.com/masontuft/routemaster/issues/33)). ADR 0007 is Accepted. Supabase is not deployed.
 
 ## System context
 

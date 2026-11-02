@@ -12,4 +12,4 @@ Planned per [ADR 0010](../adr/0010-deployment-and-trust-boundary.md). The server
 | Health check | `GET /health` returns 200, or 503 when `SELECT 1` fails | Tested locally; not set on Render |
 | Variables | See [environment variables](../setup/environment-variables.md) | No |
 
-Open: the instructor must confirm an external Supabase database satisfies "Render with connected PostgreSQL" ([#19](https://github.com/masontuft/routemaster/issues/19)). ADR 0007 stays Proposed.
+The instructor confirmed on 2026-11-02 that an external Supabase database satisfies "Render with connected PostgreSQL" ([ADR 0007](../adr/0007-persistence-postgres-on-supabase.md)). Supabase is not deployed ([#21](https://github.com/masontuft/routemaster/issues/21)).

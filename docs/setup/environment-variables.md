@@ -1,6 +1,6 @@
 # Environment Variables
 
-Names only. Never commit values. Proposed production hosting is in [ADR 0010](../adr/0010-deployment-and-trust-boundary.md) and is not deployed ([#21](https://github.com/masontuft/routemaster/issues/21)). Supabase as the production database stays Proposed until the instructor confirms it ([#19](https://github.com/masontuft/routemaster/issues/19)). In production the server refuses to start if `SESSION_SECRET` is shorter than 32 characters or is a placeholder.
+Names only. Never commit values. Proposed production hosting is in [ADR 0010](../adr/0010-deployment-and-trust-boundary.md) and is not deployed ([#21](https://github.com/masontuft/routemaster/issues/21)). Supabase is the accepted production database ([ADR 0007](../adr/0007-persistence-postgres-on-supabase.md)). The instructor confirmed that on 2026-11-02. It is not deployed. In production the server refuses to start if `SESSION_SECRET` is shorter than 32 characters or is a placeholder.
 
 | Name | Purpose | Read by |
 | --- | --- | --- |

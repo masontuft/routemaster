@@ -24,6 +24,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
 
 ### Changed
+- ADR 0007 is Accepted. The instructor confirmed on 2026-11-02 that an external Supabase Postgres satisfies the course's Render database requirement. Supabase is not deployed.
 - The Enterprise palette (deep blue, white, and bubblegum pink) is confirmed as Routemaster's palette.
 - The Render build command is `corepack enable && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.
 - The Sprinkler Messenger bulk send is parked. The seven open questions in the integration spec stay unanswered.

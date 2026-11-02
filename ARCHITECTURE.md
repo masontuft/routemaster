@@ -2,7 +2,7 @@
 
 Routemaster is a web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. This file states the answered architecture decisions. Each links to its ADR.
 
-Built in this repo: the Express server, authentication and sessions (including `csrf-sync`), service requests, the staff dashboard, owner admin, reviews, contact and moderation, migrations 001 through 015, `pnpm seed`, the styling in `public/css/`, and CI with a Postgres 16 service. Not built: spreadsheet import, daily routes and route stops, payments, and the About page. Render and Supabase are not deployed. [ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) and [ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md) stay Proposed.
+Built in this repo: the Express server, authentication and sessions (including `csrf-sync`), service requests, the staff dashboard, owner admin, reviews, contact and moderation, migrations 001 through 015, `pnpm seed`, the styling in `public/css/`, and CI with a Postgres 16 service. Not built: spreadsheet import, daily routes and route stops, payments, and the About page. Render and Supabase are not deployed. [ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) is Accepted. [ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md) stays Proposed.
 
 ## Decisions
 
@@ -14,7 +14,7 @@ Built in this repo: the Express server, authentication and sessions (including `
 | App pattern | Strict MVC: `models/`, `controllers/`, `views/`, with thin `routes/` and `middleware/` | [0004](docs/adr/0004-mvc-app-pattern.md) |
 | CSS approach | Native CSS with nesting, cascade layers and `@import`, no build step | [0005](docs/adr/0005-native-css-with-cascade-layers.md) |
 | UI style | Base `ui-style-conservative`; marketing pages `ui-style-futuristic`; 404 and error pages `ui-style-over-the-top`; palette `enterprise` (settled: deep blue, white, bubblegum pink); `ui-design-mobile` applies as phone-browser responsiveness only | [0006](docs/adr/0006-ui-style-and-palette.md) |
-| Data and persistence | PostgreSQL via `pg`, plain SQL, and `DATABASE_URL`. Supabase is the proposed production host and is not deployed | [0007](docs/adr/0007-persistence-postgres-on-supabase.md) |
+| Data and persistence | PostgreSQL via `pg`, plain SQL, and `DATABASE_URL`. Supabase is the production host and is not deployed. The instructor confirmed on 2026-11-02 that this satisfies the course | [0007](docs/adr/0007-persistence-postgres-on-supabase.md) |
 | Schema definition | Numbered plain SQL migration files applied by a small runner | [0008](docs/adr/0008-schema-as-numbered-sql-migrations.md) |
 | Spreadsheet import | Staged: link or `.xlsx` import with tab picker, column mapping and preview; then export; two-way sync is a stretch goal. Not built | [0009](docs/adr/0009-spreadsheet-import-and-sync.md) |
 | Deployment and trust boundary | One Render web service, same origin, Postgres-backed `express-session` cookies, no CORS. Sessions are built; Render is not deployed | [0010](docs/adr/0010-deployment-and-trust-boundary.md) |
@@ -35,7 +35,6 @@ Still a draft, with no migration: `subdivisions`, `routes`, `route_stops`, `paym
 
 ## Open items
 
-- Instructor confirmation that an external Postgres on Supabase satisfies the Render requirement ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md), [#19](https://github.com/masontuft/routemaster/issues/19)). This ADR stays Proposed.
 - A spike proving how a public Google Sheet is fetched, and the Excel parsing library ([ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md), [#33](https://github.com/masontuft/routemaster/issues/33)).
 - Render's IPv6 reachability for the Supabase connection ([ADR 0010](docs/adr/0010-deployment-and-trust-boundary.md), [#21](https://github.com/masontuft/routemaster/issues/21)). `connect-pg-simple` under ESM and CSRF (`csrf-sync` in `src/middleware/csrf.js`, wired in `src/app.js`) are in the code.
 - The schema snapshot folder and script. `AGENTS.md` still names the placeholders `docs/schemas` and `generate schema` ([#39](https://github.com/masontuft/routemaster/issues/39)).

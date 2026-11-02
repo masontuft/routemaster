@@ -6,7 +6,7 @@ Web app for service companies that builds daily routes and pairs well with Sprin
 
 ## Stack
 
-Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL through `pg` and `DATABASE_URL`, native CSS, pnpm, and `node:test`. Supabase and Render are the planned production host and are not deployed ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) stays Proposed). Decisions are in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/adr/](docs/adr/README.md).
+Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL through `pg` and `DATABASE_URL`, native CSS, pnpm, and `node:test`. Supabase and Render are the planned production host and are not deployed ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) is Accepted; the instructor confirmed Supabase on 2026-11-02). Decisions are in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/adr/](docs/adr/README.md).
 
 ## Architecture summary
 
