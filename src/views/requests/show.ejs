@@ -2,7 +2,7 @@
 <h1>Request <%= request.id %></h1>
 <dl>
     <dt>Service</dt><dd><%= request.service_type %></dd>
-    <dt>Property</dt><dd><%= request.street %>, <%= request.city %></dd>
+    <dt>Property</dt><dd><%= formatAddress(request.street, request.city) %></dd>
     <dt>Preferred Date</dt><dd><%= request.preferred_date.toISOString().slice(0, 10) %></dd>
     <dt>Status</dt><dd><%= request.status %></dd>
     <% if (request.notes) { %><dt>Notes</dt><dd><%= request.notes %></dd><% } %>

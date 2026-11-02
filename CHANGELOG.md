@@ -5,8 +5,10 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- A spreadsheet import no longer skips a row for lacking a city. The street is saved, the property's city is left empty (migration 017 drops `NOT NULL` on `properties.city`), and the preview and result page say how many properties have no city. Lists show just the street for those. Properties made by hand still require a city. The import page now asks for a name, street, city and ZIP on every row.
 - Staff and owners can record who referred a job. `service_requests.referred_by` (migration 015) stores the name only. Referral payouts are handled outside the app.
 - Owners can paste a public Google Sheet link at `/admin/import` and see each tab with its row and column counts. Nothing is saved yet. A zip that declares more than 50 MiB uncompressed or 200 entries is refused before parsing.
+- Owners can confirm a spreadsheet import. The preview now takes a service type, a status and a default city, and a Confirm Import button writes the new customers, properties and past jobs in one transaction. A changed sheet or database refuses and writes nothing; confirming the same sheet twice changes nothing; imported jobs are dated by their own day. Migration 016 adds `import_batches`, `import_mappings`, `subdivisions`, `service_requests.amount_cents`, and an `import_batch_id` on customers, properties and service requests.
 - Owners can pick a tab at `/admin/import`, map its columns (with a header row and a season year), and see a read-only preview: rows that are new, already on file, at a new street for a known customer, flagged because the street belongs to someone else, or cannot be imported. Nothing is saved. The import pages are never cached.
 - Spreadsheet import spike: download a public Google Sheet from a fixed `docs.google.com` export URL, and parse `.xlsx` rows with ExcelJS 4.4.0, with size and row limits (`src/import/`). No import screen yet.
 - Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Mason approved the fetch spike and chose ExcelJS on 2026-11-02. The findings are in the update below. The import screens, the upload route, and the database writes are not built.
+Accepted. Mason approved the fetch spike and chose ExcelJS on 2026-11-02. The findings are in the update below. Link import is built end to end (migration 016). The upload route and the per-value status picker are not.
 
 ## Date
 
@@ -42,7 +42,7 @@ The bullets below are the 2026-10-30 proposal. The update is the spike result, a
 - ExcelJS appeared as a candidate, but its ESM support and release status were not confirmed. No library is chosen.
 - Real customer data must never be committed. Test data is fake.
 - Multi-tenant import, expenses, mileage and compressor tabs are on the roadmap, not in scope.
-- Fetch and parse live in `src/import/` and are covered by tests. The owner-only pages list a pasted sheet's tabs, map columns, and show a read-only preview. The upload route, the status mapping, and the database writes are not built. Each step re-downloads the sheet and carries only the sheet id; the confirm step must recompute the plan and refuse if it differs from the preview. Cell text can start with `=`, `+`, `-` or `@`: the export stage must neutralize those so a spreadsheet does not run them as formulas ([#33](https://github.com/masontuft/routemaster/issues/33)).
+- Link import is built: fetch and parse in `src/import/`, owner-only pages for the tab list, column mapping, preview and a confirmed write. Each step re-downloads the sheet and carries only the sheet id. Confirm recomputes the plan inside one transaction under a Postgres advisory lock and writes only if its SHA-256 equals the preview's, so a changed sheet or a changed match refuses and writes nothing. The write is set-based (a few statements per thousand rows) and skips a job already on file for the same property, service type and day. Imported jobs are dated by their own day. Migration 016 added `import_batches`, `import_mappings`, `subdivisions`, `service_requests.amount_cents`, and an `import_batch_id` on customers, properties and service requests. A row with no city is imported with a null `properties.city` (migration 017) and counted on the preview and result page, because the owner's sheets do not supply cities and a made-up value would look like real data. The upload route, the per-value status picker, and an undo are not built. Cell text can start with `=`, `+`, `-` or `@`: the export stage must neutralize those so a spreadsheet does not run them as formulas ([#33](https://github.com/masontuft/routemaster/issues/33)).
 
 ## Update 2026-11-02
 

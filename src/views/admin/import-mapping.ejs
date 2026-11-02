@@ -2,6 +2,7 @@
 <h1>Map Columns</h1>
 <%- include("../partials/errors") %>
 <p>Sheet: <strong><%= sheetName %></strong>. Pick which column holds each field. Leave a field on "Not Used" to skip it.</p>
+<p>Map Street Address, City and ZIP each to their own column when the sheet has them. Only the name and street are required.</p>
 <form method="post" action="/admin/import/preview">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <input type="hidden" name="sheetId" value="<%= sheetId %>">
@@ -13,6 +14,25 @@
 
     <label for="seasonYear">Season Year</label>
     <input id="seasonYear" name="seasonYear" type="text" inputmode="numeric" maxlength="4" value="<%= seasonYear %>" required>
+
+    <label for="serviceTypeId">Service Type</label>
+    <select id="serviceTypeId" name="serviceTypeId" required>
+        <option value="">Choose a Service</option>
+        <% serviceTypes.forEach((type) => { %>
+            <option value="<%= type.id %>"<%= optionValues.serviceTypeId === String(type.id) ? " selected" : "" %>><%= type.name %></option>
+        <% }); %>
+    </select>
+
+    <label for="statusName">Status of Imported Jobs</label>
+    <select id="statusName" name="statusName">
+        <% statuses.forEach((name) => { %>
+            <option value="<%= name %>"<%= optionValues.statusName === name ? " selected" : "" %>><%= name %></option>
+        <% }); %>
+    </select>
+
+    <label for="defaultCity">Default City</label>
+    <input id="defaultCity" name="defaultCity" type="text" maxlength="100" value="<%= optionValues.defaultCity %>">
+    <p>Used for a row with no city. A property with no city at all is still saved with its street, and flagged on the preview.</p>
 
     <% fields.forEach((field) => { %>
         <label for="col_<%= field.key %>"><%= field.label %><%= field.required ? " (required)" : "" %></label>

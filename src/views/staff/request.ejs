@@ -8,7 +8,7 @@
     <% if (request.scheduled_date) { %><dt>Scheduled Date</dt><dd><%= request.scheduled_date %></dd><% } %>
     <% if (request.customer_id) { %>
         <dt>Customer</dt><dd><a href="/staff/customers/<%= request.customer_id %>"><%= request.customer_name %></a> <%= request.customer_phone ?? "" %></dd>
-        <dt>Property</dt><dd><%= request.street %>, <%= request.city %></dd>
+        <dt>Property</dt><dd><%= formatAddress(request.street, request.city) %></dd>
     <% } else { %>
         <dt>Typed Name</dt><dd><%= request.contact_name %></dd>
         <dt>Typed Phone</dt><dd><%= request.contact_phone %></dd>

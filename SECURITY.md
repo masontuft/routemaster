@@ -6,7 +6,7 @@ Report privately. Do not open a public issue and do not post exploit details or 
 
 ## Scope
 
-Routemaster is a student project (CSE 340 final project). The Express server is in this repo: authentication and sessions, service requests, the staff dashboard, owner admin, reviews, contact, and moderation, plus migrations 001 through 015 and `pnpm seed`. Mason reported on 2026-11-02 that it is deployed on Render and `/health` responds through the Supabase session pooler. Sample data in the repo is non-production and fake.
+Routemaster is a student project (CSE 340 final project). The Express server is in this repo: authentication and sessions, service requests, the staff dashboard, owner admin, reviews, contact, and moderation, plus migrations 001 through 017 and `pnpm seed`. Mason reported on 2026-11-02 that it is deployed on Render and `/health` responds through the Supabase session pooler. Sample data in the repo is non-production and fake.
 
 ## Secrets
 

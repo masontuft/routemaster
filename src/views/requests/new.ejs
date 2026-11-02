@@ -15,7 +15,7 @@
         <label for="propertyId">Property</label>
         <select id="propertyId" name="propertyId" required>
             <% properties.forEach((property) => { %>
-                <option value="<%= property.id %>" <%= Number(values.propertyId) === property.id ? "selected" : "" %>><%= property.street %>, <%= property.city %></option>
+                <option value="<%= property.id %>" <%= Number(values.propertyId) === property.id ? "selected" : "" %>><%= formatAddress(property.street, property.city) %></option>
             <% }); %>
         </select>
         <label for="preferredDate">Preferred Date</label>

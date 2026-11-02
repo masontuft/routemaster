@@ -14,6 +14,7 @@ import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
 import sessionMiddleware, { createSessionStore } from "./middleware/session.js";
 import { formatCents } from "./utils/money.js";
+import { formatAddress } from "./utils/address.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import csrf from "./middleware/csrf.js";
 import notFound from "./middleware/notFound.js";
@@ -43,6 +44,7 @@ export default function createApp({
     app.set("trust proxy", 1);
     app.set("view engine", "ejs");
     app.locals.formatCents = formatCents;
+    app.locals.formatAddress = formatAddress;
     app.set("views", path.join(here, "views"));
     app.locals.db = pool;
     app.locals.sessionStore = store ?? (pool ? createSessionStore(pool) : undefined);
