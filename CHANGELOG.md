@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook. Nothing is deployed.
 - Roadmap entry for branded business workspaces: a planned, uncommitted sign-up where each business gets a workspace and a branded mirror of the service sign-up, plus a customization layer. Open questions are marked `TODO (Mason)`.
 - Futuristic marketing pages: home ("Schedule Your Service" hero and tiles), a public services and pricing page, and the contact page in the same layout; over-the-top 404 and error pages; Services nav link (the owner link is now "Manage Services").
 - Styling foundation: enterprise palette tokens with light and dark, a conservative base for every app page, cascade-layered CSS, a skip link, safe-area padding, scrolling table regions, and a test that checks view headings against modified Chicago case.

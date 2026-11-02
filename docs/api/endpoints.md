@@ -7,7 +7,7 @@ No JSON API exists. The tables are the HTML routes that exist. Every POST needs 
 | Method | Path | Role | Fields | What it does |
 | --- | --- | --- | --- | --- |
 | GET | `/` | public | | Home |
-| GET | `/health` | public | | Body `ok` |
+| GET | `/health` | public | | Body `ok` (200) when `SELECT 1` succeeds, otherwise 503 |
 | GET | `/__dev/boot` | dev reload only | | Boot id as text. 404 when dev reload is off |
 | GET, POST | `/register` | public | `email`, `password`, `confirm` | Creates a customer and starts a session |
 | GET, POST | `/login` | public | `email`, `password` | POST is rate limited |

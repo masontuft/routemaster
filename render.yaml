@@ -1,0 +1,16 @@
+# Render Blueprint. Names only; secret values are set in the Render dashboard. Not yet used or verified.
+# Migrations run at the start of the start command because Render's pre-deploy command is paid-only.
+services:
+  - type: web
+    name: routemaster
+    runtime: node
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm migrate && pnpm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

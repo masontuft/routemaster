@@ -1,13 +1,12 @@
 import { Router } from "express";
 import { showHome, showServices } from "../controllers/home.js";
+import { check } from "../controllers/health.js";
 
 const router = Router();
 
 router.get("/", showHome);
 router.get("/services", showServices);
-router.get("/health", (req, res) => {
-    res.status(200).send("ok");
-});
+router.get("/health", check);
 router.get("/__dev/boot", (req, res) => {
     if (!req.app.locals.devReload) {
         res.status(404).end();

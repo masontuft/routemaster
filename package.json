@@ -13,7 +13,7 @@
     "start": "node src/server.js",
     "lint": "eslint .",
     "test": "node --env-file-if-exists=.env --test",
-    "migrate": "node --env-file=.env scripts/migrate.js",
+    "migrate": "node --env-file-if-exists=.env scripts/migrate.js",
     "seed": "node --env-file=.env scripts/seed-users.js",
     "link:create": "node --env-file=.env scripts/create-link.js"
   },
