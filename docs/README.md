@@ -1,6 +1,6 @@
 # Routemaster Docs
 
-Routemaster is a server-rendered web app for a service company. Customers submit service requests, dispatchers build daily routes, and the owner manages everything. The server is not built yet. Tooling and the test-database guard exist. Every page here separates what is decided from what exists, and anything unbuilt is marked Not currently implemented.
+Routemaster is a server-rendered web app for a service company. Customers submit service requests, owners and dispatchers work the queue, and the owner manages users and the service catalog. The Express server, authentication, staff and owner pages, reviews, contact, migrations 001 through 014, and CI with a Postgres 16 service are in the repo. Spreadsheet import, daily route building, and deployment are not. Every page here separates what is decided from what exists, and anything unbuilt is marked Not currently implemented.
 
 | Folder | What it holds |
 | --- | --- |
@@ -14,6 +14,6 @@ Routemaster is a server-rendered web app for a service company. Customers submit
 | [product/](product/known-limitations.md) | Known limitations, roadmap, backlog labels |
 | [handoff/](handoff/project-summary.md) | Summary, reviewer guide, next steps |
 | [integrations/](integrations/sprinkler-messenger.md) | Specs for other apps (Sprinkler Messenger) |
-| [wireframes/](wireframes/README.md) | Screens (none yet) |
+| [wireframes/](wireframes/README.md) | No wireframe files. Pages are EJS views in `src/views/` |
 
 The decisions table is in [../ARCHITECTURE.md](../ARCHITECTURE.md). Agent rules are in [../AGENTS.md](../AGENTS.md).

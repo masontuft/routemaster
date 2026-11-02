@@ -28,9 +28,9 @@ Use pnpm for all installs and scripts.
 ## Consequences
 
 - Mason confirmed that pnpm has deployed successfully on Render in earlier projects. That is his experience, not a statement in Render's documentation: Render's Node version page does not mention pnpm.
-- A Render article suggests setting the `packageManager` field and enabling Corepack. pnpm's own CI guide says not to use Corepack. This conflict was seen in search results only, and is resolved when the build command is written (phase 4).
+- A Render article suggests setting the `packageManager` field and enabling Corepack. pnpm's own CI guide says not to use Corepack. This conflict was seen in search results only. The Render build command is still open ([#38](https://github.com/masontuft/routemaster/issues/38)). `package.json` sets `packageManager` to pnpm 11.24.0. `pnpm start` is `node src/server.js`.
 - Verify the first Render build before relying on it.
-- ESLint and its two plugins are installed. Application packages are not installed yet.
+- Installed dependencies: `express`, `ejs`, `pg`, `express-session`, `connect-pg-simple`, `bcrypt`, `csrf-sync`, and `express-rate-limit`. Installed devDependencies: `eslint`, `@eslint/js`, `@stylistic/eslint-plugin`, and `supertest`.
 
 ## References
 

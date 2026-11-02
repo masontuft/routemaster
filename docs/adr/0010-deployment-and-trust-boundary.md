@@ -34,9 +34,9 @@ The course requires a Render deployment with the database connected, environment
 
 ## Consequences
 
-- `connect-pg-simple` takes a `pg.Pool` and can create its table from a provided SQL file. Its page shows only `require()` examples and a CJS badge, so ESM use is unconfirmed and has to be tested. It would be a dependency Mason approves first.
-- CSRF protection is needed for cookie sessions and is not yet researched.
-- Nothing is built yet: Not currently implemented.
+- `connect-pg-simple` takes a `pg.Pool`. When this ADR was written, its page showed only `require()` examples, so ESM use was unconfirmed. The update below records that the ESM import works.
+- CSRF protection was an open research item when this ADR was written. The update below records the choice (`csrf-sync`).
+- Sessions, the cookie flags, `trust proxy`, and role checks are in the code. Render deployment, and the Secure cookie behind Render's proxy, are unverified ([#21](https://github.com/masontuft/routemaster/issues/21)).
 
 ## Update 2026-10-31
 

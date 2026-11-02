@@ -1,6 +1,6 @@
 # Deployment Runbook
 
-Nothing is deployed. The repo is prepared: `render.yaml`, a database-aware health check, a production secret check, security headers, and migrations that run at start. Every step below is unverified until someone does it on Render.
+Nothing is deployed. The repo is prepared: `render.yaml`, a database-aware health check, a production secret check, security headers, and migrations that run at start. Every step below is unverified until someone does it on Render. The deploy itself is [issue 21](https://github.com/masontuft/routemaster/issues/21).
 
 ## Before the first deploy (Mason)
 
@@ -25,4 +25,4 @@ Render's pre-deploy command is paid-only (Render deploys docs). With one instanc
 
 - Server exits with "SESSION_SECRET must be at least 32 characters": the production secret check; set a long random value.
 - `/health` returns 503: the database is unreachable. Check `DATABASE_URL`, the pooler host and the TLS setting above.
-- Build fails on `corepack enable` or pnpm: unconfirmed on Render. Fallback build command: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`.
+- Build fails on `corepack enable` or pnpm: unconfirmed on Render. Fallback build command: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`. Tracked in [#38](https://github.com/masontuft/routemaster/issues/38).

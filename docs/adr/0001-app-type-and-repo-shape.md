@@ -32,9 +32,8 @@ Routemaster is a web app for service companies that builds daily routes and pair
 
 ## Consequences
 
-- The three course roles map to owner, dispatcher and customer.
-- Nothing is built yet. Everything in this ADR is Not currently implemented.
-- Open question: whether technicians need their own logins or are only names a dispatcher assigns to routes.
+- The three course roles map to owner, dispatcher and customer. Those roles, the Express app, and the staff and owner pages exist.
+- Open question: whether technicians need their own logins or are only names a dispatcher assigns to routes ([#34](https://github.com/masontuft/routemaster/issues/34)). Daily route assignment is not built.
 
 ## References
 

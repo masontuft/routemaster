@@ -36,7 +36,7 @@ Error handling: controllers do not wrap handlers in `try/catch`, because Express
 ## Consequences
 
 - MDN's Express tutorial uses a separate routes layer between URLs and controllers. Its page never uses the term "MVC" in body text, so this layout is MDN's, not an official Express rule.
-- Nothing is built yet: Not currently implemented.
+- `src/` follows this layout: `models/`, `controllers/`, `views/`, thin `routes/`, and `middleware/`.
 
 ## References
 
