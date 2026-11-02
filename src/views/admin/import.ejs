@@ -11,10 +11,20 @@
     <h2>Sheets Found</h2>
     <div class="table-scroll" role="region" aria-label="Sheets found" tabindex="0">
     <table>
-        <thead><tr><th>Sheet</th><th>Rows</th><th>Columns</th></tr></thead>
+        <thead><tr><th>Sheet</th><th>Rows</th><th>Columns</th><th></th></tr></thead>
         <tbody>
             <% sheets.forEach((sheet) => { %>
-                <tr><td><%= sheet.name %></td><td><%= sheet.rowCount %></td><td><%= sheet.columnCount %></td></tr>
+                <tr>
+                    <td><%= sheet.name %></td><td><%= sheet.rowCount %></td><td><%= sheet.columnCount %></td>
+                    <td>
+                        <form method="post" action="/admin/import/mapping">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <input type="hidden" name="sheetId" value="<%= sheetId %>">
+                            <input type="hidden" name="sheet" value="<%= sheet.name %>">
+                            <button type="submit">Choose</button>
+                        </form>
+                    </td>
+                </tr>
             <% }); %>
         </tbody>
     </table>
