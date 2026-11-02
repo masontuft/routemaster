@@ -23,6 +23,7 @@ Render's pre-deploy command is paid-only (Render deploys docs). With one instanc
 
 ## Common failures
 
+- Server exits with "Missing required environment variables: ...": the named variables are not set on the Render service. Set them under Environment and redeploy. If the deploy log shows `Running 'pnpm start'` instead of `pnpm migrate && pnpm start`, the service was created by hand, not from `render.yaml`. Set the start command in Settings, and migrations will not run until you do.
 - Server exits with "SESSION_SECRET must be at least 32 characters": the production secret check; set a long random value.
 - `/health` returns 503: the database is unreachable. Check `DATABASE_URL`, the pooler host and the TLS setting above.
 - Build fails on `corepack enable` or pnpm: unconfirmed on Render. Fallback build command: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`. Tracked in [#38](https://github.com/masontuft/routemaster/issues/38).

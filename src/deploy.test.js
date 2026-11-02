@@ -4,7 +4,7 @@ import request from "supertest";
 import session from "express-session";
 import createApp from "./app.js";
 import { createPool } from "./db/pool.js";
-import { sessionSecretProblem } from "./utils/env.js";
+import { missingEnvVariables, sessionSecretProblem } from "./utils/env.js";
 
 function silence() {}
 
@@ -90,4 +90,10 @@ test("HSTS is sent only in production", async () => {
             process.env.NODE_ENV = original;
         }
     }
+});
+
+test("missingEnvVariables names each required variable that is unset or blank", () => {
+    assert.deepStrictEqual(missingEnvVariables({}), ["DATABASE_URL", "SESSION_SECRET"]);
+    assert.deepStrictEqual(missingEnvVariables({ DATABASE_URL: "postgres://x", SESSION_SECRET: "  " }), ["SESSION_SECRET"]);
+    assert.deepStrictEqual(missingEnvVariables({ DATABASE_URL: "postgres://x", SESSION_SECRET: "s" }), []);
 });

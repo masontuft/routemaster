@@ -1,11 +1,13 @@
 import createApp from "./app.js";
 import { createPool } from "./db/pool.js";
-import { sessionSecretProblem } from "./utils/env.js";
+import { missingEnvVariables, sessionSecretProblem } from "./utils/env.js";
 
 const port = Number(process.env.PORT) || 3000;
 
-if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET) {
-    console.error("DATABASE_URL and SESSION_SECRET must be set.");
+const missing = missingEnvVariables();
+
+if (missing.length) {
+    console.error(`Missing required environment variables: ${missing.join(", ")}.`);
     process.exit(1);
 }
 
