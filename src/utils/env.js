@@ -2,6 +2,15 @@ export function isProduction(nodeEnv = process.env.NODE_ENV) {
     return String(nodeEnv ?? "").trim().toLowerCase() === "production";
 }
 
+const REQUIRED_VARIABLES = ["DATABASE_URL", "SESSION_SECRET"];
+
+// Returns the required variables that are unset or blank, in a fixed order.
+export function missingEnvVariables(env = process.env) {
+    return REQUIRED_VARIABLES.filter((name) => {
+        return !String(env[name] ?? "").trim();
+    });
+}
+
 const MIN_SECRET_LENGTH = 32;
 const PLACEHOLDER_SECRETS = new Set(["change-me"]);
 
