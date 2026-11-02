@@ -151,3 +151,5 @@ vite.config.ts.timestamp-*
 # Customer spreadsheets and exports (real customer data)
 *.xlsx
 *.xls
+# Fake workbook for the parser tests. It is not customer data.
+!src/import/fixtures/tiny.xlsx

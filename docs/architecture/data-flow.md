@@ -13,4 +13,4 @@
 2. The app reads the tab list. The owner picks tabs and maps columns, then reviews a preview of rows to add, update or flag.
 3. On confirm, rows are written inside a transaction and the run is recorded in `import_batches`.
 
-Matching uses a normalized address because the sheet has no row IDs. See [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md). The fetch route for a public sheet is unverified ([#33](https://github.com/masontuft/routemaster/issues/33)).
+Matching uses a normalized address because the sheet has no row IDs. See [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md). Fetching a public sheet and parsing `.xlsx` rows are in `src/import/`. The import screens and database writes are not built ([#33](https://github.com/masontuft/routemaster/issues/33)).

@@ -14,7 +14,7 @@ Stored in Postgres: customer names, phones, and addresses; password hashes; sess
 | Access control | `requireRole` on `/admin` (owner), `/staff` (owner and dispatcher), and `/requests` and `/properties` (customer). HTTP tests cover denied cases. Deleting a review is owner-only. |
 | Injection | Models use parameterized `pg` queries |
 | Input | Server-side validation; EJS `<%=` escaping |
-| Import | Not built. Planned: Google Sheets URLs only, strict ID pattern, fixed host path, size-limited `.xlsx` uploads ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md), [#33](https://github.com/masontuft/routemaster/issues/33)) |
+| Import | `src/import/` checks a Google Sheets link, builds a fixed `docs.google.com` export URL, caps the download, and parses `.xlsx` with ExcelJS. Tested with a mocked network and a fake fixture. No import route or upload yet ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md), [#33](https://github.com/masontuft/routemaster/issues/33)) |
 | Cookies | `httpOnly`, `sameSite: "lax"`, and `secure` when `NODE_ENV` is exactly `production` (`src/middleware/session.js`) |
 | CSRF | `csrf-sync` synchronizer token. `src/app.js` runs `src/middleware/csrf.js` on every request. The token is read from the `_csrf` field. A post without a token returns 403 in tests. |
 | Session fixation | Session ID regenerated at register and login; tested |
