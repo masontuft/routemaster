@@ -32,7 +32,7 @@ Numbered plain SQL files, for example `migrations/001_create_roles.sql`, applied
 - The runner is hand-written (`src/db/migrate.js`, `pnpm migrate`) and tested in `src/db/migrate.test.js`.
 - Migrations 001 through 014 are the applied schema. Their foreign-key rules are in those files. The unmigrated names in `ARCHITECTURE.md` (`subdivisions`, `routes`, `route_stops`, `payments`, `referral_groups`, `import_batches`, `import_mappings`) are still a draft.
 - The `schema-snapshot` folder and script in `AGENTS.md` are still placeholders ([#39](https://github.com/masontuft/routemaster/issues/39)).
-- Open: do technicians need logins (affects whether routes point at users or a technicians table, [#34](https://github.com/masontuft/routemaster/issues/34)), and what the Rocky and Skyview referral payout is ([#35](https://github.com/masontuft/routemaster/issues/35)).
+- Technicians do not get logins for now (Mason, 2026-11-02). The dispatcher manages their routes, so the routes tables are not blocked on a technician user account. A technician role is planned, not committed, on the [roadmap](../product/roadmap.md#technician-logins). Open: what the Rocky and Skyview referral payout is ([#35](https://github.com/masontuft/routemaster/issues/35)).
 
 ## References
 

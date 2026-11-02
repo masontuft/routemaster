@@ -12,7 +12,8 @@
 - When import is built, address matching is fuzzy and the preview step is mandatory ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
 - No two-way spreadsheet sync.
 - Free Supabase projects may pause after inactivity (unverified).
-- Technician logins ([#34](https://github.com/masontuft/routemaster/issues/34)) and the Rocky and Skyview referral payout ([#35](https://github.com/masontuft/routemaster/issues/35)) are undecided.
+- Technicians do not get logins for now. The dispatcher manages their routes. A technician role is planned on the [roadmap](roadmap.md#technician-logins) and is not a commitment.
+- The Rocky and Skyview referral payout ([#35](https://github.com/masontuft/routemaster/issues/35)) is undecided.
 - The seeded service types start at 0 cents. Until real prices are entered, the public services page says "Contact us for pricing." and owner money stats for those catalog prices read $0.00 ([#23](https://github.com/masontuft/routemaster/issues/23)).
 - Replying to a contact message records a note and sets the status; nothing is emailed.
 - Reviews, contact messages, and the generic link have no spam filter beyond the per-IP rate limit and CSRF token ([#36](https://github.com/masontuft/routemaster/issues/36)).

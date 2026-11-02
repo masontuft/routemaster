@@ -9,7 +9,7 @@ Post-course or optional.
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
 - An instructor-hosted database as an optional target for server agents.
 - Referral payout model for Rocky and Skyview, once the rule is understood ([#35](https://github.com/masontuft/routemaster/issues/35)).
-- Technician logins, if wanted ([#34](https://github.com/masontuft/routemaster/issues/34)).
+- Technician logins. Planned, not a commitment. See [Technician Logins](#technician-logins).
 
 ## Branded Business Workspaces
 
@@ -37,3 +37,9 @@ The flow being mirrored is the public service sign-up a customer uses today: the
 - TODO (Mason): How a workspace interacts with the existing owner admin and the owner, dispatcher, and customer roles. Whether each business has its own owner, and whether Routemaster needs an operator role above those owners, is open.
 - TODO (Mason): Whether the mirror stops at the customer-facing service sign-up, or a workspace also includes staff and owner screens.
 - TODO (Mason): What [ADR 0007](../adr/0007-persistence-postgres-on-supabase.md) and [ADR 0010](../adr/0010-deployment-and-trust-boundary.md) allow. The course grades one repository and one Render deployment with a connected PostgreSQL database. ADR 0007 is one Supabase Postgres behind `DATABASE_URL` (free-plan size and pause behavior are recorded there, and instructor confirmation is still open). ADR 0010 is one Render web service, same origin, no CORS, with sessions stored in that database. Whether branded workspaces, including a custom hostname, can stay inside that single service and database is open.
+
+## Technician Logins
+
+**Status:** Planned. Future work, and not a commitment. Not currently implemented. This page does not change the decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md) and [ADR 0008](../adr/0008-schema-as-numbered-sql-migrations.md): technicians do not get their own logins for now. The dispatcher manages their routes.
+
+A later technician role would let a technician see their own route and mark jobs done. The owner, dispatcher, and customer roles stay as they are until that work is built.

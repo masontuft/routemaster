@@ -16,5 +16,5 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 
 ## Optional
 
-- Items in the [roadmap](../product/roadmap.md), including technician logins ([#34](https://github.com/masontuft/routemaster/issues/34)), the Rocky and Skyview referral payout ([#35](https://github.com/masontuft/routemaster/issues/35)), a CAPTCHA or other spam control ([#36](https://github.com/masontuft/routemaster/issues/36)), and Sprinkler Messenger ([#37](https://github.com/masontuft/routemaster/issues/37)).
+- Items in the [roadmap](../product/roadmap.md), including technician logins (planned, not a commitment; technicians do not log in for now), the Rocky and Skyview referral payout ([#35](https://github.com/masontuft/routemaster/issues/35)), a CAPTCHA or other spam control ([#36](https://github.com/masontuft/routemaster/issues/36)), and Sprinkler Messenger ([#37](https://github.com/masontuft/routemaster/issues/37)).
 - About page copy ([#24](https://github.com/masontuft/routemaster/issues/24)). Real service prices are still the seeded 0 cents ([#23](https://github.com/masontuft/routemaster/issues/23)).
