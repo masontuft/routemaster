@@ -1,10 +1,11 @@
 // Tests may only touch the database named by TEST_DATABASE_URL, never DATABASE_URL.
 // Callers must connect with the URL returned here.
-// TODO (Mason): decide whether localhost, 127.0.0.1, and other aliases are the same server.
 // This check compares the URL host, port, and database name. It does not resolve DNS.
+// localhost, 127.0.0.1, and ::1 are the same server, including bracketed [::1].
 
 const POSTGRES_PROTOCOLS = new Set(["postgres:", "postgresql:"]);
 const DEFAULT_POSTGRES_PORT = "5432";
+const LOOPBACK_ENDPOINTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 function trimmedEnvValue(value) {
     if (typeof value !== "string") {
@@ -114,8 +115,18 @@ function postgresTarget(rawUrl) {
     };
 }
 
+function endpointsMatch(left, right) {
+    if (left === right) {
+        return true;
+    }
+    if (LOOPBACK_ENDPOINTS.has(left) && LOOPBACK_ENDPOINTS.has(right)) {
+        return true;
+    }
+    return false;
+}
+
 function isSameDatabase(left, right) {
-    if (left.endpoint !== right.endpoint) {
+    if (endpointsMatch(left.endpoint, right.endpoint) === false) {
         return false;
     }
     if (left.port !== right.port) {

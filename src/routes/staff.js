@@ -11,6 +11,7 @@ router.get("/staff", staff.dashboard);
 router.get("/staff/requests", staff.listRequests);
 router.get("/staff/requests/:id", staff.showRequest);
 router.post("/staff/requests/:id/status", staff.changeStatus);
+router.post("/staff/requests/:id/referrer", staff.setReferrer);
 router.get("/staff/requests/:id/match", staff.showMatch);
 router.post("/staff/requests/:id/match", staff.matchExisting);
 router.post("/staff/requests/:id/match/new", staff.matchNew);

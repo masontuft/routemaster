@@ -82,6 +82,28 @@ export async function changeStatus(req, res) {
     res.redirect(`/staff/requests/${request.id}`);
 }
 
+const REFERRER_MAX = 100;
+
+export async function setReferrer(req, res) {
+    const request = await loadRequest(req);
+    const referredBy = String(req.body.referredBy ?? "").trim();
+
+    if (referredBy.length > REFERRER_MAX) {
+        return renderRequest(req, res, { ...request, referred_by: referredBy }, {
+            errors: ["Referred by must be 100 characters or fewer."],
+            status: 400,
+        });
+    }
+
+    const saved = await Staff.setReferrer(req.app.locals.db, request.id, referredBy === "" ? null : referredBy);
+
+    if (!saved) {
+        throw notFound();
+    }
+
+    res.redirect(`/staff/requests/${request.id}`);
+}
+
 async function renderMatch(req, res, request, { errors = [], status = 200 } = {}) {
     const db = req.app.locals.db;
     const q = String(req.query.q ?? request.contact_name ?? "").trim().slice(0, 100);

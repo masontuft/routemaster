@@ -1,10 +1,10 @@
 # Deployment Runbook
 
-Nothing is deployed. The repo is prepared: `render.yaml`, a database-aware health check, a production secret check, security headers, and migrations that run at start. Every step below is unverified until someone does it on Render. The deploy itself is [issue 21](https://github.com/masontuft/routemaster/issues/21).
+Mason reported on 2026-11-02 that Supabase is set up, `pnpm migrate` has been run, and the Render web service is deployed. `/health` responds through the Supabase session pooler. No URL or service name is recorded here. The steps below are how that deploy was prepared.
 
 ## Before the first deploy (Mason)
 
-1. Confirm with the instructor that an external Supabase database satisfies the Render database requirement.
+1. The instructor confirmed on 2026-11-02 that an external Supabase database satisfies the Render database requirement ([ADR 0007](../adr/0007-persistence-postgres-on-supabase.md)).
 2. In Supabase, copy the **session pooler** connection string (the direct connection can be IPv6-only).
 3. Decide how the connection string handles TLS. `pg` 8 reads `sslmode` from the URL. `sslmode=require` is treated as `verify-full` and prints a warning, so the Supabase certificate chain may be rejected. If it is, try `sslmode=no-verify` in `DATABASE_URL` and record the result in the ledger. No code change is needed either way.
 
@@ -17,6 +17,10 @@ Nothing is deployed. The repo is prepared: `render.yaml`, a database-aware healt
 5. Open `/health`. It returns 200 when the database answers and 503 when it does not.
 6. Seed the graded test accounts once with `pnpm seed` from a shell that has `DATABASE_URL` and `SEED_PASSWORD`.
 
+## Before grading
+
+Free Supabase projects can pause after inactivity. Resume the Supabase project before grading, then open `/health` and confirm it returns 200.
+
 ## Why migrations run in the start command
 
 Render's pre-deploy command is paid-only (Render deploys docs). With one instance there is no race. With more than one instance, move migration to a pre-deploy step.
@@ -26,4 +30,4 @@ Render's pre-deploy command is paid-only (Render deploys docs). With one instanc
 - Server exits with "Missing required environment variables: ...": the named variables are not set on the Render service. Set them under Environment and redeploy. If the deploy log shows `Running 'pnpm start'` instead of `pnpm migrate && pnpm start`, the service was created by hand, not from `render.yaml`. Set the start command in Settings, and migrations will not run until you do.
 - Server exits with "SESSION_SECRET must be at least 32 characters": the production secret check; set a long random value.
 - `/health` returns 503: the database is unreachable. Check `DATABASE_URL`, the pooler host and the TLS setting above.
-- Build fails on `corepack enable` or pnpm: unconfirmed on Render. Fallback build command: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`. Tracked in [#38](https://github.com/masontuft/routemaster/issues/38).
+- Build fails on `corepack enable` or pnpm: the decided build command is `corepack enable && pnpm install --frozen-lockfile` ([ADR 0003](../adr/0003-package-manager-pnpm.md)). A deploy exists and `/health` responds. Fallback if a later build fails on Corepack: `npm install -g pnpm@11.24.0 && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.

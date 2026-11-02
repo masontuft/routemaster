@@ -154,3 +154,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code local config (preview launch settings)
 .claude/
+
+# Fake workbook for the parser tests. It is not customer data.
+!src/import/fixtures/tiny.xlsx

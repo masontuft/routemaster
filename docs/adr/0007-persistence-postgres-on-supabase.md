@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. One open item: Mason will confirm with his instructor that an external Postgres on Supabase satisfies the course requirement for a Render deployment with a connected PostgreSQL database.
+Accepted
 
 ## Date
 
@@ -33,9 +33,9 @@ The course requires PostgreSQL, deployed on Render with the database connected. 
 ## Consequences
 
 - Supabase's free plan allows 500 MB per project.
-- Supabase's pricing page, as summarized in search results, says free projects pause after one week of inactivity. A paused project can be restored from the dashboard within a one-year window per the pausing guide. Neither page was opened in full. Use the database in the days before grading, and put "resume project" in the deployment runbook.
-- Open item: the instructor's confirmation ([#19](https://github.com/masontuft/routemaster/issues/19)). Until then this ADR stays Proposed.
-- Local persistence is built: the `pg` client, `DATABASE_URL`, and migrations 001 through 014. Hosting that database on Supabase is not done.
+- Supabase's pricing page, as summarized in search results, says free projects pause after one week of inactivity. A paused project can be restored from the dashboard within a one-year window per the pausing guide. Neither page was opened in full. The deployment runbook says to resume the Supabase project before grading.
+- The instructor confirmed on 2026-11-02, the day Mason reported it, that an external Postgres on Supabase satisfies the course requirement for a Render deployment with a connected PostgreSQL database. The same day, Mason reported that Supabase is set up, `pnpm migrate` has been run, and `/health` on the deployed Render service responds through the session pooler.
+- Local persistence is built: the `pg` client, `DATABASE_URL`, and migrations 001 through 015. Supabase hosting is set up, and `pnpm migrate` has been run there.
 
 ## References
 

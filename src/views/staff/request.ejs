@@ -15,7 +15,13 @@
         <dt>Typed Address</dt><dd><%= request.contact_address %></dd>
     <% } %>
     <% if (request.notes) { %><dt>Notes</dt><dd><%= request.notes %></dd><% } %>
+    <dt>Referred by</dt><dd><%= request.referred_by || "None" %></dd>
 </dl>
+<form method="post" action="/staff/requests/<%= request.id %>/referrer">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Referred by <input type="text" name="referredBy" maxlength="100" value="<%= request.referred_by ?? "" %>"></label>
+    <button type="submit">Save Referrer</button>
+</form>
 <% if (request.status === "Needs Review") { %>
     <p><a href="/staff/requests/<%= request.id %>/match">Match to a Customer</a></p>
 <% } %>
