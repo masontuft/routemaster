@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Spreadsheet import spike: download a public Google Sheet from a fixed `docs.google.com` export URL, and parse `.xlsx` rows with ExcelJS 4.4.0, with size and row limits (`src/import/`). No import screen yet.
 - Deploy preparation: database-aware `/health`, pool error handling, a production `SESSION_SECRET` check, hand-written security headers, `render.yaml`, and a deployment runbook. Nothing is deployed.
 - Roadmap entry for branded business workspaces: a planned, uncommitted sign-up where each business gets a workspace and a branded mirror of the service sign-up, plus a customization layer. Open questions are marked `TODO (Mason)`.
 - Futuristic marketing pages: home ("Schedule Your Service" hero and tiles), a public services and pricing page, and the contact page in the same layout; over-the-top 404 and error pages; Services nav link (the owner link is now "Manage Services").
@@ -36,4 +37,5 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Security
 
+- A pasted Google Sheet link cannot choose the download host. Redirects stay on Google's export path, cookies are not forwarded, and a body over 5 MiB is refused.
 - A cosmetic difference in `TEST_DATABASE_URL` (scheme, default port, credentials, trailing slash, or an ignored query parameter) can no longer point tests at the real database.

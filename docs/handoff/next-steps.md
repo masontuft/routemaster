@@ -10,7 +10,7 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 
 ## Recommended
 
-- Spike the Google Sheet fetch route and choose the `.xlsx` library. Spreadsheet import is not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
+- Build the spreadsheet import screens on `src/import/` (owner route, tab picker, column mapping, preview). ExcelJS 4.4.0 and the public export URL are recorded in [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md) ([#33](https://github.com/masontuft/routemaster/issues/33)).
 - `connect-pg-simple` imports under ESM and stores sessions in Postgres. CSRF is the `csrf-sync` synchronizer token in `src/middleware/csrf.js`. Both are covered by tests.
 - Add the boot smoke test from [ADR 0011](../adr/0011-testing-and-ci.md) (the health check returns 200). The Postgres 16 service container is already in the workflow.
 

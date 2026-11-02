@@ -1,13 +1,13 @@
 # System Overview
 
-Status: the Express app in this diagram is built and runs locally. The Render web service, the Supabase database, and the Google Sheet import path are the planned deploy and are not built ([#21](https://github.com/masontuft/routemaster/issues/21), [#33](https://github.com/masontuft/routemaster/issues/33)). ADR 0007 stays Proposed.
+Status: the Express app in this diagram is built and runs locally. The Render web service and the Supabase database are not deployed ([#21](https://github.com/masontuft/routemaster/issues/21)). The Google Sheet fetch and `.xlsx` parse modules are in `src/import/`. The import route is not built ([#33](https://github.com/masontuft/routemaster/issues/33)). ADR 0007 stays Proposed.
 
 ## System context
 
-- **People:** customers (submit and track requests, leave reviews), dispatchers (move requests through statuses, match Needs Review, create and revoke links), the owner (those staff actions, plus users, roles, and the service catalog). Building a daily route and spreadsheet import are not built.
+- **People:** customers (submit and track requests, leave reviews), dispatchers (move requests through statuses, match Needs Review, create and revoke links), the owner (those staff actions, plus users, roles, and the service catalog). Building a daily route and the spreadsheet import screens are not built.
 - **App:** one server-side rendered Express app. The planned host is one Render web service, and that deploy is not done.
 - **Data store:** PostgreSQL through `DATABASE_URL`. Sessions are rows in the same database (`session`). Supabase is the proposed production host and is not set up.
-- **External inputs:** a public Google Sheet link or an uploaded `.xlsx` file, supplied only by the owner. Not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
+- **External inputs:** a public Google Sheet link or an uploaded `.xlsx` file, supplied only by the owner. The modules that download and parse those files are in `src/import/`. The owner route is not built ([#33](https://github.com/masontuft/routemaster/issues/33)).
 - **Trust boundaries (planned deploy):** browser to Render over TLS; Render to Supabase over TLS; admin-supplied links and files entering the import.
 
 ```mermaid

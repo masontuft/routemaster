@@ -8,7 +8,7 @@
 - Status changes have no undo: Completed and Cancelled are final.
 - Login, magic-link redemption, the generic `/schedule` posts, and the contact form are rate limited in memory, per instance. The counts reset on restart.
 - Single company only. Branded business workspaces are planned on the [roadmap](roadmap.md#branded-business-workspaces) and are not a commitment.
-- Spreadsheet import is not built ([#33](https://github.com/masontuft/routemaster/issues/33)). The decided scope is jobs, customers and areas. Expenses, mileage and compressor tabs are outside that scope.
+- Spreadsheet import screens are not built ([#33](https://github.com/masontuft/routemaster/issues/33)). Fetch and `.xlsx` parsing exist in `src/import/`. The decided scope is jobs, customers and areas. Expenses, mileage and compressor tabs are outside that scope.
 - When import is built, address matching is fuzzy and the preview step is mandatory ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
 - No two-way spreadsheet sync.
 - Free Supabase projects may pause after inactivity (unverified).
