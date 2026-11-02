@@ -34,8 +34,8 @@ The course requires PostgreSQL, deployed on Render with the database connected. 
 
 - Supabase's free plan allows 500 MB per project.
 - Supabase's pricing page, as summarized in search results, says free projects pause after one week of inactivity. A paused project can be restored from the dashboard within a one-year window per the pausing guide. Neither page was opened in full. Use the database in the days before grading, and put "resume project" in the deployment runbook.
-- Open item: the instructor's confirmation. Until then this ADR stays Proposed.
-- Nothing is built yet: Not currently implemented.
+- Open item: the instructor's confirmation ([#19](https://github.com/masontuft/routemaster/issues/19)). Until then this ADR stays Proposed.
+- Local persistence is built: the `pg` client, `DATABASE_URL`, and migrations 001 through 014. Hosting that database on Supabase is not done.
 
 ## References
 

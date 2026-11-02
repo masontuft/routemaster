@@ -30,7 +30,7 @@ pnpm start
 - `pnpm seed` creates `owner@example.com`, `dispatcher@example.com` and `customer@example.com` using `SEED_PASSWORD`; running it again skips existing accounts.
 - `pnpm link:create <user email or customer id>` prints a magic link for local testing (set `BASE_URL` to change the host).
 - The generic scheduling page is `/schedule`.
-- CI (`.github/workflows/ci.yml`) runs a frozen install, lint, and test on pull requests and pushes to `main`.
+- CI (`.github/workflows/ci.yml`) runs a frozen install, lint, and test on pull requests and pushes to `main`. The workflow starts a `postgres:16` service and sets `TEST_DATABASE_URL`.
 
 ## Database
 

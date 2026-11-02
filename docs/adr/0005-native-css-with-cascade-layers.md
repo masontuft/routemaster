@@ -30,7 +30,7 @@ Native modern CSS: nesting, cascade layers, and `@import`, served as static file
 
 - `@layer` is Baseline Widely available since March 2022. The nesting selector is Baseline Widely available since December 2023.
 - Each `@import` is a separate request. MDN's `@import` page does not discuss the performance cost, so this is general background. Several `<link>` tags in the EJS layout are an alternative if it matters.
-- Nothing is built yet: Not currently implemented.
+- `public/css/main.css` declares `@layer reset, tokens, base, components, pages` and imports `tokens.css`, `base.css`, `components.css`, and `pages.css`.
 
 ## References
 

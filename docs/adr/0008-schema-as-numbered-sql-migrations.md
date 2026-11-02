@@ -29,11 +29,10 @@ Numbered plain SQL files, for example `migrations/001_create_roles.sql`, applied
 ## Consequences
 
 - Forward-fix only: there are no automatic down migrations. The rollback runbook must say so.
-- The runner is hand-written and needs its own test.
-- The table list in `ARCHITECTURE.md` is a draft for review, not a decision. Each foreign key's ON DELETE rule is decided when its migration is written.
-- The `schema-snapshot` folder and script in `AGENTS.md` are still placeholders.
-- Open: do technicians need logins (affects whether routes point at users or a technicians table), and what the Rocky and Skyview referral payout is.
-- Nothing is built yet: Not currently implemented.
+- The runner is hand-written (`src/db/migrate.js`, `pnpm migrate`) and tested in `src/db/migrate.test.js`.
+- Migrations 001 through 014 are the applied schema. Their foreign-key rules are in those files. The unmigrated names in `ARCHITECTURE.md` (`subdivisions`, `routes`, `route_stops`, `payments`, `referral_groups`, `import_batches`, `import_mappings`) are still a draft.
+- The `schema-snapshot` folder and script in `AGENTS.md` are still placeholders ([#39](https://github.com/masontuft/routemaster/issues/39)).
+- Open: do technicians need logins (affects whether routes point at users or a technicians table, [#34](https://github.com/masontuft/routemaster/issues/34)), and what the Rocky and Skyview referral payout is ([#35](https://github.com/masontuft/routemaster/issues/35)).
 
 ## References
 
