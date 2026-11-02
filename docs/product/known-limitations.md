@@ -7,7 +7,7 @@
 - Matching a Needs Review request cannot edit the name, phone or street the visitor typed; a new customer is created exactly as typed plus the city and ZIP staff enter.
 - Status changes have no undo: Completed and Cancelled are final.
 - Login and link throttling is in-memory and per instance.
-- Single company only; multi-tenant is on the [roadmap](roadmap.md).
+- Single company only. Branded business workspaces are planned on the [roadmap](roadmap.md#branded-business-workspaces) and are not a commitment.
 - Import covers jobs, customers and areas. Expenses, mileage and compressor tabs are not imported.
 - Address matching in import is fuzzy; the preview step is mandatory.
 - No two-way spreadsheet sync.
