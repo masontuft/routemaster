@@ -1,6 +1,6 @@
 # Known Limitations
 
-- Spreadsheet import, daily route building (`routes` and `route_stops`), payments, and the About page are not built. The Express server, authentication, service requests, staff dashboard, owner admin, reviews, contact, moderation, migrations 001 through 014, and `pnpm seed` are in the repo. The About page waits on copy from Mason ([#24](https://github.com/masontuft/routemaster/issues/24)).
+- Spreadsheet import, daily route building (`routes` and `route_stops`), payments, and the About page are not built. The Express server, authentication, service requests, staff dashboard, owner admin, reviews, contact, moderation, migrations 001 through 015, and `pnpm seed` are in the repo. The About page waits on copy from Mason ([#24](https://github.com/masontuft/routemaster/issues/24)).
 - Customers arrive by link. Staff create and revoke links on the customer page and copy them by hand; nothing sends them by email or text yet.
 - A bulk-send route through Sprinkler Messenger is proposed in [the integration spec](../integrations/sprinkler-messenger.md). The open questions are [issue 37](https://github.com/masontuft/routemaster/issues/37).
 - Generic-link matching is exact after normalization; typos go to the Needs Review queue, where staff match them by hand.
@@ -13,7 +13,7 @@
 - No two-way spreadsheet sync.
 - Free Supabase projects may pause after inactivity (unverified).
 - Technicians do not get logins for now. The dispatcher manages their routes. A technician role is planned on the [roadmap](roadmap.md#technician-logins) and is not a commitment.
-- The Rocky and Skyview referral payout ([#35](https://github.com/masontuft/routemaster/issues/35)) is undecided.
+- Referral payouts are handled outside the app. Staff record who referred the job on the request page.
 - The seeded service types start at 0 cents. Until real prices are entered, the public services page says "Contact us for pricing." and owner money stats for those catalog prices read $0.00 ([#23](https://github.com/masontuft/routemaster/issues/23)).
 - Replying to a contact message records a note and sets the status; nothing is emailed.
 - Reviews, contact messages, and the generic link have no spam filter beyond the per-IP rate limit and CSRF token ([#36](https://github.com/masontuft/routemaster/issues/36)).

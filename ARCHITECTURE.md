@@ -2,7 +2,7 @@
 
 Routemaster is a web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. This file states the answered architecture decisions. Each links to its ADR.
 
-Built in this repo: the Express server, authentication and sessions (including `csrf-sync`), service requests, the staff dashboard, owner admin, reviews, contact and moderation, migrations 001 through 014, `pnpm seed`, the styling in `public/css/`, and CI with a Postgres 16 service. Not built: spreadsheet import, daily routes and route stops, payments, and the About page. Render and Supabase are not deployed. [ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) and [ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md) stay Proposed.
+Built in this repo: the Express server, authentication and sessions (including `csrf-sync`), service requests, the staff dashboard, owner admin, reviews, contact and moderation, migrations 001 through 015, `pnpm seed`, the styling in `public/css/`, and CI with a Postgres 16 service. Not built: spreadsheet import, daily routes and route stops, payments, and the About page. Render and Supabase are not deployed. [ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md) and [ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md) stay Proposed.
 
 ## Decisions
 
@@ -29,16 +29,15 @@ Branch names and commit messages are in [CONTRIBUTING.md](CONTRIBUTING.md). Bran
 
 ## Data model
 
-Migrations `001` through `014` create `roles`, `users`, `session`, `customers`, `properties`, `service_types`, `request_statuses`, `service_requests`, `status_history`, `access_links`, `reviews`, and `contact_messages`. Foreign-key delete rules for those tables are in the migration files.
+Migrations `001` through `015` create `roles`, `users`, `session`, `customers`, `properties`, `service_types`, `request_statuses`, `service_requests`, `status_history`, `access_links`, `reviews`, and `contact_messages`. Migration 015 adds `service_requests.referred_by`, the name of who referred the job. Referral payouts are handled outside the app. Foreign-key delete rules for those tables are in the migration files.
 
-Still a draft, with no migration: `subdivisions`, `routes`, `route_stops`, `payments`, `referral_groups`, `import_batches`, `import_mappings`. Technicians do not get logins for now, and the dispatcher manages their routes, so technician logins do not block the routes tables. A technician role is on the [roadmap](docs/product/roadmap.md#technician-logins). The referral payout ([#35](https://github.com/masontuft/routemaster/issues/35)) blocks `referral_groups`. Import tables wait on [issue 33](https://github.com/masontuft/routemaster/issues/33).
+Still a draft, with no migration: `subdivisions`, `routes`, `route_stops`, `payments`, `import_batches`, `import_mappings`. Technicians do not get logins for now, and the dispatcher manages their routes, so technician logins do not block the routes tables. A technician role is on the [roadmap](docs/product/roadmap.md#technician-logins). Import tables wait on [issue 33](https://github.com/masontuft/routemaster/issues/33).
 
 ## Open items
 
 - Instructor confirmation that an external Postgres on Supabase satisfies the Render requirement ([ADR 0007](docs/adr/0007-persistence-postgres-on-supabase.md), [#19](https://github.com/masontuft/routemaster/issues/19)). This ADR stays Proposed.
 - A spike proving how a public Google Sheet is fetched, and the Excel parsing library ([ADR 0009](docs/adr/0009-spreadsheet-import-and-sync.md), [#33](https://github.com/masontuft/routemaster/issues/33)).
 - Render's IPv6 reachability for the Supabase connection ([ADR 0010](docs/adr/0010-deployment-and-trust-boundary.md), [#21](https://github.com/masontuft/routemaster/issues/21)). `connect-pg-simple` under ESM and CSRF (`csrf-sync` in `src/middleware/csrf.js`, wired in `src/app.js`) are in the code.
-- What the Rocky and Skyview referral payout is ([#35](https://github.com/masontuft/routemaster/issues/35)).
 - The Render build command, and whether that build uses Corepack ([#38](https://github.com/masontuft/routemaster/issues/38)). `pnpm start` runs `node src/server.js`. There is no application build step.
 - The schema snapshot folder and script. `AGENTS.md` still names the placeholders `docs/schemas` and `generate schema` ([#39](https://github.com/masontuft/routemaster/issues/39)).
 

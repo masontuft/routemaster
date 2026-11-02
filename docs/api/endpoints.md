@@ -43,6 +43,7 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET | `/staff/requests` | `status` (optional; unknown values are ignored) | Request list |
 | GET | `/staff/requests/:id` | | Details, history and the allowed next statuses |
 | POST | `/staff/requests/:id/status` | `status`, `scheduledDate` (required for Scheduled), `note` | Apply a transition from the table in `src/utils/transitions.js` |
+| POST | `/staff/requests/:id/referrer` | `referredBy` | Record who referred the job, or clear it. Payouts are not stored |
 | GET | `/staff/requests/:id/match` | `q` | Search customers for a Needs Review request |
 | POST | `/staff/requests/:id/match` | `propertyId` | Attach the request to an existing customer's property |
 | POST | `/staff/requests/:id/match/new` | `city`, `zip` | Create a customer and property from the typed details |

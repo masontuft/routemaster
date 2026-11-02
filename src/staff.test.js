@@ -103,6 +103,8 @@ test("staff pages send a visitor to log in and refuse a customer", async () => {
     const token = await tokenFrom(customer, "/requests");
     const forged = await customer.post("/staff/requests/1/status").type("form").send({ _csrf: token, status: "Cancelled" });
     assert.strictEqual(forged.status, 403);
+    const referrer = await customer.post("/staff/requests/1/referrer").type("form").send({ _csrf: token, referredBy: "Rocky" });
+    assert.strictEqual(referrer.status, 403);
 });
 
 test("an owner and a dispatcher can both open the dashboard", async () => {
@@ -133,6 +135,37 @@ test("the request list filters by status and ignores an unknown filter", async (
         assert.match(res.text, /Ann Lee/);
         assert.match(res.text, /Cy Doe/);
     }
+});
+
+test("a dispatcher records who referred a job and can clear it", async () => {
+    const { id } = await matchedRequest();
+    const agent = await staffAgent();
+    const page = `/staff/requests/${id}`;
+
+    const saved = await post(agent, page, `${page}/referrer`, { referredBy: "  Skyview  " });
+    assert.strictEqual(saved.status, 302);
+
+    const shown = await agent.get(page);
+    assert.match(shown.text, /Referred by<\/dt><dd>Skyview<\/dd>/);
+    assert.match(shown.text, /value="Skyview"/);
+
+    const cleared = await post(agent, page, `${page}/referrer`, { referredBy: "   " });
+    assert.strictEqual(cleared.status, 302);
+    const empty = await agent.get(page);
+    assert.match(empty.text, /Referred by<\/dt><dd>None<\/dd>/);
+    assert.match(empty.text, /name="referredBy" maxlength="100" value=""/);
+
+    const tooLong = await post(agent, page, `${page}/referrer`, { referredBy: "R".repeat(101) });
+    assert.strictEqual(tooLong.status, 400);
+    assert.match(tooLong.text, /100 characters or fewer/);
+    const unchanged = await pool.query("SELECT referred_by FROM service_requests WHERE id = $1", [id]);
+    assert.strictEqual(unchanged.rows[0].referred_by, null);
+
+    const hostile = await post(agent, page, `${page}/referrer`, { referredBy: "<script>alert(1)</script>" });
+    assert.strictEqual(hostile.status, 302);
+    const escaped = await agent.get(page);
+    assert.match(escaped.text, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+    assert.doesNotMatch(escaped.text, /<script>alert\(1\)<\/script>/);
 });
 
 test("a request moves from Requested through Scheduled to Completed with history", async () => {
