@@ -28,10 +28,10 @@ Dependency audit and secret scanning are not wired ([#26](https://github.com/mas
 
 ## Findings
 
-The test-database guard refuses a missing `TEST_DATABASE_URL`, a value that is not a `postgres://` or `postgresql://` URL, and a URL that names the same host, port, and database as `DATABASE_URL`. User, password, and parameters such as `sslmode` are ignored, so those differences cannot point tests at the real database.
+The test-database guard refuses a missing `TEST_DATABASE_URL`, a value that is not a `postgres://` or `postgresql://` URL, and a URL that names the same host, port, and database as `DATABASE_URL`. `localhost`, `127.0.0.1`, and `::1` (including bracketed `[::1]`) count as the same host. User, password, and parameters such as `sslmode` are ignored, so those differences cannot point tests at the real database.
 
 Still open:
 
-- Hostnames are not resolved. `localhost` and `127.0.0.1` count as different servers. Keyword/value connection strings are rejected. See the `TODO (Mason)` in `src/config/testDatabase.js` ([#31](https://github.com/masontuft/routemaster/issues/31)).
+- Hostnames are not resolved. Hosts other than `localhost`, `127.0.0.1`, and `::1` are compared as written. Keyword/value connection strings are rejected.
 - `pnpm audit` reports [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` before 11.0.1, moderate, dev-only through ESLint). See [dependency management](dependency-management.md) and [issue 32](https://github.com/masontuft/routemaster/issues/32).
 - Secret scanning is not wired ([#26](https://github.com/masontuft/routemaster/issues/26)).

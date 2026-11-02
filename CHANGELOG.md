@@ -36,4 +36,5 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ### Security
 
+- The test-database guard treats `localhost`, `127.0.0.1`, and `::1` (including bracketed `[::1]`) as the same server.
 - A cosmetic difference in `TEST_DATABASE_URL` (scheme, default port, credentials, trailing slash, or an ignored query parameter) can no longer point tests at the real database.
