@@ -24,6 +24,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Express app skeleton: `src/app.js`, `src/server.js`, `/` and `/health` routes, 404 and error pages, global error handler, and supertest tests.
 
 ### Changed
+- The Enterprise palette (deep blue, white, and bubblegum pink) is confirmed as Routemaster's palette.
 - The Render build command is `corepack enable && pnpm install --frozen-lockfile`. The start command stays `pnpm start`.
 - The Sprinkler Messenger bulk send is parked. The seven open questions in the integration spec stay unanswered.
 - Spam control is not built now. A honeypot, per-IP rate limiting, and Cloudflare Turnstile on reviews, contact, and the generic sign-up are a planned roadmap item, not a commitment.
