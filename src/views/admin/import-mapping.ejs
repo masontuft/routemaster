@@ -14,6 +14,25 @@
     <label for="seasonYear">Season Year</label>
     <input id="seasonYear" name="seasonYear" type="text" inputmode="numeric" maxlength="4" value="<%= seasonYear %>" required>
 
+    <label for="serviceTypeId">Service Type</label>
+    <select id="serviceTypeId" name="serviceTypeId" required>
+        <option value="">Choose a Service</option>
+        <% serviceTypes.forEach((type) => { %>
+            <option value="<%= type.id %>"<%= optionValues.serviceTypeId === String(type.id) ? " selected" : "" %>><%= type.name %></option>
+        <% }); %>
+    </select>
+
+    <label for="statusName">Status of Imported Jobs</label>
+    <select id="statusName" name="statusName">
+        <% statuses.forEach((name) => { %>
+            <option value="<%= name %>"<%= optionValues.statusName === name ? " selected" : "" %>><%= name %></option>
+        <% }); %>
+    </select>
+
+    <label for="defaultCity">Default City</label>
+    <input id="defaultCity" name="defaultCity" type="text" maxlength="100" value="<%= optionValues.defaultCity %>">
+    <p>Used for a row with no city. A row that needs a new property and has no city at all is skipped.</p>
+
     <% fields.forEach((field) => { %>
         <label for="col_<%= field.key %>"><%= field.label %><%= field.required ? " (required)" : "" %></label>
         <select id="col_<%= field.key %>" name="col_<%= field.key %>">

@@ -1,0 +1,11 @@
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<input type="hidden" name="sheetId" value="<%= sheetId %>">
+<input type="hidden" name="sheet" value="<%= sheetName %>">
+<input type="hidden" name="headerRow" value="<%= headerRow %>">
+<input type="hidden" name="seasonYear" value="<%= seasonYear %>">
+<% fields.forEach((field) => { %>
+    <input type="hidden" name="col_<%= field.key %>" value="<%= picked[field.key] %>">
+<% }); %>
+<input type="hidden" name="serviceTypeId" value="<%= optionValues.serviceTypeId %>">
+<input type="hidden" name="statusName" value="<%= optionValues.statusName %>">
+<input type="hidden" name="defaultCity" value="<%= optionValues.defaultCity %>">

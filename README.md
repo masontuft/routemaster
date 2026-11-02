@@ -2,7 +2,7 @@
 
 Web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. It is Mason's CSE 340 final project (Option A, design your own).
 
-**Status:** in development. The Express app, authentication, customer service requests, the staff dashboard, owner admin, reviews, contact, moderation, and `pnpm dev` watch/reload are in place. `pnpm start`, `pnpm lint`, and `pnpm test` run. Spreadsheet import, daily route building, and deployment are not done.
+**Status:** in development. The Express app, authentication, customer service requests, the staff dashboard, owner admin, reviews, contact, moderation, and `pnpm dev` watch/reload are in place. `pnpm start`, `pnpm lint`, and `pnpm test` run. Spreadsheet upload and export, and daily route building are not done.
 
 ## Stack
 
@@ -10,13 +10,13 @@ Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL through `pg` a
 
 ## Architecture summary
 
-One server-rendered Express app using MVC (`models/`, `controllers/`, `views/`, with thin `routes/` and `middleware/`). Customers submit and track service requests. Owners and dispatchers work the queue, match Needs Review requests, and manage links. The owner manages users, roles, and the service catalog. Spreadsheet import and daily route building are not built.
+One server-rendered Express app using MVC (`models/`, `controllers/`, `views/`, with thin `routes/` and `middleware/`). Customers submit and track service requests. Owners and dispatchers work the queue, match Needs Review requests, and manage links. The owner manages users, roles, and the service catalog. Spreadsheet upload and export, and daily route building are not built.
 
 ## Roles
 
 | Role | Can do |
 | --- | --- |
-| Owner (admin) | Users and roles, the service catalog, owner stats, and the staff actions. Spreadsheet import is not built |
+| Owner (admin) | Users and roles, the service catalog, owner stats, and the staff actions. Spreadsheet import from a Google Sheet link is built; upload is not |
 | Dispatcher | Move requests through statuses, match Needs Review, create and revoke links. Building a daily route is not built |
 | Customer | Submit and track requests, leave reviews |
 

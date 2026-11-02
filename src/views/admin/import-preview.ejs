@@ -1,6 +1,27 @@
 <%- include("../partials/head") %>
 <h1>Import Preview</h1>
-<p><strong>Nothing has been saved.</strong> This shows what an import of <strong><%= sheetName %></strong> would do. Confirming an import comes in a later step.</p>
+<%- include("../partials/errors") %>
+<p><strong>Nothing has been saved yet.</strong> This shows what an import of <strong><%= sheetName %></strong> would do.</p>
+
+<h2>What Confirming Would Do</h2>
+<ul>
+    <li><%= plan.customersToCreate %> new customers and <%= plan.propertiesToCreate %> new properties</li>
+    <li><%= plan.jobsToCreate %> jobs, each dated by its own day and marked <%= optionValues.statusName %></li>
+    <li><%= plan.rowsWithoutDate %> rows with no date add a customer and property but no job</li>
+    <li><%= plan.duplicateJobsInSheet %> repeated rows for the same property and day are counted once</li>
+    <li>Skipped: <%= skipped.blocked %> with no name or street, <%= skipped.flagged %> on another customer's street,
+        <%= skipped.missing_city %> with no city</li>
+    <li>A job already on file for the same property, service and day is not added again</li>
+</ul>
+<% if (canConfirm) { %>
+    <form method="post" action="/admin/import/confirm">
+        <%- include("import-hidden") %>
+        <input type="hidden" name="planHash" value="<%= planHash %>">
+        <button type="submit">Confirm Import</button>
+    </form>
+<% } else { %>
+    <p>There is nothing new to import.</p>
+<% } %>
 
 <h2>Summary</h2>
 <ul>
@@ -52,14 +73,7 @@
 <% }); %>
 
 <form method="post" action="/admin/import/mapping">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <input type="hidden" name="sheetId" value="<%= sheetId %>">
-    <input type="hidden" name="sheet" value="<%= sheetName %>">
-    <input type="hidden" name="headerRow" value="<%= headerRow %>">
-    <input type="hidden" name="seasonYear" value="<%= seasonYear %>">
-    <% fields.forEach((field) => { %>
-        <input type="hidden" name="col_<%= field.key %>" value="<%= picked[field.key] %>">
-    <% }); %>
+    <%- include("import-hidden") %>
     <button type="submit">Change Mapping</button>
 </form>
 <p><a href="/admin/import">Start Over</a></p>

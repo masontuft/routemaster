@@ -1,0 +1,13 @@
+<%- include("../partials/head") %>
+<h1>Import Complete</h1>
+<p>Sheet <strong><%= batch.sheet_name %></strong>, season <%= batch.season_year %>, run by
+    <%= batch.created_by_email ?? "a removed user" %> on <%= batch.created_at.toISOString().slice(0, 10) %>.</p>
+<ul>
+    <li><%= batch.customers_created %> customers created</li>
+    <li><%= batch.properties_created %> properties created</li>
+    <li><%= batch.jobs_created %> jobs created</li>
+    <li><%= batch.jobs_existing %> jobs were already on file</li>
+    <li><%= batch.rows_skipped %> rows were skipped</li>
+</ul>
+<p><a href="/staff">Staff Dashboard</a> · <a href="/admin/import">Import Another Sheet</a></p>
+<%- include("../partials/foot") %>

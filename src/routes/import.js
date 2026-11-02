@@ -17,6 +17,8 @@ export default function importRoutes(limit) {
     router.post("/admin/import", limit, spreadsheetImport.submitLink);
     router.post("/admin/import/mapping", limit, spreadsheetImport.showMapping);
     router.post("/admin/import/preview", limit, spreadsheetImport.showPreview);
+    router.post("/admin/import/confirm", limit, spreadsheetImport.confirmImport);
+    router.get("/admin/import/batches/:id", spreadsheetImport.showBatch);
 
     return router;
 }

@@ -176,6 +176,7 @@ const SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms";
 const MAPPING = {
     sheetId: SHEET_ID, sheet: "Fall", headerRow: "1", seasonYear: "2025",
     col_name: "0", col_phone: "1", col_street: "2", col_date: "3", col_amount: "4",
+    serviceTypeId: "1", statusName: "Completed", defaultCity: "Testville",
 };
 
 async function workbookBytes(rows) {
@@ -306,7 +307,7 @@ test("the preview sorts rows into outcomes and writes nothing", async () => {
     assert.match(res.text, /<td>\$45\.00<\/td>/);
     assert.match(res.text, /Missing street address\./);
     assert.deepStrictEqual(await counts(), before);
-    assert.ok(res.text.includes("Confirm") === false || /Confirming an import comes in a later step/.test(res.text));
+    assert.match(res.text, /Nothing has been saved yet/);
 });
 
 test("the preview keeps the mapping so Change Mapping returns to the same choices", async () => {
@@ -341,4 +342,154 @@ test("an empty sheet is explained instead of crashing", async () => {
     const res = await stepPost(agent, "/admin/import/mapping", { sheetId: SHEET_ID, sheet: "Fall" });
     assert.strictEqual(res.status, 400);
     assert.ok(res.text.includes("That sheet has no rows."));
+});
+
+function hashFrom(page) {
+    return page.text.match(/name="planHash" value="([0-9a-f]{64})"/)[1];
+}
+
+async function seedAda() {
+    const ada = await Customer.create(pool, { name: "Ada Example", phone: "(801) 555-0100" });
+    await Property.create(pool, ada, { street: "1 Test St", city: "Testville" });
+}
+
+test("the preview says what confirming would do and offers a confirm form with the plan hash", async () => {
+    await seedAda();
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+
+    const res = await stepPost(agent, "/admin/import/preview", MAPPING);
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /2 new customers and 2 new properties/);
+    assert.match(res.text, /3 jobs, each dated by its own day and marked Completed/);
+    assert.match(
+        res.text,
+        /Skipped: 1 with no name or street, 1 on another customer(?:'|&#39;)s street,\s+0 with no city/,
+    );
+    assert.match(res.text, /action="\/admin\/import\/confirm"/);
+    assert.ok(res.text.includes('name="serviceTypeId" value="1"'));
+    assert.ok(res.text.includes('name="defaultCity" value="Testville"'));
+    hashFrom(res);
+    assert.deepStrictEqual(await counts(), [1, 1], "the preview still writes nothing");
+});
+
+test("a missing or unknown service type, status, or an over-long default city is explained on the form", async () => {
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+
+    const type = await stepPost(agent, "/admin/import/preview", { ...MAPPING, serviceTypeId: "999" });
+    assert.strictEqual(type.status, 400);
+    assert.ok(type.text.includes("Choose a service type from the list."));
+
+    const status = await stepPost(agent, "/admin/import/preview", { ...MAPPING, statusName: "Needs Review" });
+    assert.ok(status.text.includes("Choose a status from the list."));
+
+    const city = await stepPost(agent, "/admin/import/preview", { ...MAPPING, defaultCity: "x".repeat(101) });
+    assert.ok(city.text.includes("Default city must be at most 100 characters."));
+    assert.match(city.text, /Map Columns/);
+});
+
+test("confirming writes the import and redirects to a result page that survives a refresh", async () => {
+    await seedAda();
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+    const preview = await stepPost(agent, "/admin/import/preview", MAPPING);
+
+    const res = await stepPost(agent, "/admin/import/confirm", { ...MAPPING, planHash: hashFrom(preview) });
+
+    assert.strictEqual(res.status, 303);
+    assert.match(res.headers.location, /^\/admin\/import\/batches\/\d+$/);
+    assert.deepStrictEqual(await counts(), [3, 3]);
+    const jobs = await pool.query("SELECT count(*)::int AS n FROM service_requests WHERE import_batch_id IS NOT NULL");
+    assert.strictEqual(jobs.rows[0].n, 3);
+
+    for (let visit = 0; visit < 2; visit += 1) {
+        const page = await agent.get(res.headers.location);
+        assert.strictEqual(page.status, 200);
+        assert.match(page.text, /Import Complete/);
+        assert.match(page.text, /2 customers created/);
+        assert.match(page.text, /3 jobs created/);
+        assert.match(page.text, /owner@example\.com/);
+        assert.strictEqual(page.headers["cache-control"], "no-store");
+    }
+});
+
+test("confirming from a stale preview writes nothing and shows a fresh preview", async () => {
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+    const preview = await stepPost(agent, "/admin/import/preview", MAPPING);
+    const hash = hashFrom(preview);
+
+    fetchSheet = async () => {return { bytes: await workbookBytes([...JOB_ROWS, ["Fay Added", null, "8 Test St", "10/18", "45"]]) };};
+    const changedSheet = await stepPost(agent, "/admin/import/confirm", { ...MAPPING, planHash: hash });
+    assert.strictEqual(changedSheet.status, 409);
+    assert.ok(changedSheet.text.includes("The sheet or the data changed since this preview."));
+    assert.match(changedSheet.text, /Confirm Import/);
+    assert.notStrictEqual(hashFrom(changedSheet), hash);
+
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    await Customer.create(pool, { name: "Bob New", phone: "801-555-0111" });
+    const changedData = await stepPost(agent, "/admin/import/confirm", { ...MAPPING, planHash: hash });
+    assert.strictEqual(changedData.status, 409);
+
+    const garbage = await stepPost(agent, "/admin/import/confirm", { ...MAPPING, planHash: "<b>nope</b>" });
+    assert.strictEqual(garbage.status, 409);
+    assert.ok(garbage.text.includes("<b>nope</b>") === false);
+
+    assert.deepStrictEqual(await counts(), [1, 0], "only the customer the test added by hand");
+});
+
+test("submitting the same confirm twice imports once", async () => {
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+    const preview = await stepPost(agent, "/admin/import/preview", MAPPING);
+    const fields = { ...MAPPING, planHash: hashFrom(preview) };
+
+    const first = await stepPost(agent, "/admin/import/confirm", fields);
+    const second = await stepPost(agent, "/admin/import/confirm", fields);
+
+    assert.strictEqual(first.status, 303);
+    assert.strictEqual(second.status, 409);
+    assert.deepStrictEqual(await counts(), [4, 4]);
+});
+
+test("a sheet with nothing new offers no confirm button", async () => {
+    fetchSheet = async () => {return { bytes: await workbookBytes([JOB_ROWS[0]]) };};
+    const agent = await ownerAgent();
+
+    const res = await stepPost(agent, "/admin/import/preview", MAPPING);
+
+    assert.ok(res.text.includes("There is nothing new to import."));
+    assert.ok(res.text.includes("/admin/import/confirm") === false);
+});
+
+test("confirm and the result page are owner only, and confirm needs CSRF", async () => {
+    const owner = await ownerAgent();
+    const dispatcher = request.agent(server);
+    await loginAs(dispatcher, "dispatcher");
+
+    assert.strictEqual((await stepPost(dispatcher, "/admin/import/confirm", MAPPING)).status, 403);
+    assert.strictEqual((await dispatcher.get("/admin/import/batches/1")).status, 403);
+    assert.strictEqual((await request(server).post("/admin/import/confirm").type("form").send(MAPPING)).status, 403);
+    assert.strictEqual((await owner.post("/admin/import/confirm").type("form").send(MAPPING)).status, 403);
+    assert.strictEqual((await request(server).get("/admin/import/batches/1")).status, 302);
+    assert.strictEqual((await owner.get("/admin/import/batches/999")).status, 404);
+    assert.strictEqual((await owner.get("/admin/import/batches/abc")).status, 404);
+    assert.strictEqual(fetchCalls.length, 0);
+});
+
+test("choosing the same tab again starts from the mapping saved at the last import", async () => {
+    fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
+    const agent = await ownerAgent();
+    const preview = await stepPost(agent, "/admin/import/preview", { ...MAPPING, statusName: "Scheduled" });
+    await stepPost(agent, "/admin/import/confirm", { ...MAPPING, statusName: "Scheduled", planHash: hashFrom(preview) });
+
+    const res = await stepPost(agent, "/admin/import/mapping", { sheetId: SHEET_ID, sheet: "Fall" });
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /<option value="2" selected>/);
+    assert.match(res.text, /<option value="1" selected>/);
+    assert.match(res.text, /<option value="Scheduled" selected>/);
+    assert.ok(res.text.includes('value="Testville"'));
 });
