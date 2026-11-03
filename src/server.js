@@ -24,6 +24,7 @@ const app = createApp({
     sessionSecret: process.env.SESSION_SECRET,
     geocode: createGeocoder({ apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "" }),
     serviceState: process.env.SERVICE_STATE ?? "",
+    routeStartAddress: process.env.ROUTE_START_ADDRESS ?? "",
 });
 
 // Bind all interfaces: Render's proxy reaches the container over the network, not loopback.

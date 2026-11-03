@@ -1,0 +1,90 @@
+<%- include("../partials/head") %>
+<h1>Route Builder</h1>
+<%- include("../partials/errors") %>
+<% if (notice) { %><p role="status"><%= notice %></p><% } %>
+<p>Pick a day, find a map point for each booked address, then build the route. The route starts at the address you
+    give and ends at the last customer. Times are estimates from straight-line distance.</p>
+<form method="get" action="/staff/routes">
+    <label for="day">Day</label>
+    <input id="day" name="day" type="date" value="<%= day %>" required>
+    <button type="submit">Show Day</button>
+</form>
+<h2>Booked Jobs</h2>
+<% if (booked.length === 0) { %>
+    <p>Nothing is booked for <%= day %>. Book jobs on the <a href="/staff/day-board?day=<%= day %>">day board</a>.</p>
+<% } else { %>
+    <p><%= booked.length %> booked: <%= located.length %> with a map point, <%= pending.length %> still to look up,
+        <%= failed.length %> not found.</p>
+    <% if (pending.length > 0 || failed.length > 0) { %>
+        <form method="post" action="/staff/routes/locate">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="day" value="<%= day %>">
+            <% if (pending.length > 0) { %>
+                <button type="submit">Find Locations</button>
+            <% } %>
+            <% if (failed.length > 0) { %>
+                <button type="submit" name="retryFailed" value="1">Try Failed Addresses Again</button>
+            <% } %>
+        </form>
+    <% } %>
+    <% if (failed.length > 0) { %>
+        <h2>Addresses to Fix</h2>
+        <p>No map point could be found for these. Fix the address, then try again.</p>
+        <ul>
+            <% failed.forEach((stop) => { %>
+                <li><%= stop.customer_name %>, <%= stop.street %>, <%= stop.city ?? "no city" %>
+                    <a href="/staff/properties/<%= stop.property_id %>/edit">Edit Address</a></li>
+            <% }); %>
+        </ul>
+    <% } %>
+    <% if (located.length > 0) { %>
+        <h2>Build the Route</h2>
+        <form method="post" action="/staff/routes/build">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="day" value="<%= day %>">
+            <label for="startAddress">Start Address</label>
+            <input id="startAddress" name="startAddress" value="<%= form.startAddress %>" required minlength="5" maxlength="200">
+            <label for="startTime">Start Time</label>
+            <input id="startTime" name="startTime" type="time" value="<%= form.startTime %>" required>
+            <label for="serviceMinutes">Minutes at Each Stop</label>
+            <input id="serviceMinutes" name="serviceMinutes" type="number" min="5" max="120" value="<%= form.serviceMinutes %>" required>
+            <button type="submit"><%= route ? "Rebuild Route" : "Build Route" %></button>
+        </form>
+    <% } %>
+<% } %>
+<% if (route) { %>
+    <h2>Route for <%= route.route_day %></h2>
+    <% if (route.stale) { %>
+        <p role="alert">The jobs booked for this day have changed since this route was built. Rebuild it.</p>
+    <% } %>
+    <p>Starts at <%= route.start_address %> at <%= route.start_time %>. <%= route.stops.length %> stops,
+        <%= route.total_miles.toFixed(1) %> miles, about <%= route.travel_minutes %> minutes driving,
+        done around <%= route.end %>.</p>
+    <div class="table-scroll" role="region" aria-label="Route stops" tabindex="0">
+        <table>
+            <thead><tr><th>Stop</th><th>Arrive</th><th>Customer</th><th>Address</th><th>Phone</th><th>Miles</th><th>Notes</th><th>Status</th></tr></thead>
+            <tbody>
+                <% route.stops.forEach((stop) => { %>
+                    <tr>
+                        <td><%= stop.position %></td>
+                        <td><%= stop.arrive %></td>
+                        <td><a href="/staff/requests/<%= stop.request_id %>"><%= stop.customer_name %></a></td>
+                        <td><%= stop.navigation %></td>
+                        <td><%= stop.customer_phone ?? "" %></td>
+                        <td><%= stop.leg_miles.toFixed(1) %></td>
+                        <td><%= stop.notes %></td>
+                        <td><%= stop.status %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+    <h2>Map Links</h2>
+    <p>Open these on a phone for directions. A long day is split into parts, and each part starts where the last ended.</p>
+    <ul>
+        <% route.links.forEach((link, index) => { %>
+            <li><a href="<%= link.url %>" rel="noopener noreferrer" target="_blank">Part <%= index + 1 %>: stops <%= link.first - 1 || "start" %> to <%= link.last - 1 %></a></li>
+        <% }); %>
+    </ul>
+<% } %>
+<%- include("../partials/foot") %>

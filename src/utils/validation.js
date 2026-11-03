@@ -291,3 +291,32 @@ export function validateLinkBatch(body) {
         errors,
     };
 }
+
+// The form that builds a day's route. day goes through validatePreferredDate, so it is a real date from today to a
+// year out. startTime is 24-hour HH:MM, and serviceMinutes is the time at each customer.
+export function validateRouteBuild(body, today = todayString()) {
+    const day = String(body.day ?? "");
+    const startAddress = String(body.startAddress ?? "").trim();
+    const startTime = String(body.startTime ?? "");
+    const serviceMinutes = /^\d{1,3}$/.test(String(body.serviceMinutes ?? "")) ? Number(body.serviceMinutes) : null;
+    const errors = [];
+    const dayError = validatePreferredDate(day, today);
+
+    if (dayError) {
+        errors.push(dayError);
+    }
+
+    if (startAddress.length < 5 || startAddress.length > 200) {
+        errors.push("Enter the address the route starts from, up to 200 characters.");
+    }
+
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
+        errors.push("Choose a start time.");
+    }
+
+    if (serviceMinutes === null || serviceMinutes < 5 || serviceMinutes > 120) {
+        errors.push("Enter 5 to 120 minutes at each stop.");
+    }
+
+    return { values: { day, startAddress, startTime, serviceMinutes }, errors };
+}
