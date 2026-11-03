@@ -28,10 +28,13 @@ pnpm start
 - Create a local `.env` (git-ignored) with `DATABASE_URL`, `TEST_DATABASE_URL` and `SESSION_SECRET`; see `.env.example`. `pnpm dev`, `pnpm migrate`, `pnpm seed`, and `pnpm test` load it with `--env-file`.
 - `pnpm migrate` applies new files from `migrations/` to `DATABASE_URL`. Running it twice applies nothing the second time.
 - `pnpm seed` creates `owner@example.com`, `dispatcher@example.com` and `customer@example.com` using `SEED_PASSWORD`; running it again skips existing accounts.
+- `pnpm seed:test` fills the local test database (`TEST_DATABASE_URL`) with sample data: it applies the migrations, creates the three accounts, then adds 8 made-up customers, two areas with days, requests in every status, and a built route for tomorrow. Dates are relative to today. Running it again does nothing; `pnpm seed:test --reset` drops everything in that database first. It refuses to run unless `TEST_DATABASE_URL` is set and differs from `DATABASE_URL`. Point the app at it by running `DATABASE_URL="$TEST_DATABASE_URL" pnpm dev`.
 - `pnpm link:create <user email or customer id>` prints a magic link for local testing (set `BASE_URL` to change the host).
 - The generic scheduling page is `/schedule`.
 - CI (`.github/workflows/ci.yml`) runs a frozen install, lint, and test on pull requests and pushes to `main`. The workflow starts a `postgres:16` service and sets `TEST_DATABASE_URL`.
 
 ## Database
 
-Tests use only the database in `TEST_DATABASE_URL`. See [ADR 0011](../adr/0011-testing-and-ci.md).
+Tests use only the database in `TEST_DATABASE_URL`. See [ADR 0011](../adr/0011-testing-and-ci.md). Each test file makes and drops its own schema inside that database, so `pnpm seed:test` data in the `public` schema is not touched by `pnpm test`.
+
+To create the database the first time: `createdb routemaster_test`.
