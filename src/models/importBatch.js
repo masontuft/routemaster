@@ -66,3 +66,20 @@ export async function setCounts(client, id, counts) {
         ],
     );
 }
+
+// Every batch with how many of its customers are still on file, newest first.
+export async function listWithRemaining(pool) {
+    const { rows } = await pool.query(
+        `SELECT import_batches.id, import_batches.sheet_name, import_batches.season_year, import_batches.created_at,
+                (SELECT count(*)::int FROM customers WHERE customers.import_batch_id = import_batches.id)
+                    AS customers_remaining
+         FROM import_batches
+         ORDER BY import_batches.id DESC`,
+    );
+    return rows;
+}
+
+export async function exists(pool, id) {
+    const { rows } = await pool.query("SELECT 1 FROM import_batches WHERE id = $1", [id]);
+    return rows.length === 1;
+}

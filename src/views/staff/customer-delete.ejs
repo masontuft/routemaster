@@ -1,0 +1,15 @@
+<%- include("../partials/head") %>
+<h1>Delete <%= customer.name %></h1>
+<p>This cannot be undone. Deleting this customer also deletes:</p>
+<ul>
+    <li><%= counts.properties %> <%= counts.properties === 1 ? "property" : "properties" %></li>
+    <li><%= counts.requests %> <%= counts.requests === 1 ? "service request" : "service requests" %> and their status history</li>
+    <li><%= counts.reviews %> <%= counts.reviews === 1 ? "review" : "reviews" %></li>
+    <li><%= counts.links %> scheduling <%= counts.links === 1 ? "link" : "links" %></li>
+</ul>
+<form method="post" action="/staff/customers/<%= customer.id %>/delete">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Delete Customer Permanently</button>
+    <a href="/staff/customers/<%= customer.id %>">Cancel</a>
+</form>
+<%- include("../partials/foot") %>

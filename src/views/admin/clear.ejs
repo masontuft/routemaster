@@ -1,0 +1,30 @@
+<%- include("../partials/head") %>
+<h1>Clear Customers</h1>
+<% if (deleted !== null) { %>
+    <p role="status"><strong><%= deleted %> <%= deleted === 1 ? "customer was" : "customers were" %> deleted.</strong></p>
+<% } %>
+<p>Deleting a customer also deletes their properties, service requests, reviews and scheduling links. This cannot be undone.
+    You see the exact counts before anything is removed.</p>
+<h2>Delete by Import Batch</h2>
+<p>Removes the customers an import created. Jobs added to those customers by hand go with them. Jobs an import added to a
+    customer who was already on file stay.</p>
+<% if (batches.length === 0) { %>
+    <p>No imports have been run.</p>
+<% } else { %>
+    <ul>
+        <% batches.forEach((batch) => { %>
+            <li>
+                Batch <%= batch.id %>: <%= batch.sheet_name %>, season <%= batch.season_year %>,
+                <%= batch.created_at.toISOString().slice(0, 10) %> -
+                <%= batch.customers_remaining %> <%= batch.customers_remaining === 1 ? "customer" : "customers" %> on file
+                <% if (batch.customers_remaining > 0) { %>
+                    <a href="/admin/clear/batches/<%= batch.id %>">Review and Delete</a>
+                <% } %>
+            </li>
+        <% }); %>
+    </ul>
+<% } %>
+<h2>Delete All Customers</h2>
+<p>Removes every customer, including ones added by hand. Staff and owner logins stay.</p>
+<p><a href="/admin/clear/all">Review and Delete All</a></p>
+<%- include("../partials/foot") %>

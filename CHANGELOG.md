@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Added
+- Owners can delete a customer (`/staff/customers/:id/delete`) and clear customers in bulk (`/admin/clear`): by import batch, which removes the customers that batch created, or all customers behind a typed phrase. Each delete first shows the exact counts of customers, properties, requests, reviews and links that go with it, and a bulk delete is refused if those counts changed before it runs. There is no undo. Staff logins, import batches and service types are kept.
 - Owners and dispatchers can edit a customer's details and a property's city, ZIP and notes from the staff pages, add a property to a customer, and filter the customer list to those with a property missing a city. Only an owner can change a name or a street, because matching reads them; the route refuses a posted field the role may not change, not just the form. Normalized name, phone and address are recomputed on every edit.
 - A spreadsheet import no longer skips a row for lacking a city. The street is saved, the property's city is left empty (migration 017 drops `NOT NULL` on `properties.city`), and the preview and result page say how many properties have no city. Lists show just the street for those. Properties made by hand still require a city. The import page now asks for a name, street, city and ZIP on every row.
 - Staff and owners can record who referred a job. `service_requests.referred_by` (migration 015) stores the name only. Referral payouts are handled outside the app.

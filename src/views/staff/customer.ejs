@@ -1,7 +1,8 @@
 <%- include("../partials/head") %>
 <h1><%= customer.name %></h1>
 <%- include("../partials/errors") %>
-<p><%= customer.phone ?? "" %> <%= customer.email ?? "" %> <a href="/staff/customers/<%= customer.id %>/edit">Edit Customer</a></p>
+<p><%= customer.phone ?? "" %> <%= customer.email ?? "" %> <a href="/staff/customers/<%= customer.id %>/edit">Edit Customer</a>
+    <% if (user && user.role === "owner") { %><a href="/staff/customers/<%= customer.id %>/delete">Delete Customer</a><% } %></p>
 <h2>Properties</h2>
 <ul>
     <% properties.forEach((property) => { %>

@@ -52,6 +52,7 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET, POST | `/staff/customers/:id/edit` | `name`, `phone`, `email` | Owner edits all three; a dispatcher edits phone and email. A posted field the role may not change is a 403 and nothing is saved |
 | POST | `/staff/customers/:id/properties` | `street`, `city`, `zip` | Add a property; the city is required for one made by hand |
 | GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes` | Owner edits all four; a dispatcher edits city, ZIP and notes. A blank city or ZIP is allowed |
+| GET, POST | `/staff/customers/:id/delete` | | Owner only (403 for a dispatcher). The GET lists what will be deleted with the customer; the POST deletes the customer and, by cascade, their properties, requests, status history, reviews and links, then redirects to `/staff/customers` |
 | POST | `/staff/customers/:id/links` | | Create a link, shown once in the response |
 | POST | `/staff/customers/:id/links/:linkId/revoke` | | Revoke a link |
 
@@ -67,6 +68,9 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 | POST | `/admin/users` | `email`, `role` (owner or dispatcher), `password`, `confirm` | Create a staff user |
 | GET | `/admin/service-types` | | Services with price and active flag |
 | GET | `/admin/service-types/new`, `/admin/service-types/:id/edit` | | Service form |
+| GET | `/admin/clear` | `deleted` (optional) | Owner only. Lists import batches with the customers each still has on file, and links to the delete pages |
+| GET, POST | `/admin/clear/batches/:id` | `customers`, `properties`, `requests`, `reviews`, `links` | Confirm page, then delete the customers that import batch created. The POST carries the counts the owner saw and is refused with 409 if they no longer match |
+| GET, POST | `/admin/clear/all` | the same five counts, `phrase` | Confirm page, then delete every customer. The phrase must be `delete all customers` (400 otherwise); a changed count is a 409 |
 | GET | `/admin/import` | | Form for a public Google Sheet link (owner only) |
 | POST | `/admin/import` | `link` | Download and parse the sheet, then list each tab with its row and column counts. Nothing is saved. Owner only, CSRF, shared per-IP limit. Bad input returns 400, a Google or network failure returns 502 |
 | POST | `/admin/import/mapping` | `sheetId`, `sheet`, `headerRow` (optional), plus `seasonYear` and `col_<field>` to keep earlier choices | Download the sheet again and show the column mapping form for one tab. Owner only, CSRF, shared per-IP limit |
