@@ -2,7 +2,7 @@
 
 Web app for service companies that builds daily routes and pairs well with Sprinkler Messenger. It is Mason's CSE 340 final project (Option A, design your own).
 
-**Status:** in development. The Express app, authentication, customer service requests, the staff dashboard, owner admin, reviews, contact, moderation, and `pnpm dev` watch/reload are in place. `pnpm start`, `pnpm lint`, and `pnpm test` run. Spreadsheet upload and export, and daily route building are not done.
+**Status:** in development. The Express app, authentication, customer service requests, the staff dashboard, owner admin, reviews, contact, moderation, and `pnpm dev` watch/reload are in place. `pnpm start`, `pnpm lint`, and `pnpm test` run. Spreadsheet upload and export are not done. Staff can book a day's requests on the day board and build an ordered, timed route for the day.
 
 ## Stack
 
@@ -10,14 +10,14 @@ Plain JavaScript as ES modules, Node 24, Express, EJS, PostgreSQL through `pg` a
 
 ## Architecture summary
 
-One server-rendered Express app using MVC (`models/`, `controllers/`, `views/`, with thin `routes/` and `middleware/`). Customers submit and track service requests. Owners and dispatchers work the queue, match Needs Review requests, and manage links. The owner manages users, roles, and the service catalog. Spreadsheet upload and export, and daily route building are not built.
+One server-rendered Express app using MVC (`models/`, `controllers/`, `views/`, with thin `routes/` and `middleware/`). Customers submit and track service requests. Owners and dispatchers work the queue, match Needs Review requests, and manage links. The owner manages users, roles, and the service catalog. Staff book a day's requests on the day board and build a timed route for the day. Spreadsheet upload and export are not built.
 
 ## Roles
 
 | Role | Can do |
 | --- | --- |
 | Owner (admin) | Users and roles, the service catalog, owner stats, and the staff actions. Spreadsheet import from a Google Sheet link is built; upload is not |
-| Dispatcher | Move requests through statuses, match Needs Review, create and revoke links. Building a daily route is not built |
+| Dispatcher | Move requests through statuses, match Needs Review, create and revoke links, book a day's requests, and build the day's route |
 | Customer | Submit and track requests, leave reviews |
 
 Test account emails (created by `pnpm seed`; the shared password is not listed here): `owner@example.com`, `dispatcher@example.com`, `customer@example.com`.
@@ -39,7 +39,7 @@ Names are in [.env.example](.env.example) and [docs/setup/environment-variables.
 
 ## Database diagram
 
-ERD image: not exported yet. The schema is migrations `001` through `015` ([#29](https://github.com/masontuft/routemaster/issues/29)).
+ERD image: not exported yet. The schema is migrations `001` through `021` ([#29](https://github.com/masontuft/routemaster/issues/29)).
 
 ## Deployment
 

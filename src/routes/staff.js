@@ -3,6 +3,7 @@ import { requireRole } from "../middleware/auth.js";
 import * as staff from "../controllers/staff.js";
 import * as moderation from "../controllers/moderation.js";
 import * as areas from "../controllers/areas.js";
+import * as dayBoard from "../controllers/dayBoard.js";
 
 const router = Router();
 
@@ -33,6 +34,8 @@ router.get("/staff/areas/:id", areas.show);
 router.post("/staff/areas/:id", areas.rename);
 router.post("/staff/areas/:id/days", areas.addDays);
 router.post("/staff/areas/:id/days/delete", areas.removeDay);
+router.get("/staff/day-board", dayBoard.show);
+router.post("/staff/day-board/schedule", dayBoard.schedule);
 router.get("/staff/reviews", moderation.listReviews);
 router.post("/staff/reviews/:id/hide", moderation.hideReview);
 router.post("/staff/reviews/:id/restore", moderation.restoreReview);

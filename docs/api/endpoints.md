@@ -53,6 +53,11 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | POST | `/staff/customers/:id/properties` | `street`, `city`, `zip` | Add a property; the city is required for one made by hand |
 | GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes`, `subdivisionId` | Owner edits all five; a dispatcher edits city, ZIP, notes and the area (blank clears it). A blank city or ZIP is allowed |
 | GET | `/staff/link-batches/new` | `areaId`, `includeActive` (optional) | Choose an area and see how many links a batch would make, skip or list as having no usable phone. Makes nothing. No-store |
+| GET | `/staff/day-board` | owner, dispatcher | `day` (optional, `YYYY-MM-DD`, default today) | Requests waiting for that day, those already booked for it, and days with waiting requests |
+| POST | `/staff/day-board/schedule` | owner, dispatcher | `day` (today or later), `requestIds` (one or many, at most 200) | Book each ticked Requested job for the day; others are counted as skipped |
+| GET | `/staff/routes` | owner, dispatcher | `day` (optional) | Booked jobs with map-point counts, addresses to fix, the build form, and the saved route with map links |
+| POST | `/staff/routes/locate` | owner, dispatcher, rate limited | `day`, `retryFailed` (optional `1`) | Look up map points for up to 15 booked jobs that have none |
+| POST | `/staff/routes/build` | owner, dispatcher, rate limited | `day`, `startAddress` (5 to 200), `startTime` (`HH:MM`), `serviceMinutes` (5 to 120) | Order the located stops, time them, and save the day's route (replaces any earlier one) |
 | POST | `/staff/link-batches` | `areaId`, `days` (1 to 120), `template` (must contain `{link}`), `includeActive` | Make one link per eligible customer in the area in one transaction and show them once, as a table and a CSV. More than 500 is a 400; an unknown area is a 404. Shared per-IP limit, CSRF, no-store |
 | GET, POST | `/staff/areas` | `name` | List areas with property and upcoming-day counts; create an area (400 for a blank or duplicate name) |
 | GET, POST | `/staff/areas/:id` | `name` | The area's upcoming days and entry forms; POST renames it (400 if another area has the name) |

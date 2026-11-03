@@ -11,3 +11,6 @@ Names only. Never commit values. Production hosting is in [ADR 0010](../adr/0010
 | `SEED_PASSWORD` | Password for the seeded test accounts. Never commit the real value ([#22](https://github.com/masontuft/routemaster/issues/22)). | `pnpm seed` only |
 | `TEST_DATABASE_URL` | Throwaway database for tests. Must differ in host, port, or database name from `DATABASE_URL`. | `src/config/testDatabase.js` only. The server does not read it. |
 | `BASE_URL` | Optional host printed by `pnpm link:create`. Defaults to `http://localhost:3000`. | `scripts/create-link.js` only. Not listed in `.env.example`. |
+| `GOOGLE_MAPS_API_KEY` | Optional. When set, addresses are looked up with Google first, then OpenStreetMap Nominatim. Without it only Nominatim is used, at one lookup a second. Never commit the value. | `src/server.js` |
+| `SERVICE_STATE` | Optional. A state such as `ID`, added to each address before a lookup, because properties store a city and ZIP but no state. | `src/server.js` |
+| `ROUTE_START_ADDRESS` | Optional. The address a route starts from, shown as the default on the Route Builder page. Staff can change it for a day. | `src/server.js` |

@@ -16,5 +16,6 @@ One file per decision, numbered, named for the decision. Status is "Accepted" on
 | [0010](0010-deployment-and-trust-boundary.md) | Deployment and trust boundary | Accepted |
 | [0011](0011-testing-and-ci.md) | Testing and CI | Accepted |
 | [0012](0012-customer-access-by-link.md) | Customer access by link | Accepted |
+| [0013](0013-route-ordering-and-map-lookups.md) | Route ordering and map lookups | Proposed |
 
 Each ADR has: Title, Status, Date, Context, Decision drivers, Decision, Alternatives considered, Consequences and References. References are links that were opened and checked when the ADR was written. Where a page did not confirm a claim, the ADR says so.
