@@ -53,6 +53,28 @@ export async function update(pool, id, fields) {
     return result.rowCount === 1;
 }
 
+// What deleting a customer takes with it: the foreign keys CASCADE from customers to these four tables.
+// Returns null for a customer that does not exist.
+export async function countRelated(pool, id) {
+    const { rows } = await pool.query(
+        `SELECT customers.id,
+                (SELECT count(*)::int FROM properties WHERE customer_id = customers.id) AS properties,
+                (SELECT count(*)::int FROM service_requests WHERE customer_id = customers.id) AS requests,
+                (SELECT count(*)::int FROM reviews WHERE customer_id = customers.id) AS reviews,
+                (SELECT count(*)::int FROM access_links WHERE customer_id = customers.id) AS links
+         FROM customers
+         WHERE customers.id = $1`,
+        [id],
+    );
+    return rows[0] ?? null;
+}
+
+// One statement, so the cascade is atomic. Returns false when there was no such customer.
+export async function remove(pool, id) {
+    const result = await pool.query("DELETE FROM customers WHERE id = $1", [id]);
+    return result.rowCount === 1;
+}
+
 // Name, phone and street must all match. Returns the customer and that property, or null.
 export async function findByContact(pool, { name, phone, address }) {
     const { rows } = await pool.query(

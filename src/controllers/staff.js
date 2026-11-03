@@ -320,3 +320,25 @@ export async function revokeLink(req, res) {
 
     res.redirect(`/staff/customers/${customerId}`);
 }
+
+// Deleting is owner-only and checked here, not only by hiding the link. The page shows what will go first.
+function requireOwner(req) {
+    if (req.session.user.role !== "owner") {
+        throw forbidden();
+    }
+}
+
+export async function showCustomerDelete(req, res) {
+    requireOwner(req);
+    const customer = await loadCustomer(req);
+    const counts = await Customer.countRelated(req.app.locals.db, customer.id);
+    res.set("Cache-Control", "no-store");
+    res.render("staff/customer-delete", { title: "Delete Customer", customer, counts });
+}
+
+export async function deleteCustomer(req, res) {
+    requireOwner(req);
+    const customer = await loadCustomer(req);
+    await Customer.remove(req.app.locals.db, customer.id);
+    res.redirect(303, "/staff/customers");
+}

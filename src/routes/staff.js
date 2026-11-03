@@ -19,6 +19,8 @@ router.get("/staff/customers", staff.listCustomers);
 router.get("/staff/customers/:id", staff.showCustomer);
 router.get("/staff/customers/:id/edit", staff.showCustomerEdit);
 router.post("/staff/customers/:id/edit", staff.updateCustomer);
+router.get("/staff/customers/:id/delete", staff.showCustomerDelete);
+router.post("/staff/customers/:id/delete", staff.deleteCustomer);
 router.post("/staff/customers/:id/properties", staff.addProperty);
 router.get("/staff/properties/:id/edit", staff.showPropertyEdit);
 router.post("/staff/properties/:id/edit", staff.updateProperty);
