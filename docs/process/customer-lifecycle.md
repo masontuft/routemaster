@@ -88,6 +88,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
   2. Addresses that were not found are listed with a link to fix them. A job without a point is left off the route.
   3. Build Route takes a start address, a start time and minutes per stop, orders the stops with nearest-neighbor and a 2-opt pass, times them, and saves one route for the day. Building again replaces it.
 - **Output:** a table with arrival time, phone and notes for each stop, the total miles and drive time, and Google Maps links split into parts. The page warns if the day's booked jobs changed after the route was built.
+- **Tentative stops:** a penciled-in job (step 6) is on the route only while the owner option is on. It is marked tentative in the table, and the summary says how many stops are unconfirmed. With the option off, the page says how many tentative jobs it left off, and a route built earlier is flagged out of date.
 - **Rules:** distances are straight-line, so times are estimates.
 - **Code:** `src/routing/engine.js`, `src/geocoding/`, `src/models/routePlan.js`.
 - **Gaps:** one route and one starting point per day. No print or export. Technicians cannot see routes.
@@ -118,6 +119,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Route builder includes tentative stops only while the owner option is on, and marks them. |
 | 2026-11-03 | Added an optional city on each area, used for map lookups when a property has no city. |
 | 2026-11-03 | Added penciling in: tentative bookings from the day board, and customer and staff confirmation (step 6). |
 | 2026-11-03 | Added step 9, rebooking: the list of customers to reach again and links for just the ticked ones. |

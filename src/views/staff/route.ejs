@@ -10,6 +10,10 @@
     <button type="submit">Show Day</button>
 </form>
 <h2>Booked Jobs</h2>
+<% if (leftOff > 0) { %>
+    <p role="status"><%= leftOff %> tentative <%= leftOff === 1 ? "job is" : "jobs are" %> not on this route, because booking
+        customers who have not confirmed is turned off. The owner can change that in Settings.</p>
+<% } %>
 <% if (booked.length === 0) { %>
     <p>Nothing is booked for <%= day %>. Book jobs on the <a href="/staff/day-board?day=<%= day %>">day board</a>.</p>
 <% } else { %>
@@ -59,7 +63,8 @@
     <% } %>
     <p>Starts at <%= route.start_address %> at <%= route.start_time %>. <%= route.stops.length %> stops,
         <%= route.total_miles.toFixed(1) %> miles, about <%= route.travel_minutes %> minutes driving,
-        done around <%= route.end %>.</p>
+        done around <%= route.end %>.<% if (route.tentativeCount > 0) { %>
+        <%= route.tentativeCount %> of them <%= route.tentativeCount === 1 ? "is" : "are" %> tentative, not yet confirmed by the customer.<% } %></p>
     <div class="table-scroll" role="region" aria-label="Route stops" tabindex="0">
         <table>
             <thead><tr><th>Stop</th><th>Arrive</th><th>Customer</th><th>Address</th><th>Phone</th><th>Miles</th><th>Notes</th><th>Status</th></tr></thead>
@@ -68,7 +73,7 @@
                     <tr>
                         <td><%= stop.position %></td>
                         <td><%= stop.arrive %></td>
-                        <td><a href="/staff/requests/<%= stop.request_id %>"><%= stop.customer_name %></a></td>
+                        <td><a href="/staff/requests/<%= stop.request_id %>"><%= stop.customer_name %></a><%= stop.tentative ? " (tentative)" : "" %></td>
                         <td><%= stop.navigation %></td>
                         <td><%= stop.customer_phone ?? "" %></td>
                         <td><%= stop.leg_miles.toFixed(1) %></td>

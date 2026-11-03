@@ -1,5 +1,6 @@
 import * as Property from "../models/property.js";
 import * as RoutePlan from "../models/routePlan.js";
+import * as AppSetting from "../models/appSetting.js";
 import { locateProperties } from "../geocoding/locate.js";
 import { addressText } from "../geocoding/geocoder.js";
 import { buildRoute, formatClock, mapsLinks } from "../routing/engine.js";
@@ -21,11 +22,23 @@ function joinNotes(stop) {
     return [stop.request_notes, stop.property_notes].filter(Boolean).join(" / ");
 }
 
+// The booked jobs a route may use. Tentative ones (penciled in, not yet confirmed) count only while the owner option
+// is on. With it off they are left out and counted, so the page can say how many were left off.
+async function jobsFor(db, day) {
+    const all = await RoutePlan.bookedForDay(db, day);
+    const booked = await AppSetting.allowsTentativeBooking(db)
+        ? all
+        : all.filter((stop) => {
+            return !stop.tentative;
+        });
+    return { booked, leftOff: all.length - booked.length };
+}
+
 // Every page here carries names, phones and addresses, so none may be cached.
 async function routePage(req, res, { day, values, errors = [], notice = null, status = 200 }) {
     const db = req.app.locals.db;
     const state = req.app.locals.serviceState;
-    const booked = await RoutePlan.bookedForDay(db, day);
+    const { booked, leftOff } = await jobsFor(db, day);
     const saved = await RoutePlan.findForDay(db, day);
     const located = booked.filter((stop) => {
         return stop.geocode_status === "ok";
@@ -58,6 +71,9 @@ async function routePage(req, res, { day, values, errors = [], notice = null, st
             ...saved,
             stops,
             stale: bookedIds.join() !== savedIds.join(),
+            tentativeCount: stops.filter((stop) => {
+                return stop.tentative;
+            }).length,
             links: mapsLinks([saved.start_address, ...stops.map((stop) => {
                 return stop.navigation;
             })]),
@@ -73,7 +89,8 @@ async function routePage(req, res, { day, values, errors = [], notice = null, st
 
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/route", {
-        title: "Route Builder", day, today: todayString(), booked, located, pending, failed, route, form, errors, notice,
+        title: "Route Builder", day, today: todayString(), booked, leftOff, located, pending, failed, route, form, errors,
+        notice,
     });
 }
 
@@ -86,7 +103,7 @@ export async function show(req, res) {
 export async function locate(req, res) {
     const db = req.app.locals.db;
     const day = dayFrom(req.body.day);
-    const booked = await RoutePlan.bookedForDay(db, day);
+    const { booked } = await jobsFor(db, day);
     const ids = booked.map((stop) => {
         return stop.property_id;
     });
@@ -122,7 +139,7 @@ export async function build(req, res) {
     }
 
     const db = req.app.locals.db;
-    const booked = await RoutePlan.bookedForDay(db, day);
+    const { booked } = await jobsFor(db, day);
     const located = booked.filter((stop) => {
         return stop.geocode_status === "ok";
     });

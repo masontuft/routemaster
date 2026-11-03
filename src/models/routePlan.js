@@ -5,7 +5,7 @@ const STOP_COLUMNS = `
     service_requests.notes AS request_notes, properties.notes AS property_notes,
     properties.id AS property_id, properties.street, COALESCE(properties.city, subdivisions.city) AS city, properties.zip,
     properties.latitude, properties.longitude, properties.geocode_status, subdivisions.name AS area,
-    request_statuses.name AS status
+    request_statuses.name AS status, service_requests.tentative
 `;
 const STOP_FROM = `
     FROM service_requests
