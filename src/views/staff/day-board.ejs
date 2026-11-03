@@ -1,0 +1,68 @@
+<%- include("../partials/head") %>
+<h1>Day Board</h1>
+<%- include("../partials/errors") %>
+<% if (notice) { %><p role="status"><%= notice %></p><% } %>
+<p>Pick a day to see who asked for it, then book the customers you will visit. Booked customers can be put into a route.</p>
+<form method="get" action="/staff/day-board">
+    <label for="day">Day</label>
+    <input id="day" name="day" type="date" value="<%= day %>" required>
+    <button type="submit">Show Day</button>
+</form>
+<% if (busyDays.length > 0) { %>
+    <h2>Days with Waiting Requests</h2>
+    <ul>
+        <% busyDays.forEach((busy) => { %>
+            <li><a href="/staff/day-board?day=<%= busy.day %>"><%= busy.day %></a>: <%= busy.waiting %> waiting</li>
+        <% }); %>
+    </ul>
+<% } %>
+<h2>Waiting for <%= day %></h2>
+<% if (board.waiting.length === 0) { %>
+    <p>No requests are waiting for this day.</p>
+<% } else if (day < today) { %>
+    <p>This day has passed, so requests can no longer be booked for it.</p>
+<% } else { %>
+    <form method="post" action="/staff/day-board/schedule">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="day" value="<%= day %>">
+        <div class="table-scroll" role="region" aria-label="Waiting requests" tabindex="0">
+            <table>
+                <thead><tr><th>Book</th><th>Customer</th><th>Area</th><th>Address</th><th>Service</th><th>Phone</th></tr></thead>
+                <tbody>
+                    <% board.waiting.forEach((item) => { %>
+                        <tr>
+                            <td><input type="checkbox" name="requestIds" value="<%= item.id %>" aria-label="Book <%= item.customer_name %>" checked></td>
+                            <td><a href="/staff/requests/<%= item.id %>"><%= item.customer_name %></a></td>
+                            <td><%= item.area ?? "No area" %></td>
+                            <td><%= item.street %>, <%= item.city %></td>
+                            <td><%= item.service_type %></td>
+                            <td><%= item.customer_phone ?? "" %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+        <button type="submit">Book Ticked for <%= day %></button>
+    </form>
+<% } %>
+<h2>Booked for <%= day %></h2>
+<% if (board.booked.length === 0) { %>
+    <p>Nothing is booked for this day yet.</p>
+<% } else { %>
+    <div class="table-scroll" role="region" aria-label="Booked requests" tabindex="0">
+        <table>
+            <thead><tr><th>Customer</th><th>Area</th><th>Address</th><th>Service</th></tr></thead>
+            <tbody>
+                <% board.booked.forEach((item) => { %>
+                    <tr>
+                        <td><a href="/staff/requests/<%= item.id %>"><%= item.customer_name %></a></td>
+                        <td><%= item.area ?? "No area" %></td>
+                        <td><%= item.street %>, <%= item.city %></td>
+                        <td><%= item.service_type %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+<% } %>
+<%- include("../partials/foot") %>
