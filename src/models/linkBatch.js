@@ -1,0 +1,97 @@
+import { withTransaction } from "../db/transaction.js";
+import { normalizePhone } from "../utils/normalize.js";
+import * as AccessLink from "./accessLink.js";
+
+export const MAX_BATCH = 500;
+export const MAX_DAYS = 120;
+
+// Customers with a property in the area, each once however many properties they have there, and whether they
+// already hold a link that still works (not revoked, not expired).
+async function customersInArea(db, areaId) {
+    const { rows } = await db.query(
+        `SELECT customers.id, customers.name, customers.phone,
+                EXISTS (SELECT 1 FROM access_links
+                        WHERE access_links.customer_id = customers.id
+                          AND access_links.revoked_at IS NULL AND access_links.expires_at > now()) AS has_active
+         FROM customers
+         WHERE EXISTS (SELECT 1 FROM properties
+                       WHERE properties.customer_id = customers.id AND properties.subdivision_id = $1)
+         ORDER BY customers.name, customers.id`,
+        [areaId],
+    );
+    return rows;
+}
+
+// A phone that cannot be texted (blank, or fewer than 10 digits) is listed, not linked.
+function textable(customer) {
+    return normalizePhone(customer.phone ?? "").length >= 10;
+}
+
+function sort(customers, includeActive) {
+    const noPhone = customers.filter((customer) => {
+        return !textable(customer);
+    });
+    const withPhone = customers.filter(textable);
+    const skippedActive = includeActive ? [] : withPhone.filter((customer) => {
+        return customer.has_active;
+    });
+    const toLink = withPhone.filter((customer) => {
+        return includeActive || !customer.has_active;
+    });
+    return { toLink, noPhone, skippedActive };
+}
+
+// What a batch would do, without creating anything. null for an area that does not exist.
+export async function preview(pool, areaId, { includeActive = false } = {}) {
+    const { rows } = await pool.query("SELECT 1 FROM subdivisions WHERE id = $1", [areaId]);
+
+    if (rows.length === 0) {
+        return null;
+    }
+
+    const { toLink, noPhone, skippedActive } = sort(await customersInArea(pool, areaId), includeActive);
+    return { toLink: toLink.length, noPhone: noPhone.length, skippedActive: skippedActive.length };
+}
+
+// Makes one link per eligible customer in one transaction, so a failure leaves no half-made batch. The area row is
+// locked so two runs for the same area cannot both see "no active link" and double up. The raw tokens are returned
+// here and nowhere else; only their hashes are stored.
+export async function create(pool, { areaId, createdBy, days, includeActive = false }) {
+    if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
+        throw new RangeError(`days must be a whole number from 1 to ${MAX_DAYS}`);
+    }
+
+    return withTransaction(pool, async (client) => {
+        const area = await client.query("SELECT id FROM subdivisions WHERE id = $1 FOR UPDATE", [areaId]);
+
+        if (area.rows.length === 0) {
+            return { error: "not_found" };
+        }
+
+        const { toLink, noPhone, skippedActive } = sort(await customersInArea(client, areaId), includeActive);
+
+        if (toLink.length > MAX_BATCH) {
+            return { error: "too_many", count: toLink.length };
+        }
+
+        const batch = await client.query(
+            `INSERT INTO link_batches (subdivision_id, created_by, days, links_created, skipped_no_phone, skipped_active)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+            [areaId, createdBy ?? null, days, toLink.length, noPhone.length, skippedActive.length],
+        );
+        const batchId = batch.rows[0].id;
+        const rows = [];
+
+        for (const customer of toLink) {
+            const token = await AccessLink.create(client, { customerId: customer.id, createdBy, days, batchId });
+            rows.push({ customerId: customer.id, name: customer.name, phone: customer.phone, token });
+        }
+
+        return {
+            batchId, rows, skippedActive: skippedActive.length,
+            noPhone: noPhone.map((customer) => {
+                return { id: customer.id, name: customer.name };
+            }),
+        };
+    });
+}
