@@ -1,0 +1,40 @@
+<%- include("../partials/head") %>
+<h1>Send Scheduling Links</h1>
+<%- include("../partials/errors") %>
+<p>This makes one scheduling link for each customer who has a property in an area. It does not send anything. You get a
+    list to copy into your texting tool.</p>
+<form method="get" action="/staff/link-batches/new">
+    <label for="areaPick">Area</label>
+    <select id="areaPick" name="areaId" required>
+        <option value="">Choose an area</option>
+        <% areas.forEach((area) => { %>
+            <option value="<%= area.id %>" <%= Number(values.areaId) === area.id ? "selected" : "" %>><%= area.name %> (<%= area.properties %> properties)</option>
+        <% }); %>
+    </select>
+    <label><input type="checkbox" name="includeActive" value="1"<%= values.includeActive ? " checked" : "" %>> Also include customers who already have a working link</label>
+    <button type="submit">Preview</button>
+</form>
+<% if (preview) { %>
+    <h2>Preview</h2>
+    <ul>
+        <li><%= preview.toLink %> <%= preview.toLink === 1 ? "customer gets" : "customers get" %> a new link</li>
+        <li><%= preview.noPhone %> <%= preview.noPhone === 1 ? "customer has" : "customers have" %> no usable phone and will be listed, not linked</li>
+        <li><%= preview.skippedActive %> already <%= preview.skippedActive === 1 ? "has" : "have" %> a working link and will be skipped</li>
+    </ul>
+    <% if (preview.toLink > max) { %>
+        <p>That is more than the limit of <%= max %> for one batch. Nothing can be made for this area until it is smaller.</p>
+    <% } else if (preview.toLink > 0) { %>
+        <form method="post" action="/staff/link-batches">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="areaId" value="<%= values.areaId %>">
+            <input type="hidden" name="includeActive" value="<%= values.includeActive ? "1" : "0" %>">
+            <label for="days">Link Lifetime (Days)</label>
+            <input id="days" name="days" type="number" min="1" max="120" value="<%= values.days %>" required>
+            <label for="template">Message</label>
+            <textarea id="template" name="template" maxlength="500" required><%= values.template %></textarea>
+            <p>Use <code>{name}</code> for the customer's name and <code>{link}</code> for their link.</p>
+            <button type="submit">Make Links</button>
+        </form>
+    <% } %>
+<% } %>
+<%- include("../partials/foot") %>

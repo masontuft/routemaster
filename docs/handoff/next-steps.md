@@ -1,6 +1,6 @@
 # Next Steps
 
-The Express server, authentication, service requests, staff dashboard, owner admin, reviews, contact, moderation, migrations 001 through 018, and `pnpm seed` are in the repo. CSRF is `csrf-sync`, wired in `src/app.js`. CI (`.github/workflows/ci.yml`) runs a `postgres:16` service. The items below are still open.
+The Express server, authentication, service requests, staff dashboard, owner admin, reviews, contact, moderation, migrations 001 through 019, and `pnpm seed` are in the repo. CSRF is `csrf-sync`, wired in `src/app.js`. CI (`.github/workflows/ci.yml`) runs a `postgres:16` service. The items below are still open.
 
 ## Required
 

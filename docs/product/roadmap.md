@@ -3,7 +3,7 @@
 Post-course or optional.
 
 - Email or text delivery of customer links. The staff pages already create and revoke links and work the Needs Review queue.
-- Send customer links in bulk through Sprinkler Messenger. Parked. Future work, and not a commitment. Nothing is built until the open questions are answered. A deep link would open the companion React Native app and its mass-text feature on the dispatcher's phone. Viability is not confirmed: it depends on Messenger sending a different message to each customer and on iOS and carrier limits. Spec: [docs/integrations/sprinkler-messenger.md](../integrations/sprinkler-messenger.md). All seven open questions stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
+- Send customer links in bulk through Sprinkler Messenger. Parked. A manual version exists: `/staff/link-batches/new` makes the links for an area and lists them to copy, and nothing is sent. Future work, and not a commitment. Nothing is built until the open questions are answered. A deep link would open the companion React Native app and its mass-text feature on the dispatcher's phone. Viability is not confirmed: it depends on Messenger sending a different message to each customer and on iOS and carrier limits. Spec: [docs/integrations/sprinkler-messenger.md](../integrations/sprinkler-messenger.md). All seven open questions stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
 - Branded business workspaces (multi-tenant). Planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
 - Import of expenses, mileage and compressor schedule tabs.
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
