@@ -4,7 +4,7 @@
 
 1. A customer submits a form, as a signed-in customer, through a magic link, or on the generic `/schedule` page. Input is validated server-side.
 2. A model inserts a `service_requests` row with a parameterized query and writes a `status_history` row.
-3. An owner or dispatcher moves the request through the statuses in `src/utils/transitions.js`. Scheduling requires a date. Each change adds a `status_history` row. Assigning the request to a route (`route_stops`) is not built.
+3. An owner or dispatcher moves the request through the statuses in `src/utils/transitions.js`. Scheduling requires a date. Each change adds a `status_history` row. Staff can book many Requested jobs for a day at once on the day board (`/staff/day-board`), which uses the same status change. A Scheduled job can then be placed on that day's route (`route_stops`), built at `/staff/routes`: map points are looked up and saved on the property, the stops are ordered with nearest-neighbor and 2-opt in `src/routing/engine.js`, and the timed route is saved, one per day.
 4. The customer sees the updated status on a server-rendered page.
 
 ## Spreadsheet import
