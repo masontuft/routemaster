@@ -22,6 +22,7 @@ import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { isProduction } from "./utils/env.js";
 import { fetchPublicGoogleSheet } from "./import/googleSheet.js";
+import { createGeocoder } from "./geocoding/geocoder.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -32,6 +33,8 @@ export default function createApp({
     store,
     rateLimitMax = 20,
     fetchSheet = fetchPublicGoogleSheet,
+    geocode = createGeocoder(),
+    serviceState = "",
     devReload,
     devReloadBootId,
 } = {}) {
@@ -50,6 +53,8 @@ export default function createApp({
     app.locals.db = pool;
     app.locals.sessionStore = store ?? (pool ? createSessionStore(pool) : undefined);
     app.locals.fetchSheet = fetchSheet;
+    app.locals.geocode = geocode;
+    app.locals.serviceState = serviceState;
     app.locals.devReload = devReload ?? !isProduction();
     app.locals.devReloadBootId = devReloadBootId ?? Date.now().toString();
 
