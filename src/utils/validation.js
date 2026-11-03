@@ -159,6 +159,12 @@ export function validateAreaName(value) {
     return name && name.length <= 80 ? { name, errors: [] } : { name, errors: ["Enter an area name of up to 80 characters."] };
 }
 
+// An area's city: blank clears it, otherwise up to 100 characters.
+export function validateAreaCity(value) {
+    const city = String(value ?? "").trim();
+    return city.length <= 100 ? { city, errors: [] } : { city, errors: ["Enter a city of up to 100 characters."] };
+}
+
 // One day ({ day }) or every chosen weekday between two dates ({ weekday, from, to }). Every date goes through
 // validatePreferredDate, so a day is a real date from today to a year out. weekday 0 is Sunday.
 export function validateAreaDays(body, today = todayString()) {

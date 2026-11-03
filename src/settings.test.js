@@ -116,7 +116,7 @@ test("a dispatcher, a customer and a signed-out visitor cannot reach the setting
 
 test("requests start out confirmed", async () => {
     const { rows } = await pool.query(
-        "SELECT column_default FROM information_schema.columns WHERE table_name = 'service_requests' AND column_name = 'tentative'",
+        "SELECT column_default FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'service_requests' AND column_name = 'tentative'",
     );
 
     assert.strictEqual(rows[0].column_default, "false");

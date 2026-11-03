@@ -41,9 +41,10 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 ## 2. Set up areas and their days
 
 - **Who:** owner, dispatcher.
-- **Where:** `/staff/areas` and `/staff/areas/:id`. Days are added at `/staff/areas/:id/days` and removed at `/staff/areas/:id/days/delete`. A property is put in an area on `/staff/properties/:id/edit`.
+- **Where:** `/staff/areas` and `/staff/areas/:id`. Days are added at `/staff/areas/:id/days` and removed at `/staff/areas/:id/days/delete`. A property is put in an area on `/staff/properties/:id/edit`. An area can also have a city, set for many areas at once with `/staff/areas/cities` from the areas list.
 - **What happens:** staff list the dates they will work each area. A date is stored on its own, so one week can be skipped without a rule.
 - **Rules:** a customer whose property has an area with upcoming days can only request one of those days. A property with no area, or an area with no upcoming days, can still request, and the date is a preference.
+- **The area city:** imported sheets often give a street and an area but no city. A property with no city of its own is looked up on the map, and shown on the route, with its area's city. A property's own city always wins. Changing an area's city sends its city-less properties back to be looked up again.
 - **Code:** `src/models/area.js`, `src/controllers/areas.js`.
 
 ## 3. Make the links
@@ -117,6 +118,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Added an optional city on each area, used for map lookups when a property has no city. |
 | 2026-11-03 | Added penciling in: tentative bookings from the day board, and customer and staff confirmation (step 6). |
 | 2026-11-03 | Added step 9, rebooking: the list of customers to reach again and links for just the ticked ones. |
 | 2026-11-03 | Added the owner option for tentative booking (setting and flag only; the booking itself comes next). |

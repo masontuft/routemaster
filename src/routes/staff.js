@@ -31,6 +31,7 @@ router.post("/staff/customers/:id/links", staff.createLink);
 router.post("/staff/customers/:id/links/:linkId/revoke", staff.revokeLink);
 router.get("/staff/areas", areas.list);
 router.post("/staff/areas", areas.create);
+router.post("/staff/areas/cities", areas.setCities);
 router.get("/staff/areas/:id", areas.show);
 router.post("/staff/areas/:id", areas.rename);
 router.post("/staff/areas/:id/days", areas.addDays);

@@ -1,7 +1,9 @@
 import * as Area from "../models/area.js";
 import { notFound } from "../utils/errors.js";
 import { dayLabel, WEEKDAYS } from "../utils/dayLabel.js";
-import { parseId, todayString, validateAreaName, validateAreaDays } from "../utils/validation.js";
+import {
+    parseId, todayString, validateAreaName, validateAreaDays, validateAreaCity,
+} from "../utils/validation.js";
 
 const NAME_TAKEN = "An area with that name already exists.";
 
@@ -90,4 +92,35 @@ export async function removeDay(req, res) {
     }
 
     res.redirect(303, `/staff/areas/${area.id}`);
+}
+
+const MAX_CITY_EDITS = 500;
+
+// One form sets many cities: every field named city_<area id> is an area's city. Nothing is saved unless every one
+// is valid. An id that is not an area is ignored. Setting a city where it did not change touches nothing.
+export async function setCities(req, res) {
+    const entries = Object.entries(req.body)
+        .map(([key, value]) => {
+            return [/^city_(\d{1,9})$/.exec(key)?.[1], value];
+        })
+        .filter(([id]) => {
+            return id !== undefined;
+        })
+        .slice(0, MAX_CITY_EDITS);
+    const checked = entries.map(([id, value]) => {
+        return { id: Number(id), ...validateAreaCity(value) };
+    });
+    const bad = checked.filter((entry) => {
+        return entry.errors.length > 0;
+    });
+
+    if (bad.length > 0) {
+        return listPage(req, res, { errors: ["Enter a city of up to 100 characters for each area."], status: 400 });
+    }
+
+    for (const { id, city } of checked) {
+        await Area.setCity(req.app.locals.db, id, city);
+    }
+
+    res.redirect(303, "/staff/areas");
 }
