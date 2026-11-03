@@ -36,7 +36,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - **Rules:** a row with no city keeps its street and is flagged. Customers are matched on normalized name, phone and street. The import creates areas from the sheet's area column but never adds days.
 - **Undo:** the owner can clear customers by import batch (`/admin/clear/batches/:id`) or all at once (`/admin/clear/all`), starting from `/admin/clear`. Each shows what would go first.
 - **Code:** `src/import/`, `src/controllers/import.js`.
-- **Gaps:** no `.xlsx` upload.
+- **Gaps:** no `.xlsx` upload. One status applies to every row of a tab, so cancelled rows are not told apart from completed ones. A free-text area column ("Sub") creates one area per spelling, so a large sheet can produce close to a hundred areas to tidy. A tab with no city column imports properties with no city (see the area city in step 2).
 
 ## 2. Set up areas and their days
 
@@ -114,6 +114,8 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is built, behind the owner option, in step 6.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.
+- The app records that a link was made, not that a customer replied or was called. Tentative bookings send no message, and a customer who only ever used a link may have an expired link.
+- A season is a calendar year, and a job completed this year counts as booked, which suits a service done once a year. A twice-a-year service or a season that spans New Year is on the [roadmap](../product/roadmap.md).
 
 ## Changes to the process
 

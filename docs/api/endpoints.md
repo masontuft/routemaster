@@ -62,6 +62,13 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET, POST | `/staff/areas` | `name` | List areas with property and upcoming-day counts; create an area (400 for a blank or duplicate name) |
 | GET, POST | `/staff/areas/:id` | `name` | The area's upcoming days and entry forms; POST renames it (400 if another area has the name) |
 | POST | `/staff/areas/:id/days` | `day`, or `weekday` (0 is Sunday), `from`, `to` | Add one date, or every chosen weekday between two dates. Dates must be today or later and within a year; a date already there is skipped |
+| POST | `/staff/areas/cities` | owner, dispatcher | fields named `city_<area id>` (up to 100 characters, blank clears) | Set many area cities at once; one bad value saves none (400). A changed city sends the area's city-less properties back to be looked up |
+| GET | `/staff/rebooking` | owner, dispatcher | `areaId`, `year` (optional) | Customers in the area sorted into not yet booked, declined, never served and already booked, with the last service date and link status |
+| POST | `/staff/rebooking/links` | owner, dispatcher, rate limited | `areaId`, `year`, `customerIds` (one or many), `days` (1 to 120), `template` (must contain `{link}`), `includeActive` | Make links for just the ticked customers; ids outside the area are ignored. Shown once, like a link batch |
+| POST | `/staff/day-board/pencil` | owner, dispatcher | `day` (today or later), `customerIds` (one or many, at most 200) | Pencil customers in as tentative Scheduled requests. Refused (400) unless the owner option is on |
+| POST | `/staff/requests/:id/confirm` | owner, dispatcher | | Mark a tentative booking confirmed; no effect on any other request |
+| POST | `/requests/:id/confirm` | customer | | The customer confirms their own tentative booking (404 for someone else's) |
+| GET, POST | `/admin/settings` | owner | `allowTentative` (`1` for on) | Show and save the company-wide scheduling options |
 | POST | `/staff/areas/:id/days/delete` | `day` | Remove one day (404 if it is not there) |
 | GET, POST | `/staff/customers/:id/delete` | | Owner only (403 for a dispatcher). The GET lists what will be deleted with the customer; the POST deletes the customer and, by cascade, their properties, requests, status history, reviews and links, then redirects to `/staff/customers` |
 | POST | `/staff/customers/:id/links` | | Create a link, shown once in the response |

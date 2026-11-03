@@ -16,6 +16,9 @@
 - Import matching uses the normalized street only, not the city, so two towns with a street of the same name can collide. The preview is mandatory for that reason; a street that belongs to a different customer is flagged, never merged. See [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md).
 - No two-way spreadsheet sync.
 - Free Supabase projects may pause after inactivity. Resume the project before grading. See the [deployment runbook](../operations/deployment-runbook.md).
+- Rebooking reads the customer's requests only. A customer served this year counts as booked, so a service done more than once a year, or a season that spans New Year, is not handled (both are on the [roadmap](roadmap.md)). The app records that a link was made, not that the customer answered a call or text.
+- A penciled-in (tentative) booking sends nothing to the customer. They see it when they open their link, and a link made earlier may have expired. It needs an area that works the chosen day. If the owner turns the option off, existing tentative bookings stay but are left off routes.
+- A free-text area column in an import creates one area per spelling, and imported properties may have no city. An area's city fills the gap for map lookups. There is no tool to merge or tidy areas.
 - Technicians do not get logins for now. The dispatcher manages their routes. A technician role is planned on the [roadmap](roadmap.md#technician-logins) and is not a commitment.
 - Referral payouts are handled outside the app. Staff record who referred the job on the request page.
 - The seeded service types start at 0 cents. Until real prices are entered, the public services page says "Contact us for pricing." and owner money stats for those catalog prices read $0.00 ([#23](https://github.com/masontuft/routemaster/issues/23)).

@@ -9,6 +9,7 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 
 ## Recommended
 
+- Apply migrations 022 and 023 to Supabase with `pnpm migrate` before deploying rebooking and tentative bookings. The owner option is off until the owner turns it on at `/admin/settings`. Try rebooking with last season's data: import the past tabs as Completed with their season year, then set a city on each area so map lookups can find the addresses.
 - Apply migrations 020 and 021 to Supabase with `pnpm migrate` before deploying the route builder. Optionally set `GOOGLE_MAPS_API_KEY`, `SERVICE_STATE` and `ROUTE_START_ADDRESS` on Render. The route builder has only been run against fake map responses, so try it once with real addresses and watch for addresses that come back not found.
 
 - Finish the spreadsheet import on `src/import/`. Link import is built end to end: tab list, mapping, preview, and a confirmed write that is atomic, hash-guarded and safe to run twice. Next are `.xlsx` upload (ask before adding `multer`; a streaming read or a worker with a memory cap is needed because zip sizes can be forged), a picker that maps each distinct status value in the sheet, showing `amount_cents` somewhere, and an undo for a batch. ExcelJS 4.4.0 and the public export URL are recorded in [ADR 0009](../adr/0009-spreadsheet-import-and-sync.md) ([#33](https://github.com/masontuft/routemaster/issues/33)).
