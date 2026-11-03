@@ -25,10 +25,10 @@ A visitor is redirected to `/login`. Another role gets a 403. `requireRole("cust
 | Method | Path | Fields | What it does |
 | --- | --- | --- | --- |
 | GET | `/requests` | | The customer's requests |
-| GET | `/requests/new` | | New-request form |
-| POST | `/requests` | `serviceTypeId`, `propertyId`, `preferredDate`, `notes` | Create a request |
+| GET | `/requests/new` | `propertyId` (optional) | New-request form for one property (the first when none is given). Lists that property's area days; with none set, the form takes a preferred date and says it is not confirmed |
+| POST | `/requests` | `serviceTypeId`, `propertyId`, `preferredDate`, `notes` | Create a request. When the property's area has upcoming days, `preferredDate` must be one of them (400 otherwise); when it has none, any valid date is accepted as a preference |
 | GET | `/requests/:id` | | One request, including its review |
-| GET, POST | `/requests/:id/edit` | `preferredDate`, `notes` | Edit while the request is still Requested |
+| GET, POST | `/requests/:id/edit` | `preferredDate`, `notes` | Edit while the request is still Requested. The same area-day rule applies; the request's current date is always allowed, so a notes-only edit works |
 | POST | `/requests/:id/cancel` | | Cancel while the request is still Requested |
 | GET | `/properties/new` | | New-property form |
 | POST | `/properties` | `street`, `city`, `zip`, `notes` | Add a property |
@@ -51,7 +51,11 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET | `/staff/customers/:id` | | Properties, requests and links |
 | GET, POST | `/staff/customers/:id/edit` | `name`, `phone`, `email` | Owner edits all three; a dispatcher edits phone and email. A posted field the role may not change is a 403 and nothing is saved |
 | POST | `/staff/customers/:id/properties` | `street`, `city`, `zip` | Add a property; the city is required for one made by hand |
-| GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes` | Owner edits all four; a dispatcher edits city, ZIP and notes. A blank city or ZIP is allowed |
+| GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes`, `subdivisionId` | Owner edits all five; a dispatcher edits city, ZIP, notes and the area (blank clears it). A blank city or ZIP is allowed |
+| GET, POST | `/staff/areas` | `name` | List areas with property and upcoming-day counts; create an area (400 for a blank or duplicate name) |
+| GET, POST | `/staff/areas/:id` | `name` | The area's upcoming days and entry forms; POST renames it (400 if another area has the name) |
+| POST | `/staff/areas/:id/days` | `day`, or `weekday` (0 is Sunday), `from`, `to` | Add one date, or every chosen weekday between two dates. Dates must be today or later and within a year; a date already there is skipped |
+| POST | `/staff/areas/:id/days/delete` | `day` | Remove one day (404 if it is not there) |
 | GET, POST | `/staff/customers/:id/delete` | | Owner only (403 for a dispatcher). The GET lists what will be deleted with the customer; the POST deletes the customer and, by cascade, their properties, requests, status history, reviews and links, then redirects to `/staff/customers` |
 | POST | `/staff/customers/:id/links` | | Create a link, shown once in the response |
 | POST | `/staff/customers/:id/links/:linkId/revoke` | | Revoke a link |
