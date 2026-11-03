@@ -5,8 +5,8 @@ import { editableFields, refusedFields } from "./permissions.js";
 test("the owner edits everything, the dispatcher edits contact details, city and ZIP", () => {
     assert.deepStrictEqual(editableFields("customer", "owner"), ["name", "phone", "email"]);
     assert.deepStrictEqual(editableFields("customer", "dispatcher"), ["phone", "email"]);
-    assert.deepStrictEqual(editableFields("property", "owner"), ["street", "city", "zip", "notes"]);
-    assert.deepStrictEqual(editableFields("property", "dispatcher"), ["city", "zip", "notes"]);
+    assert.deepStrictEqual(editableFields("property", "owner"), ["street", "city", "zip", "notes", "subdivisionId"]);
+    assert.deepStrictEqual(editableFields("property", "dispatcher"), ["city", "zip", "notes", "subdivisionId"]);
 });
 
 test("a customer or an unknown role edits nothing", () => {

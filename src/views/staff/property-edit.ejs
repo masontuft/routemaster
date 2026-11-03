@@ -13,6 +13,13 @@
     <input id="city" name="city" value="<%= values.city || "" %>" maxlength="80">
     <label for="zip">ZIP Code</label>
     <input id="zip" name="zip" value="<%= values.zip || "" %>" maxlength="10">
+    <label for="subdivisionId">Area</label>
+    <select id="subdivisionId" name="subdivisionId">
+        <option value="">No area</option>
+        <% areas.forEach((area) => { %>
+            <option value="<%= area.id %>" <%= Number("subdivisionId" in values ? values.subdivisionId : values.subdivision_id) === area.id ? "selected" : "" %>><%= area.name %></option>
+        <% }); %>
+    </select>
     <label for="notes">Notes</label>
     <textarea id="notes" name="notes" maxlength="500"><%= values.notes || "" %></textarea>
     <button type="submit">Save Property</button>

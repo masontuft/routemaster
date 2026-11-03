@@ -1,0 +1,32 @@
+<%- include("../partials/head") %>
+<h1>Areas</h1>
+<%- include("../partials/errors") %>
+<p>An area is a group of properties worked on the same days. Assign each property to an area on its edit page,
+    then give the area the days you will be there.</p>
+<% if (areas.length === 0) { %>
+    <p>No areas yet.</p>
+<% } else { %>
+    <div class="table-scroll" role="region" aria-label="Areas" tabindex="0">
+    <table>
+        <thead><tr><th>Area</th><th>Properties</th><th>Upcoming Days</th><th></th></tr></thead>
+        <tbody>
+            <% areas.forEach((area) => { %>
+                <tr>
+                    <td><%= area.name %></td>
+                    <td><%= area.properties %></td>
+                    <td><%= area.upcoming_days %></td>
+                    <td><a href="/staff/areas/<%= area.id %>">Manage Days</a></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+    </div>
+<% } %>
+<h2>Add an Area</h2>
+<form method="post" action="/staff/areas">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="name">Area Name</label>
+    <input id="name" name="name" value="<%= values.name || "" %>" required maxlength="80">
+    <button type="submit">Add Area</button>
+</form>
+<%- include("../partials/foot") %>

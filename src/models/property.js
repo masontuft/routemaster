@@ -11,14 +11,14 @@ export async function create(pool, customerId, { street, city, zip, notes }) {
 
 export async function findById(pool, id) {
     const { rows } = await pool.query(
-        "SELECT id, customer_id, street, city, zip, notes FROM properties WHERE id = $1",
+        "SELECT id, customer_id, street, city, zip, notes, subdivision_id FROM properties WHERE id = $1",
         [id],
     );
     return rows[0] ?? null;
 }
 
-// Changes only the fields given: { street, city, zip, notes }. A new street also gets a new normalized address,
-// which the import and the scheduling form match on. A blank city, ZIP or note becomes NULL.
+// Changes only the fields given: { street, city, zip, notes, subdivisionId }. A new street also gets a new
+// normalized address, which the import and the scheduling form match on. A blank city, ZIP, note or area becomes NULL.
 export async function update(pool, id, fields) {
     const values = [id];
     const sets = [];
@@ -30,6 +30,10 @@ export async function update(pool, id, fields) {
     if ("street" in fields) {
         set("street", fields.street);
         set("address_normalized", normalizeAddress(fields.street));
+    }
+
+    if ("subdivisionId" in fields) {
+        set("subdivision_id", fields.subdivisionId || null);
     }
 
     for (const column of ["city", "zip", "notes"]) {

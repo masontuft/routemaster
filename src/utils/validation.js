@@ -142,7 +142,63 @@ export function validatePropertyEdit(body, fields) {
         values.notes = String(body.notes ?? "").trim().slice(0, 500);
     }
 
+    // Blank means no area. Whether the id names a real area is checked where the database is available.
+    if (fields.includes("subdivisionId") && "subdivisionId" in body) {
+        const raw = String(body.subdivisionId ?? "").trim();
+        values.subdivisionId = raw === "" ? null : parseId(raw);
+        if (raw !== "" && values.subdivisionId === null) {
+            errors.push("Choose an area from the list.");
+        }
+    }
+
     return { values, errors };
+}
+
+export function validateAreaName(value) {
+    const name = String(value ?? "").trim();
+    return name && name.length <= 80 ? { name, errors: [] } : { name, errors: ["Enter an area name of up to 80 characters."] };
+}
+
+// One day ({ day }) or every chosen weekday between two dates ({ weekday, from, to }). Every date goes through
+// validatePreferredDate, so a day is a real date from today to a year out. weekday 0 is Sunday.
+export function validateAreaDays(body, today = todayString()) {
+    if (String(body.day ?? "") !== "") {
+        const error = validatePreferredDate(body.day, today);
+        return error ? { days: [], errors: [error] } : { days: [String(body.day)], errors: [] };
+    }
+
+    const weekday = /^[0-6]$/.test(String(body.weekday ?? "")) ? Number(body.weekday) : null;
+    const errors = [];
+
+    if (weekday === null) {
+        errors.push("Choose a weekday, or enter a single date.");
+    }
+
+    for (const field of ["from", "to"]) {
+        const error = validatePreferredDate(body[field], today);
+        if (error) {
+            errors.push(`The ${field === "from" ? "start" : "end"} date: ${error.charAt(0).toLowerCase()}${error.slice(1)}`);
+        }
+    }
+
+    if (errors.length === 0 && body.from > body.to) {
+        errors.push("The end date must be on or after the start date.");
+    }
+
+    if (errors.length > 0) {
+        return { days: [], errors };
+    }
+
+    const days = [];
+    const last = new Date(`${body.to}T00:00:00Z`);
+
+    for (let date = new Date(`${body.from}T00:00:00Z`); date <= last; date = new Date(date.getTime() + DAY_MS)) {
+        if (date.getUTCDay() === weekday) {
+            days.push(date.toISOString().slice(0, 10));
+        }
+    }
+
+    return { days, errors: [] };
 }
 
 export function validateIdentity(body) {

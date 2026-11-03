@@ -1,0 +1,52 @@
+<%- include("../partials/head") %>
+<h1><%= area.name %></h1>
+<%- include("../partials/errors") %>
+<h2>Days</h2>
+<% if (days.length === 0) { %>
+    <p>No upcoming days. Customers in this area cannot choose a date until you add some.</p>
+<% } else { %>
+    <ul>
+        <% days.forEach((item) => { %>
+            <li>
+                <%= item.label %>
+                <form method="post" action="/staff/areas/<%= area.id %>/days/delete">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="day" value="<%= item.day %>">
+                    <button type="submit">Remove</button>
+                </form>
+            </li>
+        <% }); %>
+    </ul>
+<% } %>
+<h2>Add One Day</h2>
+<form method="post" action="/staff/areas/<%= area.id %>/days">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="day">Date</label>
+    <input id="day" name="day" type="date" min="<%= today %>" required>
+    <button type="submit">Add Day</button>
+</form>
+<h2>Add a Weekday Between Two Dates</h2>
+<form method="post" action="/staff/areas/<%= area.id %>/days">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="weekday">Weekday</label>
+    <select id="weekday" name="weekday" required>
+        <% weekdays.forEach((name, index) => { %>
+            <option value="<%= index %>" <%= String(values.weekday) === String(index) ? "selected" : "" %>><%= name %></option>
+        <% }); %>
+    </select>
+    <label for="from">From</label>
+    <input id="from" name="from" type="date" min="<%= today %>" value="<%= values.from || "" %>" required>
+    <label for="to">To</label>
+    <input id="to" name="to" type="date" min="<%= today %>" value="<%= values.to || "" %>" required>
+    <button type="submit">Add These Days</button>
+</form>
+<p>Each date is saved on its own, so you can remove any one later. Dates already in the list are skipped.</p>
+<h2>Rename</h2>
+<form method="post" action="/staff/areas/<%= area.id %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="name">Area Name</label>
+    <input id="name" name="name" value="<%= values.name ?? area.name %>" required maxlength="80">
+    <button type="submit">Rename Area</button>
+</form>
+<p><a href="/staff/areas">All Areas</a></p>
+<%- include("../partials/foot") %>

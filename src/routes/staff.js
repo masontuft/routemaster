@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireRole } from "../middleware/auth.js";
 import * as staff from "../controllers/staff.js";
 import * as moderation from "../controllers/moderation.js";
+import * as areas from "../controllers/areas.js";
 
 const router = Router();
 
@@ -26,6 +27,12 @@ router.get("/staff/properties/:id/edit", staff.showPropertyEdit);
 router.post("/staff/properties/:id/edit", staff.updateProperty);
 router.post("/staff/customers/:id/links", staff.createLink);
 router.post("/staff/customers/:id/links/:linkId/revoke", staff.revokeLink);
+router.get("/staff/areas", areas.list);
+router.post("/staff/areas", areas.create);
+router.get("/staff/areas/:id", areas.show);
+router.post("/staff/areas/:id", areas.rename);
+router.post("/staff/areas/:id/days", areas.addDays);
+router.post("/staff/areas/:id/days/delete", areas.removeDay);
 router.get("/staff/reviews", moderation.listReviews);
 router.post("/staff/reviews/:id/hide", moderation.hideReview);
 router.post("/staff/reviews/:id/restore", moderation.restoreReview);
