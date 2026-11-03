@@ -31,7 +31,7 @@ Branch names and commit messages are in [CONTRIBUTING.md](CONTRIBUTING.md). Bran
 
 Migrations `001` through `015` create `roles`, `users`, `session`, `customers`, `properties`, `service_types`, `request_statuses`, `service_requests`, `status_history`, `access_links`, `reviews`, and `contact_messages`. Migration 015 adds `service_requests.referred_by`, the name of who referred the job. Referral payouts are handled outside the app. Foreign-key delete rules for those tables are in the migration files.
 
-Migration 016 added `import_batches`, `import_mappings`, `subdivisions`, `properties.subdivision_id`, `service_requests.amount_cents`, and an `import_batch_id` on customers, properties and service requests. Still a draft, with no migration: `routes`, `route_stops`, `payments`. Technicians do not get logins for now, and the dispatcher manages their routes, so technician logins do not block the routes tables. A technician role is on the [roadmap](docs/product/roadmap.md#technician-logins). The import is in `src/import/` ([#33](https://github.com/masontuft/routemaster/issues/33)).
+Migration 018 added `area_days`, the dates staff work each area (`subdivisions`). Migration 016 added `import_batches`, `import_mappings`, `subdivisions`, `properties.subdivision_id`, `service_requests.amount_cents`, and an `import_batch_id` on customers, properties and service requests. Still a draft, with no migration: `routes`, `route_stops`, `payments`. Technicians do not get logins for now, and the dispatcher manages their routes, so technician logins do not block the routes tables. A technician role is on the [roadmap](docs/product/roadmap.md#technician-logins). The import is in `src/import/` ([#33](https://github.com/masontuft/routemaster/issues/33)).
 
 ## Open items
 

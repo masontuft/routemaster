@@ -1,7 +1,8 @@
 import { withTransaction } from "../db/transaction.js";
 
 const DETAIL_SELECT = `
-    SELECT service_requests.id, service_requests.preferred_date, service_requests.notes,
+    SELECT service_requests.id, service_requests.property_id, service_requests.preferred_date,
+           to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS preferred_day, service_requests.notes,
            service_requests.created_at, request_statuses.name AS status,
            service_types.name AS service_type,
            properties.street, properties.city

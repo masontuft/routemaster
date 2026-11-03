@@ -8,6 +8,7 @@ import * as Customer from "./models/customer.js";
 import * as Property from "./models/property.js";
 import * as ServiceRequest from "./models/serviceRequest.js";
 import * as Admin from "./models/admin.js";
+import * as Area from "./models/area.js";
 import { hashPassword } from "./utils/password.js";
 
 const db = testDb("admin");
@@ -181,6 +182,9 @@ test("an owner adds, edits and deactivates a service, and customers stop seeing 
     const customer = request.agent(server);
     await loginAs(customer, "ann@example.com", "customer");
     await post(customer, "/properties/new", "/properties", { street: "5 Elm St", city: "Rexburg" });
+    const areaId = await Area.create(pool, "Oakwood");
+    await pool.query("UPDATE properties SET subdivision_id = $1", [areaId]);
+    await Area.addDays(pool, areaId, [new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10)]);
     const form = await customer.get("/requests/new");
     assert.doesNotMatch(form.text, /Winterize/);
     assert.match(form.text, /Sprinkler Blowout/);

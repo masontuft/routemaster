@@ -1,6 +1,7 @@
 import * as Staff from "../models/staff.js";
 import * as Customer from "../models/customer.js";
 import * as Property from "../models/property.js";
+import * as Area from "../models/area.js";
 import * as ServiceRequest from "../models/serviceRequest.js";
 import * as ContactMessage from "../models/contactMessage.js";
 import * as AccessLink from "../models/accessLink.js";
@@ -269,15 +270,16 @@ async function loadProperty(req) {
     return property;
 }
 
-function propertyEditPage(req, res, { property, values, errors = [], status = 200 }) {
+async function propertyEditPage(req, res, { property, values, errors = [], status = 200 }) {
+    const areas = await Area.list(req.app.locals.db, todayString());
     res.status(status).render("staff/property-edit", {
-        title: "Edit Property", property, values, errors, editable: editableFields("property", req.session.user.role),
+        title: "Edit Property", property, values, errors, areas, editable: editableFields("property", req.session.user.role),
     });
 }
 
 export async function showPropertyEdit(req, res) {
     const property = await loadProperty(req);
-    propertyEditPage(req, res, { property, values: property });
+    await propertyEditPage(req, res, { property, values: property });
 }
 
 export async function updateProperty(req, res) {
@@ -289,6 +291,10 @@ export async function updateProperty(req, res) {
     }
 
     const { values, errors } = validatePropertyEdit(req.body, editableFields("property", role));
+
+    if (values.subdivisionId && !await Area.find(req.app.locals.db, values.subdivisionId)) {
+        errors.push("Choose an area from the list.");
+    }
 
     if (errors.length > 0) {
         return propertyEditPage(req, res, { property, values: { ...property, ...values }, errors, status: 400 });
