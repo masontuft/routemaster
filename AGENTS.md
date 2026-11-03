@@ -59,6 +59,7 @@ Floors, the shared palette, and anti-slop rules are in `ui-design-foundations`. 
 Agents share context through the channels below. Use the matching skill for details.
 
 - **Ledger** (`ai-ledger-handoff`): After each segment of work, append an entry to your own file, `ledger/<agent>_YYYY-MM-DD.md`, with Changed, Why, Decisions and Open / next. At the start of a session, or after an agent switch or lost context, read every file in `ledger/` from the last 3 days before working. If there are none, widen the window to 7 days, then 14.
+- **Process doc** (`docs/process/customer-lifecycle.md`): The end-to-end customer process, import through route. A change that adds, removes or renames a page in that process, or changes who may do a step or a rule, updates this file in the same pull request and adds a line to its "Changes to the process" table. `src/processDoc.test.js` fails when its paths drift from the routes.
 - **Message channel** (`agent-message-bus`): Not used right now. It may become a future feature, so do not set up or post to a `messages` table unless Mason says to.
 - **Schema file** (`schema-snapshot`): Read the schema snapshot file before querying the live database. Run the script that generates it to refresh it.
 
