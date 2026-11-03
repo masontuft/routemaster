@@ -4,22 +4,42 @@
 <% if (properties.length === 0) { %>
     <p>Add a property before requesting service. <a href="/properties/new">Add Property</a></p>
 <% } else { %>
+    <% if (properties.length > 1) { %>
+        <form method="get" action="/requests/new">
+            <label for="chooseProperty">Property</label>
+            <select id="chooseProperty" name="propertyId">
+                <% properties.forEach((property) => { %>
+                    <option value="<%= property.id %>" <%= property.id === selected.id ? "selected" : "" %>><%= formatAddress(property.street, property.city) %></option>
+                <% }); %>
+            </select>
+            <button type="submit">Show Days</button>
+        </form>
+    <% } %>
+    <p>Property: <strong><%= formatAddress(selected.street, selected.city) %></strong></p>
+    <% if (days.length === 0) { %>
+        <p>No service days are set for this property's area yet. You can still send a request. The date you
+            choose is only a preference, not a confirmed time. We will contact you to set the day.</p>
+    <% } %>
     <form method="post" action="/requests">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="propertyId" value="<%= selected.id %>">
         <label for="serviceTypeId">Service</label>
         <select id="serviceTypeId" name="serviceTypeId" required>
             <% types.forEach((type) => { %>
                 <option value="<%= type.id %>" <%= Number(values.serviceTypeId) === type.id ? "selected" : "" %>><%= type.name %></option>
             <% }); %>
         </select>
-        <label for="propertyId">Property</label>
-        <select id="propertyId" name="propertyId" required>
-            <% properties.forEach((property) => { %>
-                <option value="<%= property.id %>" <%= Number(values.propertyId) === property.id ? "selected" : "" %>><%= formatAddress(property.street, property.city) %></option>
-            <% }); %>
-        </select>
-        <label for="preferredDate">Preferred Date</label>
-        <input id="preferredDate" name="preferredDate" type="date" min="<%= today %>" value="<%= values.preferredDate || "" %>" required>
+        <% if (days.length === 0) { %>
+            <label for="preferredDate">Preferred Date (Not Confirmed)</label>
+            <input id="preferredDate" name="preferredDate" type="date" min="<%= today %>" value="<%= values.preferredDate || "" %>" required>
+        <% } else { %>
+            <label for="preferredDate">Available Days</label>
+            <select id="preferredDate" name="preferredDate" required>
+                <% days.forEach((item) => { %>
+                    <option value="<%= item.day %>" <%= values.preferredDate === item.day ? "selected" : "" %>><%= item.label %></option>
+                <% }); %>
+            </select>
+        <% } %>
         <label for="notes">Notes</label>
         <textarea id="notes" name="notes" maxlength="500"><%= values.notes || "" %></textarea>
         <button type="submit">Submit Request</button>

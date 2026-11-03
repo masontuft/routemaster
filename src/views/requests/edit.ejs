@@ -3,8 +3,18 @@
 <%- include("../partials/errors") %>
 <form method="post" action="/requests/<%= request.id %>/edit">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <label for="preferredDate">Preferred Date</label>
-    <input id="preferredDate" name="preferredDate" type="date" min="<%= today %>" value="<%= values.preferredDate %>" required>
+    <% if (days.length === 0) { %>
+        <p>No service days are set for this property's area, so this date is only a preference. We will contact you to set the day.</p>
+        <label for="preferredDate">Preferred Date (Not Confirmed)</label>
+        <input id="preferredDate" name="preferredDate" type="date" min="<%= today %>" value="<%= values.preferredDate %>" required>
+    <% } else { %>
+        <label for="preferredDate">Available Days</label>
+        <select id="preferredDate" name="preferredDate" required>
+            <% days.forEach((item) => { %>
+                <option value="<%= item.day %>" <%= values.preferredDate === item.day ? "selected" : "" %>><%= item.label %></option>
+            <% }); %>
+        </select>
+    <% } %>
     <label for="notes">Notes</label>
     <textarea id="notes" name="notes" maxlength="500"><%= values.notes %></textarea>
     <button type="submit">Save</button>

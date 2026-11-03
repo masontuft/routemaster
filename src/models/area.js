@@ -16,6 +16,22 @@ export async function list(pool, today) {
     return rows;
 }
 
+// The upcoming days of the area a property is in. A property with no area, or an area with no upcoming
+// days, gets an empty list.
+export async function daysForProperty(pool, propertyId, today) {
+    const { rows } = await pool.query(
+        `SELECT to_char(area_days.day, 'YYYY-MM-DD') AS day
+         FROM properties
+         JOIN area_days ON area_days.subdivision_id = properties.subdivision_id
+         WHERE properties.id = $1 AND area_days.day >= $2::date
+         ORDER BY area_days.day`,
+        [propertyId, today],
+    );
+    return rows.map((row) => {
+        return row.day;
+    });
+}
+
 export async function find(pool, id) {
     const { rows } = await pool.query("SELECT id, name FROM subdivisions WHERE id = $1", [id]);
     return rows[0] ?? null;

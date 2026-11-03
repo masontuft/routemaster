@@ -6,6 +6,7 @@ import createApp from "./app.js";
 import * as User from "./models/user.js";
 import * as Customer from "./models/customer.js";
 import * as Property from "./models/property.js";
+import * as Area from "./models/area.js";
 import * as AccessLink from "./models/accessLink.js";
 import { hashPassword } from "./utils/password.js";
 
@@ -60,6 +61,14 @@ async function customerWithProperty(name = "Ann Lee", phone = "208-555-0101", st
     return { customerId, propertyId };
 }
 
+// Customers pick from their area's days, so a property needs an area with days before a request can be made.
+async function giveArea(propertyId, days, name = "Oakwood") {
+    const areaId = await Area.create(pool, name) ?? (await pool.query("SELECT id FROM subdivisions LIMIT 1")).rows[0].id;
+    await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, areaId]);
+    await Area.addDays(pool, areaId, days);
+    return areaId;
+}
+
 function daysAhead(days) {
     return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
@@ -83,6 +92,7 @@ test("a password customer adds a property, submits, views, changes and cancels a
 
     const property = await post(agent, "/properties/new", "/properties", { street: "5 Elm St", city: "Rexburg" });
     assert.strictEqual(property.status, 302);
+    await giveArea(1, [FUTURE, LATER]);
 
     const created = await post(agent, "/requests/new", "/requests",
         { serviceTypeId: 1, propertyId: 1, preferredDate: FUTURE, notes: "gate code 1234" });
@@ -142,6 +152,7 @@ test("a customer gets 404 for someone else's request, a missing one, and a bad i
 
 test("a magic link shows a button on GET, logs the customer in only on POST, and shows only their data", async () => {
     const ann = await customerWithProperty();
+    await giveArea(ann.propertyId, [FUTURE]);
     await customerWithProperty("Bo Kim", "208-555-0202", "9 Pine St");
     const token = await AccessLink.create(pool, { customerId: ann.customerId });
 

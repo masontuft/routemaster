@@ -1,14 +1,9 @@
 import * as Area from "../models/area.js";
 import { notFound } from "../utils/errors.js";
+import { dayLabel, WEEKDAYS } from "../utils/dayLabel.js";
 import { parseId, todayString, validateAreaName, validateAreaDays } from "../utils/validation.js";
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const NAME_TAKEN = "An area with that name already exists.";
-
-// 'YYYY-MM-DD' to "Tuesday, 2026-11-10". Read in UTC so no time zone moves the day.
-function dayLabel(day) {
-    return `${WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]}, ${day}`;
-}
 
 async function listPage(req, res, { errors = [], values = {}, status = 200 } = {}) {
     const areas = await Area.list(req.app.locals.db, todayString());
