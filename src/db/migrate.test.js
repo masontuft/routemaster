@@ -61,6 +61,7 @@ test("applies the real migrations in order and records them", async () => {
         "019_create_link_batches.sql",
         "020_add_property_location.sql",
         "021_create_routes.sql",
+        "022_create_settings_and_tentative.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");

@@ -20,6 +20,10 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 | Dispatcher | Areas and days, links, matching, the day board, routes |
 | Customer | Opens a link or logs in, requests service, picks a day, cancels, reviews |
 
+## Owner options
+
+The owner sets company-wide options at `/admin/settings` (saved by posting there). There is one so far: **Allow booking customers who have not confirmed**, off by default. Off means the day board and the route builder deal only with jobs the customer asked for. On means staff may pencil in a customer who has not picked a day, as a tentative booking. The option is stored in `app_settings` and read on every request, so a change takes effect at once. Tentative booking itself is not built yet, so turning this on changes nothing until it is.
+
 ## The status of a request
 
 `Needs Review`, `Requested`, `Scheduled`, `Completed`, `Cancelled`. The moves staff can make are in `src/utils/transitions.js`: Needs Review goes to Requested (by matching) or Cancelled, Requested goes to Scheduled or Cancelled, Scheduled can be rescheduled or go to Completed or Cancelled, and Completed and Cancelled are final.
@@ -102,4 +106,5 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Added the owner option for tentative booking (setting and flag only; the booking itself comes next). |
 | 2026-11-03 | First version. Covers import through route, as built on `main` after pull request 55. |
