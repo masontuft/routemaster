@@ -52,6 +52,8 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET, POST | `/staff/customers/:id/edit` | `name`, `phone`, `email` | Owner edits all three; a dispatcher edits phone and email. A posted field the role may not change is a 403 and nothing is saved |
 | POST | `/staff/customers/:id/properties` | `street`, `city`, `zip` | Add a property; the city is required for one made by hand |
 | GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes`, `subdivisionId` | Owner edits all five; a dispatcher edits city, ZIP, notes and the area (blank clears it). A blank city or ZIP is allowed |
+| GET | `/staff/link-batches/new` | `areaId`, `includeActive` (optional) | Choose an area and see how many links a batch would make, skip or list as having no usable phone. Makes nothing. No-store |
+| POST | `/staff/link-batches` | `areaId`, `days` (1 to 120), `template` (must contain `{link}`), `includeActive` | Make one link per eligible customer in the area in one transaction and show them once, as a table and a CSV. More than 500 is a 400; an unknown area is a 404. Shared per-IP limit, CSRF, no-store |
 | GET, POST | `/staff/areas` | `name` | List areas with property and upcoming-day counts; create an area (400 for a blank or duplicate name) |
 | GET, POST | `/staff/areas/:id` | `name` | The area's upcoming days and entry forms; POST renames it (400 if another area has the name) |
 | POST | `/staff/areas/:id/days` | `day`, or `weekday` (0 is Sunday), `from`, `to` | Add one date, or every chosen weekday between two dates. Dates must be today or later and within a year; a date already there is skipped |

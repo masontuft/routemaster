@@ -263,3 +263,31 @@ export function validateContact(body) {
 
     return { values: { name, email, phone, message }, errors };
 }
+
+export const DEFAULT_LINK_MESSAGE = "Hi {name}, you can choose a day for your sprinkler service here: {link}";
+
+// Which area, how long the links last, whether customers who already have a working link get another, and the
+// text of the message. The message must hold {link}, or the customer would be texted nothing to open.
+export function validateLinkBatch(body) {
+    const areaId = parseId(body.areaId);
+    const days = /^\d{1,3}$/.test(String(body.days ?? "")) ? Number(body.days) : null;
+    const template = String(body.template ?? "").trim();
+    const errors = [];
+
+    if (!areaId) {
+        errors.push("Choose an area.");
+    }
+
+    if (days === null || days < 1 || days > 120) {
+        errors.push("Choose a link lifetime from 1 to 120 days.");
+    }
+
+    if (!template || template.length > 500 || !template.includes("{link}")) {
+        errors.push("Write a message of up to 500 characters that includes {link}.");
+    }
+
+    return {
+        values: { areaId, days, includeActive: body.includeActive === "1", template },
+        errors,
+    };
+}

@@ -1,0 +1,33 @@
+<%- include("../partials/head") %>
+<h1>Scheduling Links</h1>
+<p><strong>Copy these now.</strong> The links are shown only on this page. If you leave or refresh it, they cannot be
+    shown again, and reloading would make a second set.</p>
+<p><%= rows.length %> <%= rows.length === 1 ? "link" : "links" %> made for <%= area.name %>, each good for <%= days %> days
+    (batch <%= batchId %>).</p>
+<p><a href="<%= csvHref %>" download="scheduling-links-<%= batchId %>.csv">Download CSV</a></p>
+<label for="csv">CSV to Copy</label>
+<textarea id="csv" readonly rows="8" cols="80"><%= csv %></textarea>
+<div class="table-scroll" role="region" aria-label="Links" tabindex="0">
+<table>
+    <thead><tr><th>Name</th><th>Phone</th><th>Message</th></tr></thead>
+    <tbody>
+        <% rows.forEach((row) => { %>
+            <tr><td><%= row.name %></td><td><%= row.phone %></td><td><%= row.message %></td></tr>
+        <% }); %>
+    </tbody>
+</table>
+</div>
+<% if (noPhone.length > 0) { %>
+    <h2>No Usable Phone</h2>
+    <p>These customers have no phone that can be texted, so they got no link.</p>
+    <ul>
+        <% noPhone.forEach((customer) => { %>
+            <li><a href="/staff/customers/<%= customer.id %>/edit"><%= customer.name %></a></li>
+        <% }); %>
+    </ul>
+<% } %>
+<% if (skippedActive > 0) { %>
+    <p><%= skippedActive %> <%= skippedActive === 1 ? "customer was" : "customers were" %> skipped because they already have a working link.</p>
+<% } %>
+<p><a href="/staff">Staff Dashboard</a></p>
+<%- include("../partials/foot") %>

@@ -9,6 +9,7 @@ import adminRoutes from "./routes/admin.js";
 import reviewRoutes from "./routes/reviews.js";
 import contactRoutes from "./routes/contact.js";
 import importRoutes from "./routes/import.js";
+import linkBatchRoutes from "./routes/linkBatches.js";
 import linkRoutes from "./routes/link.js";
 import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
@@ -69,6 +70,7 @@ export default function createApp({
     app.use(staffRoutes);
     app.use(adminRoutes);
     app.use(importRoutes(limit));
+    app.use(linkBatchRoutes(limit));
     app.use(reviewRoutes);
     app.use(linkRoutes(limit));
     app.use(scheduleRoutes(limit));
