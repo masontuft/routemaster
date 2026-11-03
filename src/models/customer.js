@@ -170,3 +170,46 @@ export async function listByNamePhonePairs(pool, pairs) {
     );
     return rows;
 }
+
+// Bulk delete. batchId null means every customer; a number means the customers that import batch created.
+// Properties, requests, history, reviews and links go with them through the CASCADE keys. Unmatched requests
+// (no customer) are not customer data and stay.
+async function countClearScope(client, batchId) {
+    const { rows } = await client.query(
+        `SELECT
+            (SELECT count(*)::int FROM customers
+              WHERE $1::int IS NULL OR import_batch_id = $1) AS customers,
+            (SELECT count(*)::int FROM properties JOIN customers ON customers.id = properties.customer_id
+              WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS properties,
+            (SELECT count(*)::int FROM service_requests JOIN customers ON customers.id = service_requests.customer_id
+              WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS requests,
+            (SELECT count(*)::int FROM reviews JOIN customers ON customers.id = reviews.customer_id
+              WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS reviews,
+            (SELECT count(*)::int FROM access_links JOIN customers ON customers.id = access_links.customer_id
+              WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS links`,
+        [batchId],
+    );
+    return rows[0];
+}
+
+export function countClear(pool, batchId) {
+    return countClearScope(pool, batchId);
+}
+
+// Deletes only if the counts the owner confirmed still hold. The table lock stops a customer or a request from
+// being added between the count and the delete, so what was shown is exactly what goes.
+export async function clear(pool, batchId, expected) {
+    return withTransaction(pool, async (client) => {
+        await client.query("LOCK TABLE customers IN SHARE ROW EXCLUSIVE MODE");
+        const counts = await countClearScope(client, batchId);
+
+        if (Object.keys(counts).some((key) => {
+            return counts[key] !== expected[key];
+        })) {
+            return { deleted: false, counts };
+        }
+
+        await client.query("DELETE FROM customers WHERE $1::int IS NULL OR import_batch_id = $1", [batchId]);
+        return { deleted: true, counts };
+    });
+}

@@ -24,3 +24,7 @@ flowchart LR
 | SSRF | Import link pointing at an internal host | Built in `src/import/googleSheet.js`: the pasted link cannot choose the host, and redirects off Google's export path are refused. Tested with a mocked network. The owner-only `POST /admin/import` calls it ([#33](https://github.com/masontuft/routemaster/issues/33)). |
 
 Residual risk that is still open: the rate limit is per process, spam control on reviews, contact, and the generic link is planned and not built ([roadmap](../product/roadmap.md#spam-control), [#36](https://github.com/masontuft/routemaster/issues/36)), magic links are bearer tokens, and the test-database guard does not resolve DNS (it treats `localhost`, `127.0.0.1`, and `::1` as the same server and compares every other host as written).
+
+## Deleting customers
+
+Deleting customers is the first destructive owner action, so it has its own checks. Every delete route requires the owner role, and the single-customer delete checks the role in its controller, not only in the view. Every delete is a POST behind CSRF. A confirmation page lists what will go, and a bulk delete carries those counts back and is refused if they changed, with a table lock held so nothing is added between the count and the delete. Deleting every customer also needs a typed phrase. The residual risks are a compromised owner session, which can delete everything with no undo, and no audit trail of who deleted what. This repo does not record whether the Supabase project has a backup to restore from, so treat a delete as final.

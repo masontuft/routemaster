@@ -1,0 +1,29 @@
+<%- include("../partials/head") %>
+<h1>Confirm Delete</h1>
+<%- include("../partials/errors") %>
+<% if (batch) { %>
+    <p>You are deleting the customers that import batch <%= batch.id %> (<%= batch.sheet_name %>, season <%= batch.season_year %>) created.</p>
+<% } else { %>
+    <p><strong>You are deleting every customer.</strong></p>
+<% } %>
+<p>This cannot be undone. It will delete:</p>
+<ul>
+    <li><%= counts.customers %> <%= counts.customers === 1 ? "customer" : "customers" %></li>
+    <li><%= counts.properties %> <%= counts.properties === 1 ? "property" : "properties" %></li>
+    <li><%= counts.requests %> <%= counts.requests === 1 ? "service request" : "service requests" %> and their status history</li>
+    <li><%= counts.reviews %> <%= counts.reviews === 1 ? "review" : "reviews" %></li>
+    <li><%= counts.links %> scheduling <%= counts.links === 1 ? "link" : "links" %></li>
+</ul>
+<form method="post" action="<%= batch ? `/admin/clear/batches/${batch.id}` : "/admin/clear/all" %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% ["customers", "properties", "requests", "reviews", "links"].forEach((key) => { %>
+        <input type="hidden" name="<%= key %>" value="<%= counts[key] %>">
+    <% }); %>
+    <% if (!batch) { %>
+        <label for="phrase">Type <code><%= phrase %></code> to confirm</label>
+        <input id="phrase" name="phrase" autocomplete="off" required>
+    <% } %>
+    <button type="submit">Delete Permanently</button>
+    <a href="/admin/clear">Cancel</a>
+</form>
+<%- include("../partials/foot") %>
