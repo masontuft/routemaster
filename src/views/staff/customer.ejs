@@ -1,12 +1,27 @@
 <%- include("../partials/head") %>
 <h1><%= customer.name %></h1>
-<p><%= customer.phone ?? "" %> <%= customer.email ?? "" %></p>
+<%- include("../partials/errors") %>
+<p><%= customer.phone ?? "" %> <%= customer.email ?? "" %> <a href="/staff/customers/<%= customer.id %>/edit">Edit Customer</a></p>
 <h2>Properties</h2>
 <ul>
     <% properties.forEach((property) => { %>
-        <li><%= formatAddress(property.street, property.city) %></li>
+        <li>
+            <%= formatAddress(property.street, property.city) %><%= property.city ? "" : " (needs a city)" %>
+            <a href="/staff/properties/<%= property.id %>/edit">Edit</a>
+        </li>
     <% }); %>
 </ul>
+<h3>Add a Property</h3>
+<form method="post" action="/staff/customers/<%= customer.id %>/properties">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="street">Street Address</label>
+    <input id="street" name="street" value="<%= propertyValues.street || "" %>" required maxlength="120">
+    <label for="city">City</label>
+    <input id="city" name="city" value="<%= propertyValues.city || "" %>" required maxlength="80">
+    <label for="zip">ZIP Code</label>
+    <input id="zip" name="zip" value="<%= propertyValues.zip || "" %>" maxlength="10">
+    <button type="submit">Add Property</button>
+</form>
 <h2>Requests</h2>
 <ul>
     <% requests.forEach((item) => { %>

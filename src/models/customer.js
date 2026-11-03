@@ -20,6 +20,39 @@ export async function findById(pool, id) {
     return rows[0] ?? null;
 }
 
+// Changes only the fields given: { name, phone, email }. The normalized columns that matching reads are
+// recomputed with them, or the customer would stop matching the new spelling. A blank phone or email becomes NULL.
+// Column names are fixed strings below; only values are parameters.
+export async function update(pool, id, fields) {
+    const values = [id];
+    const sets = [];
+    const set = (column, value) => {
+        values.push(value);
+        sets.push(`${column} = $${values.length}`);
+    };
+
+    if ("name" in fields) {
+        set("name", fields.name);
+        set("name_normalized", normalizeName(fields.name));
+    }
+
+    if ("phone" in fields) {
+        set("phone", fields.phone || null);
+        set("phone_normalized", fields.phone ? normalizePhone(fields.phone) : null);
+    }
+
+    if ("email" in fields) {
+        set("email", fields.email || null);
+    }
+
+    if (sets.length === 0) {
+        return false;
+    }
+
+    const result = await pool.query(`UPDATE customers SET ${sets.join(", ")} WHERE id = $1`, values);
+    return result.rowCount === 1;
+}
+
 // Name, phone and street must all match. Returns the customer and that property, or null.
 export async function findByContact(pool, { name, phone, address }) {
     const { rows } = await pool.query(
@@ -71,19 +104,21 @@ export async function ensureUser(pool, customerId) {
 }
 
 // Normalized search terms contain only letters, digits and spaces, so they cannot carry LIKE wildcards.
-// An empty search lists the first 50 customers. A phone term needs 3 digits to count.
-export async function search(pool, term) {
+// needsCity keeps only customers with a property that has no city. An empty search lists the first 50 customers.
+// A phone term needs 3 digits to count.
+export async function search(pool, term, { needsCity = false } = {}) {
     const digits = normalizePhone(term);
     const { rows } = await pool.query(
         `SELECT DISTINCT customers.id, customers.name, customers.phone
          FROM customers
          LEFT JOIN properties ON properties.customer_id = customers.id
-         WHERE customers.name_normalized LIKE $1
+         WHERE (customers.name_normalized LIKE $1
             OR ($2::text IS NOT NULL AND customers.phone_normalized LIKE $2::text)
-            OR properties.address_normalized LIKE $3
+            OR properties.address_normalized LIKE $3)
+           AND ($4::boolean = false OR (properties.id IS NOT NULL AND properties.city IS NULL))
          ORDER BY customers.name, customers.id
          LIMIT 50`,
-        [`%${normalizeName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`],
+        [`%${normalizeName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`, needsCity],
     );
     return rows;
 }

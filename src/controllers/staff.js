@@ -4,8 +4,11 @@ import * as Property from "../models/property.js";
 import * as ServiceRequest from "../models/serviceRequest.js";
 import * as ContactMessage from "../models/contactMessage.js";
 import * as AccessLink from "../models/accessLink.js";
-import { notFound } from "../utils/errors.js";
-import { parseId, validatePreferredDate, validateProperty, todayString } from "../utils/validation.js";
+import { notFound, forbidden } from "../utils/errors.js";
+import { editableFields, refusedFields } from "../utils/permissions.js";
+import {
+    parseId, validatePreferredDate, validateProperty, validateCustomerEdit, validatePropertyEdit, todayString,
+} from "../utils/validation.js";
 import { STATUSES, allowedNext } from "../utils/transitions.js";
 
 const TRANSITION_ERRORS = {
@@ -172,11 +175,12 @@ export async function matchNew(req, res) {
 
 export async function listCustomers(req, res) {
     const q = String(req.query.q ?? "").trim().slice(0, 100);
-    const customers = await Customer.search(req.app.locals.db, q);
-    res.render("staff/customers", { title: "Customers", customers, q });
+    const needsCity = req.query.needs === "city";
+    const customers = await Customer.search(req.app.locals.db, q, { needsCity });
+    res.render("staff/customers", { title: "Customers", customers, q, needsCity });
 }
 
-async function renderCustomer(req, res, { newLink = null } = {}) {
+async function renderCustomer(req, res, { newLink = null, errors = [], propertyValues = {}, status = 200 } = {}) {
     const db = req.app.locals.db;
     const id = parseId(req.params.id);
     const customer = id && await Customer.findById(db, id);
@@ -192,11 +196,106 @@ async function renderCustomer(req, res, { newLink = null } = {}) {
     ]);
     // A token only ever appears in the response to the POST that made it, never in a URL or the session.
     res.set("Cache-Control", "no-store");
-    res.render("staff/customer", { title: customer.name, customer, properties, requests, links, newLink });
+    res.status(status).render("staff/customer", {
+        title: customer.name, customer, properties, requests, links, newLink, errors, propertyValues,
+    });
 }
 
 export async function showCustomer(req, res) {
     await renderCustomer(req, res);
+}
+
+async function loadCustomer(req) {
+    const id = parseId(req.params.id);
+    const customer = id && await Customer.findById(req.app.locals.db, id);
+
+    if (!customer) {
+        throw notFound();
+    }
+
+    return customer;
+}
+
+function customerEditPage(req, res, { customer, values, errors = [], status = 200 }) {
+    res.status(status).render("staff/customer-edit", {
+        title: "Edit Customer", customer, values, errors, editable: editableFields("customer", req.session.user.role),
+    });
+}
+
+export async function showCustomerEdit(req, res) {
+    const customer = await loadCustomer(req);
+    customerEditPage(req, res, { customer, values: customer });
+}
+
+// The role's allowed fields are enforced here, not only by which inputs the form shows.
+export async function updateCustomer(req, res) {
+    const customer = await loadCustomer(req);
+    const { role } = req.session.user;
+
+    if (refusedFields("customer", role, req.body).length > 0) {
+        throw forbidden();
+    }
+
+    const { values, errors } = validateCustomerEdit(req.body, editableFields("customer", role));
+
+    if (errors.length > 0) {
+        return customerEditPage(req, res, { customer, values: { ...customer, ...values }, errors, status: 400 });
+    }
+
+    await Customer.update(req.app.locals.db, customer.id, values);
+    res.redirect(303, `/staff/customers/${customer.id}`);
+}
+
+export async function addProperty(req, res) {
+    const customer = await loadCustomer(req);
+    const { values, errors } = validateProperty(req.body);
+
+    if (errors.length > 0) {
+        return renderCustomer(req, res, { errors, propertyValues: values, status: 400 });
+    }
+
+    await Property.create(req.app.locals.db, customer.id, values);
+    res.redirect(303, `/staff/customers/${customer.id}`);
+}
+
+async function loadProperty(req) {
+    const id = parseId(req.params.id);
+    const property = id && await Property.findById(req.app.locals.db, id);
+
+    if (!property) {
+        throw notFound();
+    }
+
+    return property;
+}
+
+function propertyEditPage(req, res, { property, values, errors = [], status = 200 }) {
+    res.status(status).render("staff/property-edit", {
+        title: "Edit Property", property, values, errors, editable: editableFields("property", req.session.user.role),
+    });
+}
+
+export async function showPropertyEdit(req, res) {
+    const property = await loadProperty(req);
+    propertyEditPage(req, res, { property, values: property });
+}
+
+export async function updateProperty(req, res) {
+    const property = await loadProperty(req);
+    const { role } = req.session.user;
+
+    if (refusedFields("property", role, req.body).length > 0) {
+        throw forbidden();
+    }
+
+    const { values, errors } = validatePropertyEdit(req.body, editableFields("property", role));
+
+    if (errors.length > 0) {
+        return propertyEditPage(req, res, { property, values: { ...property, ...values }, errors, status: 400 });
+    }
+
+    await Property.update(req.app.locals.db, property.id, values);
+    res.redirect(303, `/staff/customers/${property.customer_id}`);
 }
 
 export async function createLink(req, res) {

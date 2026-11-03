@@ -47,8 +47,11 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET | `/staff/requests/:id/match` | `q` | Search customers for a Needs Review request |
 | POST | `/staff/requests/:id/match` | `propertyId` | Attach the request to an existing customer's property |
 | POST | `/staff/requests/:id/match/new` | `city`, `zip` | Create a customer and property from the typed details |
-| GET | `/staff/customers` | `q` | Search by name, phone or street |
+| GET | `/staff/customers` | `q`, `needs=city` (optional) | Search by name, phone or street; `needs=city` keeps customers with a property that has no city |
 | GET | `/staff/customers/:id` | | Properties, requests and links |
+| GET, POST | `/staff/customers/:id/edit` | `name`, `phone`, `email` | Owner edits all three; a dispatcher edits phone and email. A posted field the role may not change is a 403 and nothing is saved |
+| POST | `/staff/customers/:id/properties` | `street`, `city`, `zip` | Add a property; the city is required for one made by hand |
+| GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes` | Owner edits all four; a dispatcher edits city, ZIP and notes. A blank city or ZIP is allowed |
 | POST | `/staff/customers/:id/links` | | Create a link, shown once in the response |
 | POST | `/staff/customers/:id/links/:linkId/revoke` | | Revoke a link |
 

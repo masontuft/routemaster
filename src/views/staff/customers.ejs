@@ -2,6 +2,7 @@
 <h1>Customers</h1>
 <form method="get" action="/staff/customers">
     <label>Search by Name, Phone or Address <input type="search" name="q" value="<%= q %>" maxlength="100"></label>
+    <label><input type="checkbox" name="needs" value="city"<%= needsCity ? " checked" : "" %>> Only Customers with a Property Missing a City</label>
     <button type="submit">Search</button>
 </form>
 <% if (customers.length === 0) { %>

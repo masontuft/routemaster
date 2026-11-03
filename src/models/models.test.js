@@ -134,3 +134,40 @@ test("a request cannot mix matched and unmatched shapes", async () => {
         /service_requests_matched_or_unmatched/,
     );
 });
+
+test("updating a customer recomputes what matching reads, and leaves other fields alone", async () => {
+    assert.strictEqual(await Customer.update(pool, customerId, { name: "Ann  Lee-Smith", phone: "(208) 555-0199" }), true);
+
+    const found = await Customer.findByContact(pool, {
+        name: "ann lee smith", phone: "208-555-0199", address: "12 oak st",
+    });
+    assert.strictEqual(found.customer_id, customerId);
+    const old = await Customer.findByContact(pool, { name: "Ann Lee", phone: "(208) 555-0101", address: "12 Oak Street" });
+    assert.strictEqual(old, null);
+    assert.strictEqual((await Customer.findById(pool, customerId)).email, null);
+});
+
+test("a blank phone or email is stored as NULL, and a missing customer or empty change updates nothing", async () => {
+    await Customer.update(pool, customerId, { email: "ann@example.com" });
+    await Customer.update(pool, customerId, { phone: "", email: "" });
+    const customer = await Customer.findById(pool, customerId);
+    assert.deepStrictEqual([customer.phone, customer.email], [null, null]);
+    const { rows } = await pool.query("SELECT phone_normalized FROM customers WHERE id = $1", [customerId]);
+    assert.strictEqual(rows[0].phone_normalized, null);
+
+    assert.strictEqual(await Customer.update(pool, 999999, { name: "Nobody" }), false);
+    assert.strictEqual(await Customer.update(pool, customerId, {}), false);
+});
+
+test("updating a property's street renormalizes it, and a blank city or ZIP becomes NULL", async () => {
+    await Property.update(pool, propertyId, { city: "", zip: "83440" });
+    let property = await Property.findById(pool, propertyId);
+    assert.deepStrictEqual([property.city, property.zip, property.street], [null, "83440", "12 Oak Street"]);
+
+    await Property.update(pool, propertyId, { street: "99 Elm Avenue", city: "Rexburg" });
+    property = await Property.findById(pool, propertyId);
+    assert.deepStrictEqual([property.street, property.city], ["99 Elm Avenue", "Rexburg"]);
+    const found = await Customer.findByContact(pool, { name: "Ann Lee", phone: "208-555-0101", address: "99 elm ave" });
+    assert.strictEqual(found.property_id, propertyId);
+    assert.strictEqual(await Property.update(pool, propertyId, {}), false);
+});
