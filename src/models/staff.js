@@ -8,7 +8,7 @@ import { canMove } from "../utils/transitions.js";
 const LIST_SELECT = `
     SELECT service_requests.id, request_statuses.name AS status, service_types.name AS service_type,
            to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS preferred_date,
-           to_char(service_requests.scheduled_date, 'YYYY-MM-DD') AS scheduled_date,
+           to_char(service_requests.scheduled_date, 'YYYY-MM-DD') AS scheduled_date, service_requests.tentative,
            COALESCE(customers.name, service_requests.contact_name) AS customer_name,
            COALESCE(properties.street, service_requests.contact_address) AS street
     FROM service_requests
@@ -42,7 +42,7 @@ export async function findRequest(pool, id) {
     const { rows } = await pool.query(
         `SELECT service_requests.id, service_requests.customer_id, service_requests.notes,
                 service_requests.contact_name, service_requests.contact_phone, service_requests.contact_address,
-                service_requests.referred_by,
+                service_requests.referred_by, service_requests.tentative,
                 request_statuses.name AS status, service_types.name AS service_type,
                 to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS preferred_date,
                 to_char(service_requests.scheduled_date, 'YYYY-MM-DD') AS scheduled_date,
@@ -99,11 +99,31 @@ async function setStatus(client, id, to, scheduledDate, note, changedBy) {
     await client.query(
         `UPDATE service_requests
          SET status_id = (SELECT id FROM request_statuses WHERE name = $2),
-             scheduled_date = COALESCE($3::date, scheduled_date), updated_at = now()
+             scheduled_date = COALESCE($3::date, scheduled_date),
+             tentative = CASE WHEN $2 IN ('Completed', 'Cancelled') THEN false ELSE tentative END,
+             updated_at = now()
          WHERE id = $1`,
         [id, to, scheduledDate],
     );
     await addHistory(client, id, to, changedBy, note);
+}
+
+// Staff mark a penciled-in booking confirmed, for example after the customer said yes by phone.
+export async function confirmTentative(pool, id, changedBy) {
+    return withTransaction(pool, async (client) => {
+        const { rowCount } = await client.query(
+            `UPDATE service_requests SET tentative = false, updated_at = now()
+             WHERE id = $1 AND tentative
+               AND status_id = (SELECT id FROM request_statuses WHERE name = 'Scheduled')`,
+            [id],
+        );
+
+        if (rowCount === 1) {
+            await addHistory(client, id, "Scheduled", changedBy, "Confirmed by staff");
+        }
+
+        return rowCount === 1;
+    });
 }
 
 // Returns { ok: true } or { error } where error is one of: not_found, transition, unmatched, date.

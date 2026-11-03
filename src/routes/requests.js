@@ -16,6 +16,7 @@ router.get("/requests/:id", requests.show);
 router.get("/requests/:id/edit", requests.showEdit);
 router.post("/requests/:id/edit", requests.update);
 router.post("/requests/:id/cancel", requests.cancel);
+router.post("/requests/:id/confirm", requests.confirm);
 router.get("/requests/:id/review", reviews.showForm);
 router.post("/requests/:id/review", reviews.save);
 router.post("/requests/:id/review/delete", reviews.remove);

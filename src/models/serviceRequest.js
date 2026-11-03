@@ -3,7 +3,7 @@ import { withTransaction } from "../db/transaction.js";
 const DETAIL_SELECT = `
     SELECT service_requests.id, service_requests.property_id, service_requests.preferred_date,
            to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS preferred_day, service_requests.notes,
-           service_requests.created_at, request_statuses.name AS status,
+           service_requests.created_at, service_requests.tentative, request_statuses.name AS status,
            service_types.name AS service_type,
            properties.street, properties.city
     FROM service_requests
@@ -72,24 +72,82 @@ export async function historyFor(pool, id) {
     return rows;
 }
 
-// Date and notes can change only while the request is still Requested.
-export async function updateDetails(pool, id, customerId, { preferredDate, notes }) {
-    const { rowCount } = await pool.query(
-        `UPDATE service_requests SET preferred_date = $3, notes = $4, updated_at = now()
-         WHERE id = $1 AND customer_id = $2
-           AND status_id = (SELECT id FROM request_statuses WHERE name = 'Requested')`,
-        [id, customerId, preferredDate, notes || null],
-    );
-    return rowCount === 1;
+// Date and notes can change while the request is Requested. A tentative booking (staff penciled the customer in)
+// can be changed too, and the customer's answer settles it: the same day is a confirmation and the booking stays;
+// a different day drops it back to Requested for staff to book on that day. Returns true when something changed.
+export async function updateDetails(pool, id, customerId, { preferredDate, notes }, changedBy = null) {
+    return withTransaction(pool, async (client) => {
+        const { rows } = await client.query(
+            `SELECT request_statuses.name AS status, service_requests.tentative,
+                    to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS day
+             FROM service_requests
+             JOIN request_statuses ON request_statuses.id = service_requests.status_id
+             WHERE service_requests.id = $1 AND service_requests.customer_id = $2
+             FOR UPDATE OF service_requests`,
+            [id, customerId],
+        );
+        const current = rows[0];
+
+        if (current?.status === "Requested") {
+            await client.query(
+                "UPDATE service_requests SET preferred_date = $2, notes = $3, updated_at = now() WHERE id = $1",
+                [id, preferredDate, notes || null],
+            );
+            return true;
+        }
+
+        if (current?.status !== "Scheduled" || !current.tentative) {
+            return false;
+        }
+
+        if (preferredDate === current.day) {
+            await client.query(
+                "UPDATE service_requests SET notes = $2, tentative = false, updated_at = now() WHERE id = $1",
+                [id, notes || null],
+            );
+            await addHistory(client, id, "Scheduled", changedBy, "Confirmed by customer");
+        } else {
+            await client.query(
+                `UPDATE service_requests
+                 SET status_id = (SELECT id FROM request_statuses WHERE name = 'Requested'), preferred_date = $2,
+                     scheduled_date = NULL, notes = $3, tentative = false, updated_at = now()
+                 WHERE id = $1`,
+                [id, preferredDate, notes || null],
+            );
+            await addHistory(client, id, "Requested", changedBy, `Customer chose a different day: ${preferredDate}`);
+        }
+
+        return true;
+    });
+}
+
+// The customer accepts a penciled-in day. Only their own tentative booking changes.
+export async function confirm(pool, id, customerId, changedBy) {
+    return withTransaction(pool, async (client) => {
+        const { rowCount } = await client.query(
+            `UPDATE service_requests SET tentative = false, updated_at = now()
+             WHERE id = $1 AND customer_id = $2 AND tentative
+               AND status_id = (SELECT id FROM request_statuses WHERE name = 'Scheduled')`,
+            [id, customerId],
+        );
+
+        if (rowCount === 1) {
+            await addHistory(client, id, "Scheduled", changedBy, "Confirmed by customer");
+        }
+
+        return rowCount === 1;
+    });
 }
 
 export async function cancel(pool, id, customerId, changedBy) {
     return withTransaction(pool, async (client) => {
         const { rowCount } = await client.query(
             `UPDATE service_requests
-             SET status_id = (SELECT id FROM request_statuses WHERE name = 'Cancelled'), updated_at = now()
+             SET status_id = (SELECT id FROM request_statuses WHERE name = 'Cancelled'), tentative = false,
+                 updated_at = now()
              WHERE id = $1 AND customer_id = $2
-               AND status_id = (SELECT id FROM request_statuses WHERE name = 'Requested')`,
+               AND (status_id = (SELECT id FROM request_statuses WHERE name = 'Requested')
+                    OR (tentative AND status_id = (SELECT id FROM request_statuses WHERE name = 'Scheduled')))`,
             [id, customerId],
         );
 

@@ -22,7 +22,7 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 
 ## Owner options
 
-The owner sets company-wide options at `/admin/settings` (saved by posting there). There is one so far: **Allow booking customers who have not confirmed**, off by default. Off means the day board and the route builder deal only with jobs the customer asked for. On means staff may pencil in a customer who has not picked a day, as a tentative booking. The option is stored in `app_settings` and read on every request, so a change takes effect at once. Tentative booking itself is not built yet, so turning this on changes nothing until it is.
+The owner sets company-wide options at `/admin/settings` (saved by posting there). There is one so far: **Allow booking customers who have not confirmed**, off by default. Off means the day board and the route builder deal only with jobs the customer asked for. On means staff may pencil in a customer who has not picked a day, as a tentative booking (step 6). The option is stored in `app_settings` and read on every request, so a change takes effect at once. Turning it off stops new pencil-ins but leaves existing tentative bookings alone.
 
 ## The status of a request
 
@@ -64,7 +64,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 - **Who:** customer.
 - **Where:** `/l/:token` shows a Continue button, and its POST signs the customer in. Opening the link alone logs nobody in, because email scanners open links. Then `/requests/new` creates the request. After that the customer can use `/requests`, `/requests/:id`, `/requests/:id/edit` and `/requests/:id/cancel`, and `/properties/new` (saved by posting to `/properties`) to add a property. A visitor without a link uses `/schedule`, `/schedule/date` and `/schedule/thanks`.
-- **What happens:** the customer chooses a property, a service and a day. The request is created as Requested with `preferred_date`. A customer can change the date or cancel only while it is still Requested.
+- **What happens:** the customer chooses a property, a service and a day. The request is created as Requested with `preferred_date`. A customer can change the date or cancel only while it is still Requested, or while staff have penciled them in (see step 6).
 - **Rules:** the server refuses a day outside the property's area days when the area has them.
 - **Code:** `src/controllers/link.js`, `src/controllers/requests.js`.
 
@@ -74,7 +74,9 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - **Matching:** a Needs Review request is matched to an existing customer or made into a new one at `/staff/requests/:id/match` and `/staff/requests/:id/match/new`. Until it is matched it cannot be scheduled.
 - **One at a time:** `/staff/requests` lists requests, `/staff/requests/:id` shows one, and `/staff/requests/:id/status` moves it, with a date when scheduling.
 - **Many at once, the day board:** `/staff/day-board` shows the Requested jobs that asked for a day, grouped by area and street, with the jobs already booked for it. `/staff/day-board/schedule` books the ticked ones. Each is a normal status change to Scheduled with `scheduled_date`, and a history entry. Only Requested jobs are booked there, at most 200 at a time, and a day in the past is refused.
-- **Code:** `src/models/dayBoard.js`, `src/models/staff.js`.
+- **Penciling in (only when the owner option is on):** `/staff/day-board` also lists customers in areas worked that day who were served in an earlier year and have nothing booked in that year. `/staff/day-board/pencil` books the ticked ones as **tentative**: a new Scheduled request for the day, on their property in that area, for the service they last had done. The form carries only the customer ids. A customer is skipped if no property of theirs is in an area that works the day, or if they already have a live request that year. The day board marks tentative bookings.
+- **Confirming a tentative booking:** the customer sees "Please Confirm Your Day" on `/requests/:id` and can confirm it (`/requests/:id/confirm`), choose a different day (`/requests/:id/edit`, which returns the request to Requested for staff to book) or decline it (`/requests/:id/cancel`). Saving the edit page with the same day counts as confirming. Staff can mark it confirmed, for example after a phone call, at `/staff/requests/:id/confirm`. Completing or cancelling a request clears the tentative mark.
+- **Code:** `src/models/dayBoard.js`, `src/models/staff.js`, `src/models/serviceRequest.js`.
 
 ## 7. Build the route
 
@@ -107,7 +109,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 ## Known gaps in the whole process
 
 - Sending links is manual and unrecorded.
-- A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is not built yet.
+- A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is built, behind the owner option, in step 6.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.
 
@@ -115,6 +117,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Added penciling in: tentative bookings from the day board, and customer and staff confirmation (step 6). |
 | 2026-11-03 | Added step 9, rebooking: the list of customers to reach again and links for just the ticked ones. |
 | 2026-11-03 | Added the owner option for tentative booking (setting and flag only; the booking itself comes next). |
 | 2026-11-03 | First version. Covers import through route, as built on `main` after pull request 55. |

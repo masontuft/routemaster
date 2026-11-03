@@ -4,7 +4,7 @@
     <dt>Service</dt><dd><%= request.service_type %></dd>
     <dt>Property</dt><dd><%= formatAddress(request.street, request.city) %></dd>
     <dt>Preferred Date</dt><dd><%= request.preferred_date.toISOString().slice(0, 10) %></dd>
-    <dt>Status</dt><dd><%= request.status %></dd>
+    <dt>Status</dt><dd><%= request.status %><%= request.tentative ? " (penciled in, not confirmed)" : "" %></dd>
     <% if (request.notes) { %><dt>Notes</dt><dd><%= request.notes %></dd><% } %>
 </dl>
 <% if (request.status === "Requested") { %>
@@ -12,6 +12,19 @@
     <form method="post" action="/requests/<%= request.id %>/cancel">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit">Cancel Request</button>
+    </form>
+<% } %>
+<% if (request.tentative && request.status === "Scheduled") { %>
+    <h2>Please Confirm Your Day</h2>
+    <p>We penciled you in for <%= request.preferred_date.toISOString().slice(0, 10) %>. Please tell us if that day works.</p>
+    <form method="post" action="/requests/<%= request.id %>/confirm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit">Confirm This Day</button>
+    </form>
+    <p><a href="/requests/<%= request.id %>/edit">Choose a Different Day</a></p>
+    <form method="post" action="/requests/<%= request.id %>/cancel">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit">I Do Not Need This Service</button>
     </form>
 <% } %>
 <% if (request.status === "Completed") { %>

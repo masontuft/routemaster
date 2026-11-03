@@ -21,7 +21,7 @@
                     <td><%= request.street %></td>
                     <td><%= request.preferred_date %></td>
                     <td><%= request.scheduled_date ?? "" %></td>
-                    <td><%= request.status %></td>
+                    <td><%= request.status %><%= request.tentative ? " (tentative)" : "" %></td>
                     <td><a href="/staff/requests/<%= request.id %>">Open</a></td>
                 </tr>
             <% }); %>

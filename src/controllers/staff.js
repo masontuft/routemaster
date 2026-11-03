@@ -348,3 +348,10 @@ export async function deleteCustomer(req, res) {
     await Customer.remove(req.app.locals.db, customer.id);
     res.redirect(303, "/staff/customers");
 }
+
+// Staff mark a penciled-in booking confirmed. Does nothing for a request that is not tentative.
+export async function confirmTentative(req, res) {
+    const request = await loadRequest(req);
+    await Staff.confirmTentative(req.app.locals.db, request.id, req.session.user.id);
+    res.redirect(`/staff/requests/${request.id}`);
+}
