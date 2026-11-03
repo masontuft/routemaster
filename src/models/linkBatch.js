@@ -41,6 +41,19 @@ function sort(customers, includeActive) {
     return { toLink, noPhone, skippedActive };
 }
 
+// With a list of ids, only those customers; an id that is not in the area is ignored, so a forged form cannot reach
+// a customer outside it. Without a list, everyone in the area.
+function limitTo(customers, customerIds) {
+    if (!customerIds) {
+        return customers;
+    }
+
+    const wanted = new Set(customerIds);
+    return customers.filter((customer) => {
+        return wanted.has(customer.id);
+    });
+}
+
 // What a batch would do, without creating anything. null for an area that does not exist.
 export async function preview(pool, areaId, { includeActive = false } = {}) {
     const { rows } = await pool.query("SELECT 1 FROM subdivisions WHERE id = $1", [areaId]);
@@ -56,7 +69,7 @@ export async function preview(pool, areaId, { includeActive = false } = {}) {
 // Makes one link per eligible customer in one transaction, so a failure leaves no half-made batch. The area row is
 // locked so two runs for the same area cannot both see "no active link" and double up. The raw tokens are returned
 // here and nowhere else; only their hashes are stored.
-export async function create(pool, { areaId, createdBy, days, includeActive = false }) {
+export async function create(pool, { areaId, createdBy, days, includeActive = false, customerIds = null }) {
     if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
         throw new RangeError(`days must be a whole number from 1 to ${MAX_DAYS}`);
     }
@@ -68,7 +81,8 @@ export async function create(pool, { areaId, createdBy, days, includeActive = fa
             return { error: "not_found" };
         }
 
-        const { toLink, noPhone, skippedActive } = sort(await customersInArea(client, areaId), includeActive);
+        const inArea = await customersInArea(client, areaId);
+        const { toLink, noPhone, skippedActive } = sort(limitTo(inArea, customerIds), includeActive);
 
         if (toLink.length > MAX_BATCH) {
             return { error: "too_many", count: toLink.length };

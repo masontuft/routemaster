@@ -95,10 +95,19 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - **What happens:** staff drive the route and move each request to Completed on `/staff/requests/:id/status`. A customer with a Completed request can write a review at `/requests/:id/review`, and can delete their own review at `/requests/:id/review/delete`. Staff moderate reviews at `/staff/reviews`.
 - **Gaps:** the app has no technician login, so completion is marked by staff.
 
+## 9. Rebooking next season
+
+- **Who:** owner, dispatcher.
+- **Where:** `/staff/rebooking`, with `/staff/rebooking/links` to make the links.
+- **What happens:** pick an area and the year you are booking for. Customers with a property in the area are sorted into four groups: **not yet booked** (served in an earlier year, nothing this year, the outreach list and ticked by default), **declined** (cancelled this year), **never served** (no completed job before), and **already booked**. Each row shows the last service date, whether a link was made this year, and whether a working link exists. Staff tick customers and make links for just those. The links appear once, as in step 3, and the customer then picks a day as in step 5.
+- **Rules:** a year is the year of the day a request was booked for, or asked for if never booked. A job completed this year counts as booked, which suits a service done once a year. An id that is not in the chosen area is ignored. Customers who already have a working link are skipped unless asked for.
+- **Code:** `src/models/rebooking.js`, `src/controllers/rebooking.js`.
+- **Gaps:** the app does not record that a customer replied by phone, only that a link was made. A company that serves more than once a year, or whose season spans New Year, is on the [roadmap](../product/roadmap.md).
+
 ## Known gaps in the whole process
 
 - Sending links is manual and unrecorded.
-- A Completed or Cancelled request cannot be booked again, and there is no way yet to reach last season's customers to rebook them. See the [roadmap](../product/roadmap.md).
+- A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is not built yet.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.
 
@@ -106,5 +115,6 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Added step 9, rebooking: the list of customers to reach again and links for just the ticked ones. |
 | 2026-11-03 | Added the owner option for tentative booking (setting and flag only; the booking itself comes next). |
 | 2026-11-03 | First version. Covers import through route, as built on `main` after pull request 55. |

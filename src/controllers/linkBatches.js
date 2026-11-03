@@ -53,21 +53,26 @@ export async function create(req, res) {
         });
     }
 
+    await renderResult(req, res, { areaId: values.areaId, template: values.template, days: values.days, result });
+}
+
+// The page that shows a made batch once. Shared with the rebooking page, which makes batches for ticked customers.
+export async function renderResult(req, res, { areaId, template, days, result }) {
     const origin = `${req.protocol}://${req.get("host")}`;
     const rows = result.rows.map((row) => {
         const link = `${origin}/l/${row.token}`;
-        const message = messageFor(values.template, row.name, link);
+        const message = messageFor(template, row.name, link);
         return { name: row.name, phone: normalizePhone(row.phone), message };
     });
     const csv = toCsv([["name", "phone", "message"], ...rows.map((row) => {
         return [row.name, row.phone, row.message];
     })]);
-    const area = await Area.find(req.app.locals.db, values.areaId);
+    const area = await Area.find(req.app.locals.db, areaId);
 
     // The links exist only in this response. Refreshing it would run the batch again.
     res.set("Cache-Control", "no-store");
     res.render("staff/link-batch-result", {
         title: "Scheduling Links", area, rows, csv, csvHref: `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`,
-        noPhone: result.noPhone, skippedActive: result.skippedActive, days: values.days, batchId: result.batchId,
+        noPhone: result.noPhone, skippedActive: result.skippedActive, days, batchId: result.batchId,
     });
 }

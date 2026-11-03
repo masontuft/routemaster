@@ -264,6 +264,8 @@ export function validateContact(body) {
     return { values: { name, email, phone, message }, errors };
 }
 
+export const DEFAULT_REBOOK_MESSAGE = "Hi {name}, it is time to book your sprinkler service for this year. Choose a day here: {link}";
+
 export const DEFAULT_LINK_MESSAGE = "Hi {name}, you can choose a day for your sprinkler service here: {link}";
 
 // Which area, how long the links last, whether customers who already have a working link get another, and the
@@ -319,4 +321,22 @@ export function validateRouteBuild(body, today = todayString()) {
     }
 
     return { values: { day, startAddress, startTime, serviceMinutes }, errors };
+}
+
+// The rebooking form: the same area, lifetime and message rules as a link batch, plus the year being rebooked and
+// the ticked customers. The ids are checked against the area again when the links are made.
+export function validateRebooking(body) {
+    const { values, errors } = validateLinkBatch(body);
+    const year = /^\d{4}$/.test(String(body.year ?? "")) ? Number(body.year) : null;
+    const customerIds = [...new Set([].concat(body.customerIds ?? []).map(parseId).filter(Boolean))];
+
+    if (year === null || year < 2000 || year > 2100) {
+        errors.push("Choose a year.");
+    }
+
+    if (customerIds.length === 0) {
+        errors.push("Tick at least one customer.");
+    }
+
+    return { values: { ...values, year, customerIds }, errors };
 }
