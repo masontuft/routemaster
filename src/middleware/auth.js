@@ -1,8 +1,4 @@
-function forbidden() {
-    const error = new Error("Forbidden");
-    error.status = 403;
-    return error;
-}
+import { forbidden } from "../utils/errors.js";
 
 export function requireLogin(req, res, next) {
     if (!req.session.user) {

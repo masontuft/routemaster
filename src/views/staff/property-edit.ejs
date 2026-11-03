@@ -1,0 +1,21 @@
+<%- include("../partials/head") %>
+<h1>Edit Property</h1>
+<%- include("../partials/errors") %>
+<form method="post" action="/staff/properties/<%= property.id %>/edit">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (editable.includes("street")) { %>
+        <label for="street">Street Address</label>
+        <input id="street" name="street" value="<%= values.street || "" %>" required maxlength="120">
+    <% } else { %>
+        <p>Street: <strong><%= property.street %></strong>. Only an owner changes a street.</p>
+    <% } %>
+    <label for="city">City</label>
+    <input id="city" name="city" value="<%= values.city || "" %>" maxlength="80">
+    <label for="zip">ZIP Code</label>
+    <input id="zip" name="zip" value="<%= values.zip || "" %>" maxlength="10">
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" maxlength="500"><%= values.notes || "" %></textarea>
+    <button type="submit">Save Property</button>
+</form>
+<p><a href="/staff/customers/<%= property.customer_id %>">Back to Customer</a></p>
+<%- include("../partials/foot") %>

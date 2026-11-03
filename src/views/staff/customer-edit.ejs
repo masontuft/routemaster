@@ -1,0 +1,23 @@
+<%- include("../partials/head") %>
+<h1>Edit Customer</h1>
+<%- include("../partials/errors") %>
+<form method="post" action="/staff/customers/<%= customer.id %>/edit">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (editable.includes("name")) { %>
+        <label for="name">Name</label>
+        <input id="name" name="name" value="<%= values.name || "" %>" required maxlength="100">
+    <% } else { %>
+        <p>Name: <strong><%= customer.name %></strong>. Only an owner changes a name.</p>
+    <% } %>
+    <% if (editable.includes("phone")) { %>
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="tel" value="<%= values.phone || "" %>" maxlength="30">
+    <% } %>
+    <% if (editable.includes("email")) { %>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="<%= values.email || "" %>" maxlength="254">
+    <% } %>
+    <button type="submit">Save Customer</button>
+</form>
+<p><a href="/staff/customers/<%= customer.id %>">Back to Customer</a></p>
+<%- include("../partials/foot") %>

@@ -104,19 +104,21 @@ export async function ensureUser(pool, customerId) {
 }
 
 // Normalized search terms contain only letters, digits and spaces, so they cannot carry LIKE wildcards.
-// An empty search lists the first 50 customers. A phone term needs 3 digits to count.
-export async function search(pool, term) {
+// needsCity keeps only customers with a property that has no city. An empty search lists the first 50 customers.
+// A phone term needs 3 digits to count.
+export async function search(pool, term, { needsCity = false } = {}) {
     const digits = normalizePhone(term);
     const { rows } = await pool.query(
         `SELECT DISTINCT customers.id, customers.name, customers.phone
          FROM customers
          LEFT JOIN properties ON properties.customer_id = customers.id
-         WHERE customers.name_normalized LIKE $1
+         WHERE (customers.name_normalized LIKE $1
             OR ($2::text IS NOT NULL AND customers.phone_normalized LIKE $2::text)
-            OR properties.address_normalized LIKE $3
+            OR properties.address_normalized LIKE $3)
+           AND ($4::boolean = false OR (properties.id IS NOT NULL AND properties.city IS NULL))
          ORDER BY customers.name, customers.id
          LIMIT 50`,
-        [`%${normalizeName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`],
+        [`%${normalizeName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`, needsCity],
     );
     return rows;
 }

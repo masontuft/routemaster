@@ -83,6 +83,68 @@ export function validateProperty(body) {
     return { values: { street, city, zip, notes: String(body.notes ?? "").trim().slice(0, 500) }, errors };
 }
 
+// Edits check only the fields that were posted and that the role may change. A blank city, ZIP or note is allowed,
+// because a property imported from a spreadsheet may not have them yet. Name and street can never be blank.
+export function validateCustomerEdit(body, fields) {
+    const values = {};
+    const errors = [];
+
+    if (fields.includes("name") && "name" in body) {
+        values.name = String(body.name ?? "").trim();
+        if (!values.name || values.name.length > 100) {
+            errors.push("Enter a name of up to 100 characters.");
+        }
+    }
+
+    if (fields.includes("phone") && "phone" in body) {
+        values.phone = String(body.phone ?? "").trim();
+        if (values.phone && (values.phone.length > 30 || values.phone.replace(/\D/g, "").length < 10)) {
+            errors.push("Enter a phone number with at least 10 digits, or leave it blank.");
+        }
+    }
+
+    if (fields.includes("email") && "email" in body) {
+        values.email = normalizeEmail(body.email);
+        if (values.email && (!EMAIL_PATTERN.test(values.email) || values.email.length > 254)) {
+            errors.push("Enter a valid email address, or leave it blank.");
+        }
+    }
+
+    return { values, errors };
+}
+
+export function validatePropertyEdit(body, fields) {
+    const values = {};
+    const errors = [];
+
+    if (fields.includes("street") && "street" in body) {
+        values.street = String(body.street ?? "").trim();
+        if (!values.street || values.street.length > 120) {
+            errors.push("Enter a street address.");
+        }
+    }
+
+    if (fields.includes("city") && "city" in body) {
+        values.city = String(body.city ?? "").trim();
+        if (values.city.length > 80) {
+            errors.push("Enter a city of up to 80 characters, or leave it blank.");
+        }
+    }
+
+    if (fields.includes("zip") && "zip" in body) {
+        values.zip = String(body.zip ?? "").trim();
+        if (values.zip && !/^\d{5}(-\d{4})?$/.test(values.zip)) {
+            errors.push("Enter a valid ZIP code, or leave it blank.");
+        }
+    }
+
+    if (fields.includes("notes") && "notes" in body) {
+        values.notes = String(body.notes ?? "").trim().slice(0, 500);
+    }
+
+    return { values, errors };
+}
+
 export function validateIdentity(body) {
     const name = String(body.name ?? "").trim();
     const phone = String(body.phone ?? "").trim();
