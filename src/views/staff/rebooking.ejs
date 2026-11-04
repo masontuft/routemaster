@@ -19,7 +19,11 @@
 <% if (choice) { %>
     <p><%= counts.not_yet_booked %> not yet booked, <%= counts.declined %> declined, <%= counts.never_served %> never served,
         <%= counts.booked %> already booked.</p>
-    <form method="post" action="/staff/rebooking/links" data-rebooking data-limit="<%= limit %>">
+    <% if (choice === "all") { %>
+        <p>Links for all areas are made one area at a time, by each customer's first property, so there is no limit on
+            how many you tick.</p>
+    <% } %>
+    <form method="post" action="/staff/rebooking/links" data-rebooking<%- choice === "all" ? "" : ` data-limit="${limit}"` %>>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="areaId" value="<%= choice %>">
         <input type="hidden" name="year" value="<%= year %>">

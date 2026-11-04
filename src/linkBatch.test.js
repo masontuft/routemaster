@@ -178,3 +178,112 @@ test("a batch over the cap is refused before anything is created", async () => {
     assert.strictEqual(await count("access_links"), 0);
     assert.strictEqual(await count("link_batches"), 0);
 });
+
+test("a customer with properties in two areas belongs to the area of their first property", async () => {
+    const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101", ["1 Elm St"]);
+    const propertyId = await Property.create(pool, ann, { street: "9 Pine Rd", city: "Rexburg" });
+    await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, pine]);
+
+    const groups = await LinkBatch.groupByOwningArea(pool);
+
+    assert.deepStrictEqual(groups, [{ areaId: oakwood, areaName: "Oakwood", customerIds: [ann] }]);
+});
+
+test("customers whose first property has no area form a last group, and a customer with no property is left out", async () => {
+    const bo = await customerIn(pine, "Bo Kim", "208-555-0102");
+    const cy = await customerIn(null, "Cy Day", "208-555-0103");
+    await Customer.create(pool, { name: "No Home", phone: "208-555-0104" });
+
+    const groups = await LinkBatch.groupByOwningArea(pool);
+
+    assert.deepStrictEqual(groups, [
+        { areaId: pine, areaName: "Pine Hills", customerIds: [bo] },
+        { areaId: null, areaName: "No area", customerIds: [cy] },
+    ]);
+});
+
+test("grouping can be limited to some customers, so an id outside the list is never grouped", async () => {
+    const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
+    await customerIn(pine, "Bo Kim", "208-555-0102");
+
+    const groups = await LinkBatch.groupByOwningArea(pool, [ann, 99999]);
+
+    assert.deepStrictEqual(groups, [{ areaId: oakwood, areaName: "Oakwood", customerIds: [ann] }]);
+});
+
+test("all areas makes one batch per owning area, each recording its area, and links a two-area customer once", async () => {
+    const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
+    const second = await Property.create(pool, ann, { street: "9 Pine Rd", city: "Rexburg" });
+    await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [second, pine]);
+    const bo = await customerIn(pine, "Bo Kim", "208-555-0102");
+    const cy = await customerIn(null, "Cy Day", "208-555-0103");
+
+    const sections = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30, includeActive: true });
+
+    assert.deepStrictEqual(sections.map((section) => {
+        return [section.areaName, section.rows.map((row) => {
+            return row.customerId;
+        })];
+    }), [["Oakwood", [ann]], ["Pine Hills", [bo]], ["No area", [cy]]]);
+    assert.strictEqual(await count("access_links"), 3);
+    const batches = await pool.query("SELECT subdivision_id FROM link_batches ORDER BY id");
+    assert.deepStrictEqual(batches.rows.map((row) => {
+        return row.subdivision_id;
+    }), [oakwood, pine, null]);
+});
+
+test("all areas with ticked customers links only those, and an id that is nobody's is ignored", async () => {
+    const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
+    await customerIn(pine, "Bo Kim", "208-555-0102");
+
+    const sections = await LinkBatch.createForAllAreas(pool, {
+        createdBy: userId, days: 30, customerIds: [ann, 99999],
+    });
+
+    assert.deepStrictEqual(sections.map((section) => {
+        return section.areaName;
+    }), ["Oakwood"]);
+    assert.strictEqual(await count("access_links"), 1);
+});
+
+test("an area over the cap is reported and the other areas still get their links", async () => {
+    const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
+    await pool.query(
+        `INSERT INTO customers (name, name_normalized, phone, phone_normalized)
+         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0')
+         FROM generate_series(1, $1::int) g`,
+        [LinkBatch.MAX_BATCH + 1],
+    );
+    await pool.query(
+        `INSERT INTO properties (customer_id, street, city, address_normalized, subdivision_id)
+         SELECT id, '1 Elm St', 'Rexburg', '1 elm st', $1 FROM customers WHERE name LIKE 'C%'`,
+        [pine],
+    );
+
+    const sections = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+
+    assert.deepStrictEqual(sections.map((section) => {
+        return [section.areaName, section.error ?? "made", section.count];
+    }), [["Oakwood", "made", undefined], ["Pine Hills", "too_many", LinkBatch.MAX_BATCH + 1]]);
+    assert.strictEqual(await count("access_links"), 1);
+    assert.strictEqual((await pool.query("SELECT customer_id FROM access_links")).rows[0].customer_id, ann);
+});
+
+test("a database error in one area is reported, rolls back only that area, and the rest are kept", async () => {
+    await customerIn(oakwood, "Ann Lee", "208-555-0101");
+    const bo = await customerIn(pine, "Bo Kim", "208-555-0102");
+    await pool.query(`CREATE FUNCTION refuse_bo() RETURNS trigger AS $$
+        BEGIN
+            IF NEW.customer_id = ${bo} THEN RAISE EXCEPTION 'refused'; END IF;
+            RETURN NEW;
+        END $$ LANGUAGE plpgsql`);
+    await pool.query("CREATE TRIGGER refuse_bo BEFORE INSERT ON access_links FOR EACH ROW EXECUTE FUNCTION refuse_bo()");
+
+    const sections = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+
+    assert.deepStrictEqual(sections.map((section) => {
+        return [section.areaName, section.error ?? "made"];
+    }), [["Oakwood", "made"], ["Pine Hills", "failed"]]);
+    assert.strictEqual(await count("access_links"), 1);
+    assert.strictEqual(await count("link_batches"), 1);
+});

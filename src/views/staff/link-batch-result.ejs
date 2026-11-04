@@ -2,21 +2,42 @@
 <h1>Scheduling Links</h1>
 <p><strong>Copy these now.</strong> The links are shown only on this page. If you leave or refresh it, they cannot be
     shown again, and reloading would make a second set.</p>
-<p><%= rows.length %> <%= rows.length === 1 ? "link" : "links" %> made for <%= area.name %>, each good for <%= days %> days
-    (batch <%= batchId %>).</p>
-<p><a href="<%= csvHref %>" download="scheduling-links-<%= batchId %>.csv">Download CSV</a></p>
-<label for="csv">CSV to Copy</label>
-<textarea id="csv" readonly rows="8" cols="80"><%= csv %></textarea>
-<div class="table-scroll" role="region" aria-label="Links" tabindex="0">
-<table>
-    <thead><tr><th>Name</th><th>Phone</th><th>Message</th></tr></thead>
-    <tbody>
-        <% rows.forEach((row) => { %>
-            <tr><td><%= row.name %></td><td><%= row.phone %></td><td><%= row.message %></td></tr>
+<% if (sections.length === 1 && failed.length === 0) { %>
+    <p><%= linkCount %> <%= linkCount === 1 ? "link" : "links" %> made for <%= sections[0].areaName %>, each good for <%= days %> days
+        (batch <%= sections[0].batchId %>).</p>
+<% } else { %>
+    <p><%= linkCount %> <%= linkCount === 1 ? "link" : "links" %> made in <%= sections.length %> <%= sections.length === 1 ? "area" : "areas" %>, each good for <%= days %> days.</p>
+<% } %>
+<% if (failed.length > 0) { %>
+    <h2>Areas That Failed</h2>
+    <p>These areas got no links. The areas above and below them were not affected. Make links for all areas again
+        to finish them: customers who already have a working link are skipped.</p>
+    <ul>
+        <% failed.forEach((area) => { %>
+            <li><%= area.areaName %>: <%= area.reason %>.</li>
         <% }); %>
-    </tbody>
-</table>
-</div>
+    </ul>
+<% } %>
+<% sections.forEach((section) => { %>
+    <h2><%= section.areaName %></h2>
+    <p><%= section.rows.length %> <%= section.rows.length === 1 ? "link" : "links" %> (batch <%= section.batchId %>).
+        <a href="<%= section.csvHref %>" download="scheduling-links-<%= section.batchId %>.csv">Download CSV</a></p>
+    <details>
+        <summary>CSV to Copy</summary>
+        <label for="csv-<%= section.batchId %>">CSV to Copy for <%= section.areaName %></label>
+        <textarea id="csv-<%= section.batchId %>" readonly rows="8" cols="80"><%= section.csv %></textarea>
+    </details>
+    <div class="table-scroll" role="region" aria-label="Links for <%= section.areaName %>" tabindex="0">
+    <table>
+        <thead><tr><th>Name</th><th>Phone</th><th>Message</th></tr></thead>
+        <tbody>
+            <% section.rows.forEach((row) => { %>
+                <tr><td><%= row.name %></td><td><%= row.phone %></td><td><%= row.message %></td></tr>
+            <% }); %>
+        </tbody>
+    </table>
+    </div>
+<% }); %>
 <% if (noPhone.length > 0) { %>
     <h2>No Usable Phone</h2>
     <p>These customers have no phone that can be texted, so they got no link.</p>

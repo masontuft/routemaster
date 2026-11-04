@@ -23,6 +23,42 @@ async function customersInArea(db, areaId) {
     return rows;
 }
 
+// Splits customers by the area that owns them: the area of their first property (the lowest id). A customer with
+// properties in several areas lands in exactly one group, so they are linked once. A first property with no area puts
+// them in the "no area" group (areaId null), listed last. With customerIds, only those customers are grouped; an id
+// with no property is dropped. Every group is made of customers who have a property, so none is empty.
+export async function groupByOwningArea(db, customerIds = null) {
+    const { rows } = await db.query(
+        `SELECT DISTINCT ON (properties.customer_id)
+                properties.customer_id, properties.subdivision_id AS area_id, subdivisions.name AS area_name
+         FROM properties
+         LEFT JOIN subdivisions ON subdivisions.id = properties.subdivision_id
+         ORDER BY properties.customer_id, properties.id`,
+    );
+    const wanted = customerIds ? new Set(customerIds) : null;
+    const groups = new Map();
+
+    for (const row of rows) {
+        if (wanted && !wanted.has(row.customer_id)) {
+            continue;
+        }
+
+        if (!groups.has(row.area_id)) {
+            groups.set(row.area_id, { areaId: row.area_id, areaName: row.area_name ?? "No area", customerIds: [] });
+        }
+
+        groups.get(row.area_id).customerIds.push(row.customer_id);
+    }
+
+    return [...groups.values()].sort((first, second) => {
+        if (first.areaId === null || second.areaId === null) {
+            return first.areaId === null ? 1 : -1;
+        }
+
+        return first.areaName.localeCompare(second.areaName);
+    });
+}
+
 // A phone that cannot be texted (blank, or fewer than 10 digits) is listed, not linked.
 function textable(customer) {
     return normalizePhone(customer.phone ?? "").length >= 10;
@@ -115,4 +151,31 @@ export async function create(pool, { areaId, createdBy, days, includeActive = fa
             }),
         };
     });
+}
+
+// Links for every customer, one batch per owning area (see groupByOwningArea), each in its own transaction so no single
+// request holds a lock or grows with the total. The areas are independent: one that fails (a database error, or more
+// than MAX_BATCH customers) is reported and the rest still go ahead, and the batches already made are kept because
+// their tokens are only ever shown on the page that follows. customerIds limits it to some customers. Each section is
+// create's result plus its area; the "no area" group runs through create with areaId null, which the ids narrow to
+// just that group.
+export async function createForAllAreas(pool, { createdBy, days, includeActive = false, customerIds = null }) {
+    const groups = await groupByOwningArea(pool, customerIds);
+    const sections = [];
+
+    for (const group of groups) {
+        const { areaId, areaName } = group;
+
+        try {
+            const result = await create(pool, {
+                areaId, createdBy, days, includeActive, customerIds: group.customerIds,
+            });
+            sections.push({ areaId, areaName, ...result });
+        } catch (error) {
+            console.error(`Link batch for ${areaName} failed:`, error.message);
+            sections.push({ areaId, areaName, error: "failed" });
+        }
+    }
+
+    return sections;
 }

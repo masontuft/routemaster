@@ -66,7 +66,9 @@ export default function createApp({
     app.use(securityHeaders);
     app.use(express.static(path.join(here, "..", "public")));
     app.use(sessionMiddleware({ secret: sessionSecret, store: app.locals.sessionStore }));
-    app.use(express.urlencoded({ extended: false }));
+    // Ticking every customer on the rebooking page sends one field per customer, so the default limit of 1000 fields
+    // is raised. The 100 kb body limit still bounds the size.
+    app.use(express.urlencoded({ extended: false, parameterLimit: 5000 }));
     app.use(csrf);
     app.use((req, res, next) => {
         res.locals.user = req.session.user;

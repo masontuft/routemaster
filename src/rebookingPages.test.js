@@ -224,7 +224,7 @@ test("all areas lists every customer with a property, in any area or none, once 
     assert.doesNotMatch(res.text, /No Property/);
 });
 
-test("making links for all areas reaches ticked customers in every area and records a batch with no area", async () => {
+test("making links for all areas makes a batch for each owning area and shows a section for each", async () => {
     const other = await Area.create(pool, "Pine Hills");
     const inside = await servedLastYear("Inside");
     const outside = await servedLastYear("Elsewhere", { area: other, street: "9 Pine Rd" });
@@ -236,12 +236,67 @@ test("making links for all areas reaches ticked customers in every area and reco
     });
 
     assert.strictEqual(res.status, 200);
-    assert.match(res.text, /made for all areas/);
+    assert.match(res.text, /2 links made in 2 areas/);
+    assert.match(res.text, /<h2>Pine Hills<\/h2>/);
     assert.match(res.text, /Hi Inside: /);
     assert.match(res.text, /Hi Elsewhere: /);
+    assert.doesNotMatch(res.text, /Areas That Failed/);
     assert.strictEqual(await count("access_links"), 2);
-    const batch = await pool.query("SELECT links_created, subdivision_id FROM link_batches");
-    assert.deepStrictEqual(batch.rows, [{ links_created: 2, subdivision_id: null }]);
+    const batches = await pool.query("SELECT links_created, subdivision_id FROM link_batches ORDER BY id");
+    assert.deepStrictEqual(batches.rows.map((row) => {
+        return row.links_created;
+    }), [1, 1]);
+    assert.ok(batches.rows.every((row) => {
+        return row.subdivision_id !== null;
+    }));
+});
+
+test("all areas takes more ticked customers than one batch holds, and the page says there is no limit", async () => {
+    await servedLastYear("Ann Lee");
+    const dispatcher = await agentFor("dispatcher");
+    const page = await dispatcher.get("/staff/rebooking?areaId=all&year=2026");
+    const ids = Array.from({ length: 1100 }, (value, index) => {
+        return String(900000 + index);
+    });
+
+    const res = await send(dispatcher, "/staff/rebooking?areaId=all&year=2026", "/staff/rebooking/links", {
+        areaId: "all", year: "2026", days: "30", template: "Hi {name}: {link}", customerIds: ids,
+    });
+
+    assert.doesNotMatch(page.text, /data-limit/);
+    assert.match(page.text, /so there is no limit/);
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /0 links made in 0 areas/);
+});
+
+test("all areas lists an area it could not finish and still makes the others", async () => {
+    const big = await Area.create(pool, "Big Hills");
+    const inside = await servedLastYear("Inside");
+    await pool.query(
+        `INSERT INTO customers (name, name_normalized, phone, phone_normalized)
+         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0')
+         FROM generate_series(1, 501) g`,
+    );
+    await pool.query(
+        `INSERT INTO properties (customer_id, street, city, address_normalized, subdivision_id)
+         SELECT id, '1 Elm St', 'Rexburg', '1 elm st', $1 FROM customers WHERE name LIKE 'C%'`,
+        [big],
+    );
+    const crowd = await pool.query("SELECT id FROM customers WHERE name LIKE 'C%'");
+    const dispatcher = await agentFor("dispatcher");
+
+    const res = await send(dispatcher, "/staff/rebooking?areaId=all&year=2026", "/staff/rebooking/links", {
+        areaId: "all", year: "2026", days: "30", template: "Hi {name}: {link}",
+        customerIds: [String(inside), ...crowd.rows.map((row) => {
+            return String(row.id);
+        })],
+    });
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /1 link made in 1 area/);
+    assert.match(res.text, /Areas That Failed/);
+    assert.match(res.text, /Big Hills: 501 customers is more than the 500 a batch holds/);
+    assert.strictEqual(await count("access_links"), 1);
 });
 
 test("all areas still needs ticks, and a bad area value is refused", async () => {

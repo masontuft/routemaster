@@ -1,7 +1,7 @@
 import * as Area from "../models/area.js";
 import * as LinkBatch from "../models/linkBatch.js";
 import * as Rebooking from "../models/rebooking.js";
-import { renderResult } from "./linkBatches.js";
+import { renderResult, renderResults } from "./linkBatches.js";
 import { notFound } from "../utils/errors.js";
 import { normalizePhone } from "../utils/normalize.js";
 import { parseId, todayString, validateRebooking, DEFAULT_REBOOK_MESSAGE } from "../utils/validation.js";
@@ -54,6 +54,15 @@ export async function makeLinks(req, res) {
         });
     }
 
+    // Every area at once is one batch per owning area, so no single batch has to fit under the cap.
+    if (values.allAreas) {
+        const sections = await LinkBatch.createForAllAreas(req.app.locals.db, {
+            createdBy: req.session.user.id, days: values.days, includeActive: values.includeActive,
+            customerIds: values.customerIds,
+        });
+        return renderResults(req, res, { template: values.template, days: values.days, sections });
+    }
+
     const result = await LinkBatch.create(req.app.locals.db, {
         areaId: values.areaId, createdBy: req.session.user.id, days: values.days,
         includeActive: values.includeActive, customerIds: values.customerIds,
@@ -65,7 +74,7 @@ export async function makeLinks(req, res) {
 
     if (result.error === "too_many") {
         return page(req, res, {
-            choice: values.allAreas ? "all" : values.areaId, year: values.year, days: values.days,
+            choice: values.areaId, year: values.year, days: values.days,
             template: values.template, status: 400,
             errors: [`That would make ${result.count} links. A batch holds at most ${LinkBatch.MAX_BATCH}.`],
         });
