@@ -7,16 +7,17 @@ import { normalizePhone } from "../utils/normalize.js";
 import { parseId, todayString, validateRebooking, DEFAULT_REBOOK_MESSAGE } from "../utils/validation.js";
 
 // Names and phones, so the page is never cached.
+// choice is "all" (every customer), an area id, or null (nothing chosen yet).
 async function page(req, res, options) {
-    const { areaId, year, days = 30, template = DEFAULT_REBOOK_MESSAGE, errors = [], status = 200 } = options;
+    const { choice, year, days = 30, template = DEFAULT_REBOOK_MESSAGE, errors = [], status = 200 } = options;
     const db = req.app.locals.db;
     const areas = await Area.list(db, todayString());
-    const customers = areaId ? await Rebooking.forArea(db, areaId, year) : [];
+    const customers = choice ? await Rebooking.forArea(db, choice === "all" ? null : choice, year) : [];
     const counts = Rebooking.countByGroup(customers);
 
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/rebooking", {
-        title: "Rebooking", areas, areaId, year, days, template, errors, counts,
+        title: "Rebooking", areas, choice, year, days, template, errors, counts, limit: LinkBatch.MAX_BATCH,
         groups: Rebooking.GROUPS.map((group) => {
             return {
                 key: group,
@@ -36,9 +37,10 @@ function yearFrom(value) {
 }
 
 export async function show(req, res) {
-    const areaId = parseId(req.query.areaId);
+    const areaId = req.query.areaId === "all" ? null : parseId(req.query.areaId);
     const area = areaId ? await Area.find(req.app.locals.db, areaId) : null;
-    await page(req, res, { areaId: area ? areaId : null, year: yearFrom(req.query.year) });
+    const choice = req.query.areaId === "all" ? "all" : area ? areaId : null;
+    await page(req, res, { choice, year: yearFrom(req.query.year) });
 }
 
 // Makes links for the ticked customers only, then shows them on the same one-time page as a link batch.
@@ -47,7 +49,7 @@ export async function makeLinks(req, res) {
 
     if (errors.length > 0) {
         return page(req, res, {
-            areaId: values.areaId, year: yearFrom(req.body.year), days: req.body.days,
+            choice: values.allAreas ? "all" : values.areaId, year: yearFrom(req.body.year), days: req.body.days,
             template: values.template, errors, status: 400,
         });
     }
@@ -63,7 +65,8 @@ export async function makeLinks(req, res) {
 
     if (result.error === "too_many") {
         return page(req, res, {
-            areaId: values.areaId, year: values.year, days: values.days, template: values.template, status: 400,
+            choice: values.allAreas ? "all" : values.areaId, year: values.year, days: values.days,
+            template: values.template, status: 400,
             errors: [`That would make ${result.count} links. A batch holds at most ${LinkBatch.MAX_BATCH}.`],
         });
     }

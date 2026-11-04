@@ -332,7 +332,10 @@ export function validateRouteBuild(body, today = todayString()) {
 // The rebooking form: the same area, lifetime and message rules as a link batch, plus the year being rebooked and
 // the ticked customers. The ids are checked against the area again when the links are made.
 export function validateRebooking(body) {
-    const { values, errors } = validateLinkBatch(body);
+    // "all" means every customer, not one area. validateLinkBatch wants a real area id, so it is given a placeholder
+    // for that check and the area is cleared afterward.
+    const allAreas = String(body.areaId ?? "") === "all";
+    const { values, errors } = validateLinkBatch(allAreas ? { ...body, areaId: "1" } : body);
     const year = /^\d{4}$/.test(String(body.year ?? "")) ? Number(body.year) : null;
     const customerIds = [...new Set([].concat(body.customerIds ?? []).map(parseId).filter(Boolean))];
 
@@ -344,5 +347,5 @@ export function validateRebooking(body) {
         errors.push("Tick at least one customer.");
     }
 
-    return { values: { ...values, year, customerIds }, errors };
+    return { values: { ...values, areaId: allAreas ? null : values.areaId, allAreas, year, customerIds }, errors };
 }

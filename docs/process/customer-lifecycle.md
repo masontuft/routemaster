@@ -103,8 +103,8 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 - **Who:** owner, dispatcher.
 - **Where:** `/staff/rebooking`, with `/staff/rebooking/links` to make the links.
-- **What happens:** pick an area and the year you are booking for. Customers with a property in the area are sorted into four groups: **not yet booked** (served in an earlier year, nothing this year, the outreach list and ticked by default), **declined** (cancelled this year), **never served** (no completed job before), and **already booked**. Each row shows the last service date, whether a link was made this year, and whether a working link exists. Staff tick customers and make links for just those. The links appear once, as in step 3, and the customer then picks a day as in step 5.
-- **Rules:** a year is the year of the day a request was booked for, or asked for if never booked. A job completed this year counts as booked, which suits a service done once a year. An id that is not in the chosen area is ignored. Customers who already have a working link are skipped unless asked for.
+- **What happens:** pick an area, or **All areas** for every customer with a property, and the year you are booking for. Customers with a property in the area are sorted into four groups: **not yet booked** (served in an earlier year, nothing this year, the outreach list and ticked by default), **declined** (cancelled this year), **never served** (no completed job before), and **already booked**. Each row shows the last service date, whether a link was made this year, and whether a working link exists. Staff tick customers and make links for just those. Each group has Select All, which ticks every customer in it who has a phone that can be texted, and Clear. These buttons need scripts and appear only when the page's script runs; without it, customers are ticked one at a time. A count shows how many are ticked. The links appear once, as in step 3, and the customer then picks a day as in step 5.
+- **Rules:** a year is the year of the day a request was booked for, or asked for if never booked. A job completed this year counts as booked, which suits a service done once a year. An id that is not in the chosen area is ignored. Customers who already have a working link are skipped unless asked for. One batch holds at most 500 links, so a larger selection is made in more than one go. A batch for all areas records no area.
 - **Code:** `src/models/rebooking.js`, `src/controllers/rebooking.js`.
 - **Gaps:** the app does not record that a customer replied by phone, only that a link was made. A company that serves more than once a year, or whose season spans New Year, is on the [roadmap](../product/roadmap.md).
 
@@ -121,6 +121,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Rebooking: an All areas choice, and Select All and Clear buttons for each group. |
 | 2026-11-03 | Route builder includes tentative stops only while the owner option is on, and marks them. |
 | 2026-11-03 | Added an optional city on each area, used for map lookups when a property has no city. |
 | 2026-11-03 | Added penciling in: tentative bookings from the day board, and customer and staff confirmation (step 6). |

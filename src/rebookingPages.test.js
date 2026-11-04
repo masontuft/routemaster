@@ -109,7 +109,7 @@ test("the page sorts customers into groups, ticks the outreach list, and gives b
 
     assert.strictEqual(res.status, 200);
     assert.match(res.text, /2 not yet booked, 0 declined, 0 never served,\s+1 already booked/);
-    assert.match(res.text, new RegExp(`value="${ann}" aria-label="Make a link for Ann Lee" checked`));
+    assert.match(res.text, new RegExp(`value="${ann}" data-group="not_yet_booked" data-textable="1" aria-label="Make a link for Ann Lee" checked`));
     assert.doesNotMatch(res.text, /aria-label="Make a link for No Phone" checked/);
     assert.doesNotMatch(res.text, /aria-label="Make a link for Already Booked"/);
     assert.match(res.headers["cache-control"], /no-store/);
@@ -186,5 +186,78 @@ test("customers and signed-out visitors cannot use rebooking", async () => {
     assert.strictEqual((await customer.get("/staff/rebooking")).status, 403);
     const res = await customer.post("/staff/rebooking/links").type("form").send({ areaId, customerIds: String(ann) });
     assert.notStrictEqual(res.status, 200);
+    assert.strictEqual(await count("access_links"), 0);
+});
+
+test("the page offers all areas, and the buttons and script that select a whole group", async () => {
+    await servedLastYear("Ann Lee");
+    const dispatcher = await agentFor("dispatcher");
+
+    const res = await dispatcher.get(`/staff/rebooking?areaId=${areaId}&year=2026`);
+
+    assert.match(res.text, /<option value="all" >All areas \(every customer\)<\/option>/);
+    assert.match(res.text, /data-select="all" data-group="not_yet_booked">Select All/);
+    assert.match(res.text, /data-select="none" data-group="not_yet_booked">Clear/);
+    assert.match(res.text, /data-group="not_yet_booked" data-textable="1"/);
+    assert.match(res.text, /<script type="module" src="\/js\/rebooking.js">/);
+    const script = await request(server).get("/js/rebooking.js");
+    assert.strictEqual(script.status, 200);
+    assert.match(script.headers["content-type"], /javascript/);
+});
+
+test("all areas lists every customer with a property, in any area or none, once each", async () => {
+    const other = await Area.create(pool, "Pine Hills");
+    await servedLastYear("Inside");
+    await servedLastYear("Elsewhere", { area: other, street: "9 Pine Rd" });
+    const noArea = await Customer.create(pool, { name: "No Area", phone: "208-555-0102" });
+    await Property.create(pool, noArea, { street: "5 Oak St", city: "Rexburg" });
+    await Customer.create(pool, { name: "No Property", phone: "208-555-0103" });
+    const dispatcher = await agentFor("dispatcher");
+
+    const res = await dispatcher.get("/staff/rebooking?areaId=all&year=2026");
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /<option value="all" selected>/);
+    assert.match(res.text, /2 not yet booked, 0 declined, 1 never served,\s+0 already booked/);
+    assert.match(res.text, /Elsewhere/);
+    assert.match(res.text, /No Area/);
+    assert.doesNotMatch(res.text, /No Property/);
+});
+
+test("making links for all areas reaches ticked customers in every area and records a batch with no area", async () => {
+    const other = await Area.create(pool, "Pine Hills");
+    const inside = await servedLastYear("Inside");
+    const outside = await servedLastYear("Elsewhere", { area: other, street: "9 Pine Rd" });
+    const dispatcher = await agentFor("dispatcher");
+
+    const res = await send(dispatcher, "/staff/rebooking?areaId=all&year=2026", "/staff/rebooking/links", {
+        areaId: "all", year: "2026", days: "30", template: "Hi {name}: {link}",
+        customerIds: [String(inside), String(outside)],
+    });
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /made for all areas/);
+    assert.match(res.text, /Hi Inside: /);
+    assert.match(res.text, /Hi Elsewhere: /);
+    assert.strictEqual(await count("access_links"), 2);
+    const batch = await pool.query("SELECT links_created, subdivision_id FROM link_batches");
+    assert.deepStrictEqual(batch.rows, [{ links_created: 2, subdivision_id: null }]);
+});
+
+test("all areas still needs ticks, and a bad area value is refused", async () => {
+    await servedLastYear("Ann Lee");
+    const dispatcher = await agentFor("dispatcher");
+
+    const none = await send(dispatcher, "/staff/rebooking?areaId=all&year=2026", "/staff/rebooking/links", {
+        areaId: "all", year: "2026", days: "30", template: "Hi {name}: {link}",
+    });
+    const junk = await send(dispatcher, "/staff/rebooking?areaId=all&year=2026", "/staff/rebooking/links", {
+        areaId: "everything", year: "2026", days: "30", template: "Hi {name}: {link}", customerIds: "1",
+    });
+
+    assert.strictEqual(none.status, 400);
+    assert.match(none.text, /Tick at least one customer/);
+    assert.strictEqual(junk.status, 400);
+    assert.match(junk.text, /Choose an area/);
     assert.strictEqual(await count("access_links"), 0);
 });

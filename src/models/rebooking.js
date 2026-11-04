@@ -22,11 +22,13 @@ export function classify({ booked, cancelledThisYear, servedBefore }) {
     return servedBefore ? "not_yet_booked" : "never_served";
 }
 
+// areaId null means every customer who has a property, in any area or none.
 export async function forArea(pool, areaId, year) {
     const { rows } = await pool.query(
         `SELECT customers.id, customers.name, customers.phone,
                 (SELECT string_agg(properties.street, '; ' ORDER BY properties.id) FROM properties
-                  WHERE properties.customer_id = customers.id AND properties.subdivision_id = $1) AS streets,
+                  WHERE properties.customer_id = customers.id
+                    AND ($1::int IS NULL OR properties.subdivision_id = $1::int)) AS streets,
                 COALESCE(seen.booked, false) AS booked,
                 COALESCE(seen.cancelled_this_year, false) AS cancelled_this_year,
                 COALESCE(seen.served_before, false) AS served_before,
@@ -50,7 +52,8 @@ export async function forArea(pool, areaId, year) {
              GROUP BY service_requests.customer_id
          ) AS seen ON seen.customer_id = customers.id
          WHERE EXISTS (SELECT 1 FROM properties
-                       WHERE properties.customer_id = customers.id AND properties.subdivision_id = $1)
+                       WHERE properties.customer_id = customers.id
+                         AND ($1::int IS NULL OR properties.subdivision_id = $1::int))
          ORDER BY customers.name, customers.id`,
         [areaId, year],
     );

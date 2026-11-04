@@ -6,7 +6,7 @@ export const MAX_BATCH = 500;
 export const MAX_DAYS = 120;
 
 // Customers with a property in the area, each once however many properties they have there, and whether they
-// already hold a link that still works (not revoked, not expired).
+// already hold a link that still works (not revoked, not expired). areaId null means every customer with a property.
 async function customersInArea(db, areaId) {
     const { rows } = await db.query(
         `SELECT customers.id, customers.name, customers.phone,
@@ -15,7 +15,8 @@ async function customersInArea(db, areaId) {
                           AND access_links.revoked_at IS NULL AND access_links.expires_at > now()) AS has_active
          FROM customers
          WHERE EXISTS (SELECT 1 FROM properties
-                       WHERE properties.customer_id = customers.id AND properties.subdivision_id = $1)
+                       WHERE properties.customer_id = customers.id
+                         AND ($1::int IS NULL OR properties.subdivision_id = $1::int))
          ORDER BY customers.name, customers.id`,
         [areaId],
     );
@@ -75,10 +76,16 @@ export async function create(pool, { areaId, createdBy, days, includeActive = fa
     }
 
     return withTransaction(pool, async (client) => {
-        const area = await client.query("SELECT id FROM subdivisions WHERE id = $1 FOR UPDATE", [areaId]);
+        // An area's row is locked so two runs for it cannot double up. With no area (every customer) there is no row
+        // to lock, so a transaction advisory lock does the same job, and is released when the transaction ends.
+        if (areaId === null) {
+            await client.query("SELECT pg_advisory_xact_lock(hashtext('link_batch_all_areas'))");
+        } else {
+            const area = await client.query("SELECT id FROM subdivisions WHERE id = $1 FOR UPDATE", [areaId]);
 
-        if (area.rows.length === 0) {
-            return { error: "not_found" };
+            if (area.rows.length === 0) {
+                return { error: "not_found" };
+            }
         }
 
         const inArea = await customersInArea(client, areaId);

@@ -67,7 +67,7 @@ export async function renderResult(req, res, { areaId, template, days, result })
     const csv = toCsv([["name", "phone", "message"], ...rows.map((row) => {
         return [row.name, row.phone, row.message];
     })]);
-    const area = await Area.find(req.app.locals.db, areaId);
+    const area = areaId === null ? { name: "all areas" } : await Area.find(req.app.locals.db, areaId);
 
     // The links exist only in this response. Refreshing it would run the batch again.
     res.set("Cache-Control", "no-store");
