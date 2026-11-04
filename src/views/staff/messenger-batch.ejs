@@ -1,0 +1,23 @@
+<%- include("../partials/head") %>
+<h1>Messenger Batch <%= batch.id %></h1>
+<p><a href="/staff/messenger-batches">All batches</a></p>
+<p><%= batch.sent %> of <%= batch.total %> sent, <%= batch.failed %> failed, <%= batch.skipped %> skipped,
+    <%= batch.total - batch.sent - batch.failed - batch.skipped %> not yet reported. Staged by
+    <%= batch.created_by_email ?? "a removed user" %>. <%= batch.fetched_at ? "Messenger has opened it." : "Messenger has not opened it yet." %></p>
+<p>"Sent" means the phone's messaging app took the text. It does not mean the customer received it.</p>
+<table>
+    <thead>
+        <tr><th>Customer</th><th>Status</th><th>Sent</th><th>Error</th></tr>
+    </thead>
+    <tbody>
+        <% batch.recipients.forEach((recipient) => { %>
+            <tr>
+                <td><a href="/staff/customers/<%= recipient.customer_id %>"><%= recipient.name %></a></td>
+                <td><%= recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1) %></td>
+                <td><%= recipient.sent_at ? recipient.sent_at.toISOString().slice(0, 16).replace("T", " ") + " UTC" : "" %></td>
+                <td><%= recipient.error ?? "" %></td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+<%- include("../partials/foot") %>

@@ -1,0 +1,27 @@
+<%- include("../partials/head") %>
+<h1>Messenger Batches</h1>
+<p><a href="/staff/messenger-batches/new">Stage a new batch</a></p>
+<% if (batches.length === 0) { %>
+    <p>No batches have been staged.</p>
+<% } else { %>
+    <table>
+        <thead>
+            <tr><th>Batch</th><th>Staged</th><th>By</th><th>Opened</th><th>Sent</th><th>Failed</th><th>Skipped</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+            <% batches.forEach((batch) => { %>
+                <tr>
+                    <td><a href="/staff/messenger-batches/<%= batch.id %>">Batch <%= batch.id %></a></td>
+                    <td><%= batch.created_at.toISOString().slice(0, 16).replace("T", " ") %> UTC</td>
+                    <td><%= batch.created_by_email ?? "Removed user" %></td>
+                    <td><%= batch.fetched_at ? "Yes" : "No" %></td>
+                    <td><%= batch.sent %></td>
+                    <td><%= batch.failed %></td>
+                    <td><%= batch.skipped %></td>
+                    <td><%= batch.total %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+<% } %>
+<%- include("../partials/foot") %>

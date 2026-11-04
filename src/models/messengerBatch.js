@@ -163,3 +163,44 @@ export async function recordResults(pool, token, results) {
         return { updated, ignored };
     });
 }
+
+// Newest first, with a count per status, for the staff list. Never the token, which is not stored.
+export async function list(pool, { id = null, limit = 50 } = {}) {
+    const { rows } = await pool.query(
+        `SELECT batches.id, batches.created_at, batches.fetched_at, batches.fetch_expires_at, batches.results_expires_at,
+                users.email AS created_by_email,
+                count(recipients.id)::int AS total,
+                (count(*) FILTER (WHERE recipients.status = 'sent'))::int AS sent,
+                (count(*) FILTER (WHERE recipients.status = 'failed'))::int AS failed,
+                (count(*) FILTER (WHERE recipients.status = 'skipped'))::int AS skipped
+         FROM messenger_batches AS batches
+         LEFT JOIN users ON users.id = batches.created_by
+         LEFT JOIN messenger_batch_recipients AS recipients ON recipients.batch_id = batches.id
+         WHERE ($2::int IS NULL OR batches.id = $2::int)
+         GROUP BY batches.id, users.email
+         ORDER BY batches.id DESC
+         LIMIT $1`,
+        [limit, id],
+    );
+    return rows;
+}
+
+// One batch and who was texted, for the staff detail page. null for an unknown id.
+export async function find(pool, id) {
+    const [batch] = await list(pool, { id });
+
+    if (!batch) {
+        return null;
+    }
+
+    const { rows } = await pool.query(
+        `SELECT recipients.id, recipients.customer_id, customers.name, recipients.status, recipients.sent_at,
+                recipients.error
+         FROM messenger_batch_recipients AS recipients
+         JOIN customers ON customers.id = recipients.customer_id
+         WHERE recipients.batch_id = $1
+         ORDER BY customers.name, recipients.id`,
+        [id],
+    );
+    return { ...batch, recipients: rows };
+}

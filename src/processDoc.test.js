@@ -14,7 +14,7 @@ const routesDir = path.join(here, "routes");
 
 // Paths that belong to the customer process. A new route that starts with one of these must be in the doc.
 const PROCESS_PREFIXES = [
-    "/admin/import", "/admin/clear", "/staff/areas", "/staff/link-batches", "/staff/day-board", "/staff/routes",
+    "/admin/import", "/admin/clear", "/staff/areas", "/staff/link-batches", "/staff/messenger-batches", "/staff/day-board", "/staff/routes",
     "/staff/rebooking", "/admin/settings", "/l/", "/schedule", "/requests", "/properties",
 ];
 

@@ -1,0 +1,21 @@
+<%- include("../partials/head") %>
+<h1>Batch Staged</h1>
+<p><strong>Open this link on your phone now.</strong> It is shown only on this page. If you leave or refresh it, it
+    cannot be shown again, and reloading would stage a second batch.</p>
+<p><%= staged %> <%= staged === 1 ? "customer" : "customers" %> staged from <%= areaName %> (batch <%= batchId %>), each
+    link good for <%= days %> days once made.</p>
+<p><a href="<%= deepLink %>">Open in Messenger</a></p>
+<label for="deep-link">Link to Copy</label>
+<input id="deep-link" type="text" readonly value="<%= deepLink %>" size="70">
+<ul>
+    <li>Messenger can open the batch for <%= fetchMinutes %> minutes, and report results for <%= resultsHours %> hours.</li>
+    <li>Anyone who opens the link in that time can see the batch, so send it only to your own phone.</li>
+    <% if (noPhone > 0) { %>
+        <li><%= noPhone %> <%= noPhone === 1 ? "customer was" : "customers were" %> left out for having no usable phone.</li>
+    <% } %>
+    <% if (skippedActive > 0) { %>
+        <li><%= skippedActive %> already <%= skippedActive === 1 ? "has" : "have" %> a working link and <%= skippedActive === 1 ? "was" : "were" %> skipped.</li>
+    <% } %>
+</ul>
+<p><a href="/staff/messenger-batches/<%= batchId %>">See who was texted</a></p>
+<%- include("../partials/foot") %>

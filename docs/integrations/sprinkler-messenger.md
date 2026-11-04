@@ -1,6 +1,6 @@
 # Sprinkler Messenger Integration Spec
 
-Status: In progress, Routemaster side first. Decided on 2026-11-04 in [ADR 0015](../adr/0015-messenger-handoff-api.md): the public host is `https://routemaster-8w24.onrender.com`, Routemaster is the source of truth for who was texted, and consent and opt-out handling is a roadmap item. Nothing here is built yet. The open questions below that are not marked answered stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
+Status: In progress, Routemaster side built (staff page and both API routes); Messenger side not started. Decided on 2026-11-04 in [ADR 0015](../adr/0015-messenger-handoff-api.md): the public host is `https://routemaster-8w24.onrender.com`, Routemaster is the source of truth for who was texted, and consent and opt-out handling is a roadmap item. Nothing here is built yet. The open questions below that are not marked answered stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
 
 This file is written to be handed to the Sprinkler Messenger project (React Native). It describes the feature from both sides so the mobile app can be built against it. The Messenger facts below were checked against its code on 2026-11-04 (read-only), and are listed under "What Messenger does today".
 
@@ -61,9 +61,9 @@ Rules for either form:
 - If Messenger is not installed, the web fallback page (universal link form) says so.
 - Opening the link must not send anything. Messenger shows a confirmation screen with the customer count, the message template and a Send button.
 
-## Routemaster API (built, not yet reachable from staff pages)
+## Routemaster API (built)
 
-Routemaster had no JSON API before this feature. These two endpoints are built (`docs/api/endpoints.md`), used only by Messenger, and return 404 until a staff page stages batches.
+Routemaster had no JSON API before this feature. These two endpoints are built (`docs/api/endpoints.md`), used only by Messenger. Staff stage a batch at `/staff/messenger-batches/new`.
 
 ### `GET /api/messenger/batches/:batchToken`
 
