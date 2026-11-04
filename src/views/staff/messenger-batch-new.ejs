@@ -1,0 +1,42 @@
+<%- include("../partials/head") %>
+<h1>Stage Links for Messenger</h1>
+<%- include("../partials/errors") %>
+<p>This stages a batch of an area's customers for Sprinkler Messenger on your phone. Nothing is sent from here. You get
+    a link that opens the batch in Messenger, where you review it and send each text. A customer's scheduling link is
+    made only when Messenger opens the batch.</p>
+<form method="get" action="/staff/messenger-batches/new">
+    <label for="areaPick">Area</label>
+    <select id="areaPick" name="areaId" required>
+        <option value="">Choose an area</option>
+        <% areas.forEach((area) => { %>
+            <option value="<%= area.id %>" <%= Number(values.areaId) === area.id ? "selected" : "" %>><%= area.name %> (<%= area.properties %> properties)</option>
+        <% }); %>
+    </select>
+    <label><input type="checkbox" name="includeActive" value="1"<%= values.includeActive ? " checked" : "" %>> Also include customers who already have a working link</label>
+    <button type="submit">Preview</button>
+</form>
+<% if (preview) { %>
+    <h2>Preview</h2>
+    <ul>
+        <li><%= preview.toLink %> <%= preview.toLink === 1 ? "customer is" : "customers are" %> staged to be texted</li>
+        <li><%= preview.noPhone %> <%= preview.noPhone === 1 ? "customer has" : "customers have" %> no usable phone and will be left out</li>
+        <li><%= preview.skippedActive %> already <%= preview.skippedActive === 1 ? "has" : "have" %> a working link and will be skipped</li>
+    </ul>
+    <% if (preview.toLink > max) { %>
+        <p>That is more than the limit of <%= max %> for one batch. Nothing can be staged for this area until it is smaller.</p>
+    <% } else if (preview.toLink > 0) { %>
+        <form method="post" action="/staff/messenger-batches">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="areaId" value="<%= values.areaId %>">
+            <input type="hidden" name="includeActive" value="<%= values.includeActive ? "1" : "0" %>">
+            <label for="days">Link Lifetime (Days)</label>
+            <input id="days" name="days" type="number" min="1" max="120" value="<%= values.days %>" required>
+            <label for="template">Message</label>
+            <textarea id="template" name="template" maxlength="500" required><%= values.template %></textarea>
+            <p>Use <code>{name}</code> for the customer's name and <code>{link}</code> for their link.</p>
+            <button type="submit">Stage Batch</button>
+        </form>
+    <% } %>
+<% } %>
+<p><a href="/staff/messenger-batches">Past Messenger batches</a></p>
+<%- include("../partials/foot") %>

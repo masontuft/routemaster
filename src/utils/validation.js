@@ -349,3 +349,43 @@ export function validateRebooking(body) {
 
     return { values: { ...values, areaId: allAreas ? null : values.areaId, allAreas, year, customerIds }, errors };
 }
+
+const MESSENGER_STATUSES = ["sent", "failed", "skipped"];
+export const MAX_MESSENGER_RESULTS = 500;
+
+// The body Messenger posts back: { results: [{ recipientId, status, at?, error? }] }. Anything off rejects the whole
+// upload, so a half-understood list is never saved. at is turned into an ISO string here, so the database never has to
+// parse a phone's own date format.
+export function validateMessengerResults(body) {
+    const list = body?.results;
+
+    if (!Array.isArray(list) || list.length === 0 || list.length > MAX_MESSENGER_RESULTS) {
+        return { results: [], errors: [`Send between 1 and ${MAX_MESSENGER_RESULTS} results.`] };
+    }
+
+    const results = [];
+
+    for (const item of list) {
+        const at = item?.at === undefined ? null : new Date(item.at);
+        const bad = !Number.isInteger(item?.recipientId) || item.recipientId < 1
+            || !MESSENGER_STATUSES.includes(item.status)
+            || (at !== null && (typeof item.at !== "string" || Number.isNaN(at.getTime())))
+            || (item.error !== undefined && (typeof item.error !== "string" || item.error.length > 200));
+
+        if (bad) {
+            return {
+                results: [],
+                errors: ["Each result needs a recipientId, a status of sent, failed or skipped, and an optional at date and error."],
+            };
+        }
+
+        results.push({
+            recipientId: item.recipientId,
+            status: item.status,
+            at: at?.toISOString() ?? null,
+            error: item.error ?? null,
+        });
+    }
+
+    return { results, errors: [] };
+}

@@ -1,6 +1,6 @@
 # Endpoints
 
-No JSON API exists. The tables are the HTML routes that exist. Every POST needs the `_csrf` field. Routes that are not in a later table are in the two sections below.
+The only JSON routes are the two Messenger routes in [Messenger API](#messenger-api) below. Everything else is HTML routes. Every other POST needs the `_csrf` field. Routes that are not in a later table are in the two sections below.
 
 ## Public and account pages
 
@@ -59,6 +59,10 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | POST | `/staff/routes/locate` | owner, dispatcher, rate limited | `day`, `retryFailed` (optional `1`) | Look up map points for up to 15 booked jobs that have none |
 | POST | `/staff/routes/build` | owner, dispatcher, rate limited | `day`, `startAddress` (5 to 200), `startTime` (`HH:MM`), `serviceMinutes` (5 to 120) | Order the located stops, time them, and save the day's route (replaces any earlier one) |
 | POST | `/staff/link-batches` | `areaId`, `days` (1 to 120), `template` (must contain `{link}`), `includeActive` | Make one link per eligible customer in the area in one transaction and show them once, as a table and a CSV. More than 500 is a 400; an unknown area is a 404. Shared per-IP limit, CSRF, no-store |
+| GET | `/staff/messenger-batches/new` | `areaId`, `includeActive` (optional) | Choose an area and see how many customers a Messenger batch would stage. Makes nothing. Owner, dispatcher. No-store |
+| POST | `/staff/messenger-batches` | `areaId`, `days` (1 to 120), `template` (must contain `{link}`), `includeActive` | Stage the area's textable customers as a Messenger batch (at most 500) and show a `sprinklermessenger://batch/<token>` deep link once. Makes no magic links; Messenger's fetch does. Owner, dispatcher, CSRF, shared per-IP limit. Nobody to text or too many is 400. No-store |
+| GET | `/staff/messenger-batches` | | Past batches with counts of sent, failed and skipped. Never a token. Owner, dispatcher. No-store |
+| GET | `/staff/messenger-batches/:id` | | One batch and each customer's status, sent time and error. An unknown id is 404. Owner, dispatcher. No-store |
 | GET, POST | `/staff/areas` | `name` | List areas with property and upcoming-day counts; create an area (400 for a blank or duplicate name) |
 | GET, POST | `/staff/areas/:id` | `name` | The area's upcoming days and entry forms; POST renames it (400 if another area has the name) |
 | POST | `/staff/areas/:id/days` | `day`, or `weekday` (0 is Sunday), `from`, `to` | Add one date, or every chosen weekday between two dates. Dates must be today or later and within a year; a date already there is skipped |
@@ -115,3 +119,14 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 | POST | `/staff/reviews/:id/delete` | owner | | Delete a review permanently |
 | GET | `/staff/messages`, `/staff/messages/:id` | owner, dispatcher | | Message list and detail |
 | POST | `/staff/messages/:id/reply` | owner, dispatcher | `note` (up to 1000) | Record a reply and mark the message Replied |
+
+## Messenger API
+
+The only JSON routes, for the Sprinkler Messenger app ([ADR 0015](../adr/0015-messenger-handoff-api.md), [spec](../integrations/sprinkler-messenger.md)). The batch token in the path is the credential: there is no session and no `_csrf` field. A token is 43 base64url characters. Every response is `Cache-Control: no-store`. Both routes share a per-IP limit of 120 requests per 15 minutes, in memory. Errors are `{"error": "..."}` with no further detail.
+
+| Method | Path | Fields | What it does |
+| --- | --- | --- | --- |
+| GET | `/api/messenger/batches/:token` | | Returns `{batchId, expiresAt, recipients: [{recipientId, customerName, phone, message}]}` and mints a fresh magic link per recipient not yet marked sent, revoking the link the last fetch made for them. `phone` is E.164. Works for 1 hour after the batch was staged. A malformed, unknown or expired token is `404 {"error":"not_found"}` |
+| POST | `/api/messenger/batches/:token/results` | JSON `{results: [{recipientId, status, at?, error?}]}`, 1 to 500 items, `status` one of `sent`, `failed`, `skipped`, `at` an ISO date, `error` up to 200 characters | Saves what Messenger did. Returns `{updated, ignored}`; ignored counts results that changed nothing (unknown id, another batch's recipient, or already sent). `sent` is final. Works for 24 hours after the batch was staged. A bad body is `400 {"error":"invalid_results"}` or `{"error":"bad_request"}` for broken JSON, an expired or unknown token is the same 404, and over the limit is `429 {"error":"rate_limited"}` |
+
+A batch is staged from `/staff/messenger-batches/new` (see the staff tables above). Until the Messenger app is built to open the deep link, these routes can be tried with `curl`.

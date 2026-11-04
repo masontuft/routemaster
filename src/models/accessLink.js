@@ -3,14 +3,20 @@ import { generateToken, hashToken } from "../utils/token.js";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Returns the raw token once. Only its hash is stored.
-export async function create(pool, { customerId, createdBy = null, days = 30, batchId = null }) {
+export async function create(pool, options) {
+    const { token } = await createWithId(pool, options);
+    return token;
+}
+
+// The same, and the new row's id too, for a caller that must revoke this link later.
+export async function createWithId(pool, { customerId, createdBy = null, days = 30, batchId = null }) {
     const token = generateToken();
-    await pool.query(
+    const { rows } = await pool.query(
         `INSERT INTO access_links (customer_id, token_hash, expires_at, created_by, link_batch_id)
-         VALUES ($1, $2, $3, $4, $5)`,
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
         [customerId, hashToken(token), new Date(Date.now() + days * DAY_MS), createdBy, batchId],
     );
-    return token;
+    return { id: rows[0].id, token };
 }
 
 export async function findValid(pool, token) {

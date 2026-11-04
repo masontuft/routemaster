@@ -91,6 +91,19 @@ function limitTo(customers, customerIds) {
     });
 }
 
+// The customers in an area who could be texted: their ids, and the same two counts a preview gives. Used to stage a
+// Messenger batch, which makes its links later, when Messenger fetches.
+export async function textableInArea(pool, areaId, { includeActive = false } = {}) {
+    const { toLink, noPhone, skippedActive } = sort(await customersInArea(pool, areaId), includeActive);
+    return {
+        customerIds: toLink.map((customer) => {
+            return customer.id;
+        }),
+        noPhone: noPhone.length,
+        skippedActive: skippedActive.length,
+    };
+}
+
 // What a batch would do, without creating anything. null for an area that does not exist.
 export async function preview(pool, areaId, { includeActive = false } = {}) {
     const { rows } = await pool.query("SELECT 1 FROM subdivisions WHERE id = $1", [areaId]);

@@ -57,9 +57,11 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 ## 4. Send the links
 
-- **Who:** staff, outside the app.
-- **What happens:** staff copy the list into their own texting tool. The app sends nothing.
-- **Gaps:** sending is parked (Sprinkler Messenger, [#37](https://github.com/masontuft/routemaster/issues/37)). There is no record of which links were actually texted.
+- **Who:** owner, dispatcher.
+- **By hand:** staff copy the list from step 3 into their own texting tool. The app sends nothing.
+- **Through Sprinkler Messenger:** `/staff/messenger-batches/new` previews an area, and its POST to `/staff/messenger-batches` stages a batch of the customers who could be texted. The result page shows a deep link once. Opening it in Messenger fetches the batch from the Messenger API (see ADR 0015), which makes each customer's link at that moment. `/staff/messenger-batches` lists past batches and `/staff/messenger-batches/:id` shows who was texted, from what Messenger reports back. A batch holds at most 500 customers, can be opened for 1 hour and reported on for 24.
+- **Gaps:** the Messenger app does not yet open these links or report results (Sprinkler Messenger, [#37](https://github.com/masontuft/routemaster/issues/37)), so a staged batch stays at "not yet reported" until it does. Hand-copied links have no record of which were texted.
+- **Code:** `src/models/messengerBatch.js`, `src/controllers/messengerBatches.js`, `src/controllers/messengerApi.js`.
 
 ## 5. The customer picks a day
 
@@ -121,6 +123,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-04 | Step 4 can stage a batch for Sprinkler Messenger: a staff page to stage it, a list of batches and who was texted, and two token-authenticated API routes the Messenger app will call. |
 | 2026-11-04 | Review fixes: penciling in rechecks eligibility on the server and shares the customer lock with the customer's own request; a route with tentative stops is unusable while the option is off; a route goes out of date when a stop's map point changes. |
 | 2026-11-04 | All areas makes one batch per area (by each customer's first property) instead of one batch, so a large selection is no longer refused. The result page has a section and CSV for each area. |
 | 2026-11-03 | Rebooking: an All areas choice, and Select All and Clear buttons for each group. |
