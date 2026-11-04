@@ -61,7 +61,7 @@ export async function create(req, res) {
 export async function renderResults(req, res, { template, days, sections }) {
     const origin = `${req.protocol}://${req.get("host")}`;
     const made = sections.filter((section) => {
-        return !section.error;
+        return !section.error && section.rows.length > 0;
     }).map((section) => {
         const rows = section.rows.map((row) => {
             return { name: row.name, phone: normalizePhone(row.phone), message: messageFor(template, row.name, `${origin}/l/${row.token}`) };
@@ -78,10 +78,10 @@ export async function renderResults(req, res, { template, days, sections }) {
         return section.error;
     }).map((section) => {
         const reasons = {
-            too_many: `${section.count} customers is more than the ${LinkBatch.MAX_BATCH} a batch holds`,
+            too_many: `${section.count} customers is more than the ${LinkBatch.MAX_BATCH} a batch holds, so tick fewer of them and try again`,
             not_found: "the area no longer exists",
         };
-        return { areaName: section.areaName, reason: reasons[section.error] ?? "something went wrong, so nothing was made" };
+        return { areaName: section.areaName, reason: reasons[section.error] ?? "something went wrong, so nothing was made; try again, and customers who already have a working link are skipped" };
     });
     const noPhone = sections.flatMap((section) => {
         return section.noPhone ?? [];

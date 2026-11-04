@@ -2,7 +2,9 @@
 <h1>Scheduling Links</h1>
 <p><strong>Copy these now.</strong> The links are shown only on this page. If you leave or refresh it, they cannot be
     shown again, and reloading would make a second set.</p>
-<% if (sections.length === 1 && failed.length === 0) { %>
+<% if (sections.length === 0) { %>
+    <p>No links were made.</p>
+<% } else if (sections.length === 1 && failed.length === 0) { %>
     <p><%= linkCount %> <%= linkCount === 1 ? "link" : "links" %> made for <%= sections[0].areaName %>, each good for <%= days %> days
         (batch <%= sections[0].batchId %>).</p>
 <% } else { %>
@@ -10,8 +12,7 @@
 <% } %>
 <% if (failed.length > 0) { %>
     <h2>Areas That Failed</h2>
-    <p>These areas got no links. The areas above and below them were not affected. Make links for all areas again
-        to finish them: customers who already have a working link are skipped.</p>
+    <p>These areas got no links. The other areas were not affected.</p>
     <ul>
         <% failed.forEach((area) => { %>
             <li><%= area.areaName %>: <%= area.reason %>.</li>

@@ -106,7 +106,11 @@ export async function preview(pool, areaId, { includeActive = false } = {}) {
 // Makes one link per eligible customer in one transaction, so a failure leaves no half-made batch. The area row is
 // locked so two runs for the same area cannot both see "no active link" and double up. The raw tokens are returned
 // here and nowhere else; only their hashes are stored.
-export async function create(pool, { areaId, createdBy, days, includeActive = false, customerIds = null }) {
+// With recordEmpty false, a run that would make no links records no batch (batchId null), so a repeat run over many
+// areas does not leave a row of zeros for each.
+export async function create(pool, options) {
+    const { areaId, createdBy, days, includeActive = false, customerIds = null, recordEmpty = true } = options;
+
     if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
         throw new RangeError(`days must be a whole number from 1 to ${MAX_DAYS}`);
     }
@@ -131,6 +135,14 @@ export async function create(pool, { areaId, createdBy, days, includeActive = fa
             return { error: "too_many", count: toLink.length };
         }
 
+        const noPhoneList = noPhone.map((customer) => {
+            return { id: customer.id, name: customer.name };
+        });
+
+        if (!recordEmpty && toLink.length === 0) {
+            return { batchId: null, rows: [], skippedActive: skippedActive.length, noPhone: noPhoneList };
+        }
+
         const batch = await client.query(
             `INSERT INTO link_batches (subdivision_id, created_by, days, links_created, skipped_no_phone, skipped_active)
              VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
@@ -145,10 +157,7 @@ export async function create(pool, { areaId, createdBy, days, includeActive = fa
         }
 
         return {
-            batchId, rows, skippedActive: skippedActive.length,
-            noPhone: noPhone.map((customer) => {
-                return { id: customer.id, name: customer.name };
-            }),
+            batchId, rows, skippedActive: skippedActive.length, noPhone: noPhoneList,
         };
     });
 }
@@ -168,7 +177,7 @@ export async function createForAllAreas(pool, { createdBy, days, includeActive =
 
         try {
             const result = await create(pool, {
-                areaId, createdBy, days, includeActive, customerIds: group.customerIds,
+                areaId, createdBy, days, includeActive, customerIds: group.customerIds, recordEmpty: false,
             });
             sections.push({ areaId, areaName, ...result });
         } catch (error) {

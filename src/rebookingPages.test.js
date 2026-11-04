@@ -266,7 +266,7 @@ test("all areas takes more ticked customers than one batch holds, and the page s
     assert.doesNotMatch(page.text, /data-limit/);
     assert.match(page.text, /so there is no limit/);
     assert.strictEqual(res.status, 200);
-    assert.match(res.text, /0 links made in 0 areas/);
+    assert.match(res.text, /No links were made/);
 });
 
 test("all areas lists an area it could not finish and still makes the others", async () => {
@@ -295,7 +295,7 @@ test("all areas lists an area it could not finish and still makes the others", a
     assert.strictEqual(res.status, 200);
     assert.match(res.text, /1 link made in 1 area/);
     assert.match(res.text, /Areas That Failed/);
-    assert.match(res.text, /Big Hills: 501 customers is more than the 500 a batch holds/);
+    assert.match(res.text, /Big Hills: 501 customers is more than the 500 a batch holds, so tick fewer/);
     assert.strictEqual(await count("access_links"), 1);
 });
 

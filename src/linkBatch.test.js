@@ -287,3 +287,16 @@ test("a database error in one area is reported, rolls back only that area, and t
     assert.strictEqual(await count("access_links"), 1);
     assert.strictEqual(await count("link_batches"), 1);
 });
+
+test("all areas records no batch for an area where nobody needs a link, but still counts who was skipped", async () => {
+    await customerIn(oakwood, "Ann Lee", "208-555-0101");
+    await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+
+    const again = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+
+    assert.deepStrictEqual(again.map((section) => {
+        return [section.areaName, section.rows.length, section.skippedActive, section.batchId];
+    }), [["Oakwood", 0, 1, null]]);
+    assert.strictEqual(await count("link_batches"), 1);
+    assert.strictEqual(await count("access_links"), 1);
+});
