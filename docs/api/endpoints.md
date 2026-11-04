@@ -1,6 +1,6 @@
 # Endpoints
 
-No JSON API exists. The tables are the HTML routes that exist. Every POST needs the `_csrf` field. Routes that are not in a later table are in the two sections below.
+The only JSON routes are the two Messenger routes in [Messenger API](#messenger-api) below. Everything else is HTML routes. Every other POST needs the `_csrf` field. Routes that are not in a later table are in the two sections below.
 
 ## Public and account pages
 
@@ -115,3 +115,14 @@ A visitor is redirected to `/login`. A dispatcher or customer gets a 403. Every 
 | POST | `/staff/reviews/:id/delete` | owner | | Delete a review permanently |
 | GET | `/staff/messages`, `/staff/messages/:id` | owner, dispatcher | | Message list and detail |
 | POST | `/staff/messages/:id/reply` | owner, dispatcher | `note` (up to 1000) | Record a reply and mark the message Replied |
+
+## Messenger API
+
+The only JSON routes, for the Sprinkler Messenger app ([ADR 0015](../adr/0015-messenger-handoff-api.md), [spec](../integrations/sprinkler-messenger.md)). The batch token in the path is the credential: there is no session and no `_csrf` field. A token is 43 base64url characters. Every response is `Cache-Control: no-store`. Both routes share a per-IP limit of 120 requests per 15 minutes, in memory. Errors are `{"error": "..."}` with no further detail.
+
+| Method | Path | Fields | What it does |
+| --- | --- | --- | --- |
+| GET | `/api/messenger/batches/:token` | | Returns `{batchId, expiresAt, recipients: [{recipientId, customerName, phone, message}]}` and mints a fresh magic link per recipient not yet marked sent, revoking the link the last fetch made for them. `phone` is E.164. Works for 1 hour after the batch was staged. A malformed, unknown or expired token is `404 {"error":"not_found"}` |
+| POST | `/api/messenger/batches/:token/results` | JSON `{results: [{recipientId, status, at?, error?}]}`, 1 to 500 items, `status` one of `sent`, `failed`, `skipped`, `at` an ISO date, `error` up to 200 characters | Saves what Messenger did. Returns `{updated, ignored}`; ignored counts results that changed nothing (unknown id, another batch's recipient, or already sent). `sent` is final. Works for 24 hours after the batch was staged. A bad body is `400 {"error":"invalid_results"}` or `{"error":"bad_request"}` for broken JSON, an expired or unknown token is the same 404, and over the limit is `429 {"error":"rate_limited"}` |
+
+Nothing in Routemaster stages a batch yet, so these routes return 404 for every token until the staff page is built.

@@ -61,9 +61,9 @@ Rules for either form:
 - If Messenger is not installed, the web fallback page (universal link form) says so.
 - Opening the link must not send anything. Messenger shows a confirmation screen with the customer count, the message template and a Send button.
 
-## Routemaster API (new, Not currently implemented)
+## Routemaster API (built, not yet reachable from staff pages)
 
-Routemaster has no JSON API today (`docs/api/endpoints.md`). This feature would add two endpoints, used only by Messenger.
+Routemaster had no JSON API before this feature. These two endpoints are built (`docs/api/endpoints.md`), used only by Messenger, and return 404 until a staff page stages batches.
 
 ### `GET /api/messenger/batches/:batchToken`
 

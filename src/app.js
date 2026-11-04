@@ -12,6 +12,7 @@ import importRoutes from "./routes/import.js";
 import linkBatchRoutes from "./routes/linkBatches.js";
 import routePlanRoutes from "./routes/routePlans.js";
 import rebookingRoutes from "./routes/rebooking.js";
+import messengerApiRoutes from "./routes/messengerApi.js";
 import linkRoutes from "./routes/link.js";
 import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
@@ -34,6 +35,7 @@ export default function createApp({
     sessionSecret,
     store,
     rateLimitMax = 20,
+    apiRateLimitMax = 120,
     fetchSheet = fetchPublicGoogleSheet,
     geocode = createGeocoder(),
     serviceState = "",
@@ -65,6 +67,9 @@ export default function createApp({
     app.disable("x-powered-by");
     app.use(securityHeaders);
     app.use(express.static(path.join(here, "..", "public")));
+    // The Messenger API has no cookie or CSRF token, so it comes before both. It has its own, larger limit: one batch
+    // is a fetch and a few result uploads, and a retry loop on a bad signal should not lock the dispatcher out.
+    app.use(messengerApiRoutes(rateLimit({ windowMs: 15 * 60 * 1000, max: apiRateLimitMax })));
     app.use(sessionMiddleware({ secret: sessionSecret, store: app.locals.sessionStore }));
     // Ticking every customer on the rebooking page sends one field per customer, so the default limit of 1000 fields
     // is raised. The 100 kb body limit still bounds the size.
