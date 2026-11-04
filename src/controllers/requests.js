@@ -144,11 +144,11 @@ export async function update(req, res) {
     }
 
     const saved = !dateError && await ServiceRequest.updateDetails(
-        req.app.locals.db, request.id, req.session.user.customerId, { preferredDate, notes },
+        req.app.locals.db, request.id, req.session.user.customerId, { preferredDate, notes }, req.session.user.id,
     );
 
     if (!saved) {
-        const errors = [dateError ?? "Only a request that is still Requested can be changed."];
+        const errors = [dateError ?? "Only a request that is still Requested, or penciled in for you, can be changed."];
         return editPage(req, res, request, { errors, values: { preferredDate, notes }, status: 400 });
     }
 
@@ -158,5 +158,12 @@ export async function update(req, res) {
 export async function cancel(req, res) {
     const request = await ownedRequest(req);
     await ServiceRequest.cancel(req.app.locals.db, request.id, req.session.user.customerId, req.session.user.id);
+    res.redirect(`/requests/${request.id}`);
+}
+
+// The customer accepts a day that staff penciled in for them.
+export async function confirm(req, res) {
+    const request = await ownedRequest(req);
+    await ServiceRequest.confirm(req.app.locals.db, request.id, req.session.user.customerId, req.session.user.id);
     res.redirect(`/requests/${request.id}`);
 }

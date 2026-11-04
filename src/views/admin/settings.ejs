@@ -1,0 +1,12 @@
+<%- include("../partials/head") %>
+<h1>Scheduling Settings</h1>
+<% if (notice) { %><p role="status"><%= notice %></p><% } %>
+<form method="post" action="/admin/settings">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label><input type="checkbox" name="allowTentative" value="1"<%= allowTentative ? " checked" : "" %>> Allow booking customers who have not confirmed</label>
+    <p>Off: only jobs the customer asked for are booked and put on a route. On: staff can also pencil in a customer who
+        has not picked a day, for example someone served last year. A penciled-in job is marked tentative until the
+        customer or staff confirm it, and the route builder can include it.</p>
+    <button type="submit">Save Settings</button>
+</form>
+<%- include("../partials/foot") %>

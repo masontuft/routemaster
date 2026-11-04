@@ -6,9 +6,11 @@ import createApp from "./app.js";
 import * as User from "./models/user.js";
 import * as Customer from "./models/customer.js";
 import * as Property from "./models/property.js";
+import * as Area from "./models/area.js";
 import * as ServiceRequest from "./models/serviceRequest.js";
 import * as DayBoard from "./models/dayBoard.js";
 import * as RoutePlan from "./models/routePlan.js";
+import * as AppSetting from "./models/appSetting.js";
 import { hashPassword } from "./utils/password.js";
 
 const db = testDb("routeplans");
@@ -191,6 +193,26 @@ test("a job booked after the route was built makes the page say the route is out
     assert.match((await dispatcher.get(PAGE)).text, /have changed since this route was built/);
 });
 
+test("changing an area's city after a route was built flags it, and finding the points again keeps it flagged", async () => {
+    const job = await booked(1);
+    const area = await Area.create(pool, "Oakwood");
+    await pool.query("UPDATE properties SET city = NULL, subdivision_id = $2 WHERE id = $1", [job.propertyId, area]);
+    await Area.setCity(pool, area, "Rexburg");
+    const dispatcher = await agentFor("dispatcher");
+    await locate(dispatcher);
+    await build(dispatcher);
+    const fresh = await dispatcher.get(PAGE);
+    assert.doesNotMatch(fresh.text, /have changed since/);
+    assert.match(fresh.text, /Map Links/);
+
+    await Area.setCity(pool, area, "Ammon");
+
+    const cleared = await dispatcher.get(PAGE);
+    assert.match(cleared.text, /map points have changed since this route was built/);
+    await locate(dispatcher);
+    assert.match((await dispatcher.get(PAGE)).text, /map points have changed since this route was built/);
+});
+
 test("addresses that are not found are listed with an edit link, left off the route, and can be retried", async () => {
     await booked(1);
     const lost = await booked(2);
@@ -268,4 +290,62 @@ test("customers and signed-out visitors cannot reach routes", async () => {
     const res = await customer.post("/staff/routes/build").type("form").send({ day: DAY });
     assert.notStrictEqual(res.status, 200);
     assert.strictEqual(await routeCount(), 0);
+});
+
+// Marks a booked job as penciled in, the way the day board would have left it.
+async function makeTentative(id) {
+    await pool.query("UPDATE service_requests SET tentative = true WHERE id = $1", [id]);
+}
+
+test("with the option off, tentative jobs are left off the route, not looked up, and the page says so", async () => {
+    await booked(1);
+    const penciled = await booked(2);
+    await makeTentative(penciled.id);
+    const dispatcher = await agentFor("dispatcher");
+
+    const page = await dispatcher.get(PAGE);
+    assert.match(page.text, /1 tentative job is not on this route/);
+    assert.match(page.text, /1 booked: 0 with a map point/);
+
+    await locate(dispatcher);
+    assert.deepStrictEqual(asked, ["1 Elm St, Rexburg, ID"]);
+
+    const built = await build(dispatcher);
+    assert.match(built.text, /Route built with 1 stops/);
+    assert.deepStrictEqual(stopOrder(built.text), [1]);
+});
+
+test("with the option on, tentative jobs are on the route, marked, and counted", async () => {
+    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await booked(1);
+    const penciled = await booked(2);
+    await makeTentative(penciled.id);
+    const dispatcher = await agentFor("dispatcher");
+    await locate(dispatcher);
+
+    const built = await build(dispatcher);
+
+    assert.match(built.text, /Route built with 2 stops/);
+    assert.deepStrictEqual(stopOrder(built.text), [1, 2]);
+    assert.match(built.text, /Customer 2<\/a> \(tentative\)/);
+    assert.doesNotMatch(built.text, /Customer 1<\/a> \(tentative\)/);
+    assert.match(built.text, /1 of them is tentative/);
+    assert.doesNotMatch(built.text, /is not on this route/);
+});
+
+test("turning the option off after a route was built flags the route as out of date", async () => {
+    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    const penciled = await booked(1);
+    await makeTentative(penciled.id);
+    const dispatcher = await agentFor("dispatcher");
+    await locate(dispatcher);
+    await build(dispatcher);
+    assert.doesNotMatch((await dispatcher.get(PAGE)).text, /have changed since/);
+
+    await AppSetting.set(pool, "allow_tentative_booking", "off", null);
+
+    const page = await dispatcher.get(PAGE);
+    assert.match(page.text, /includes tentative jobs, and booking customers who have not confirmed is turned off/);
+    assert.doesNotMatch(page.text, /Route stops/);
+    assert.doesNotMatch(page.text, /Map Links/);
 });

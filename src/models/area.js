@@ -1,3 +1,4 @@
+import { withTransaction } from "../db/transaction.js";
 import { normalizeName } from "../utils/normalize.js";
 
 // An area is a row of subdivisions. The import creates them from a sheet's area column; staff create and rename
@@ -6,6 +7,7 @@ import { normalizeName } from "../utils/normalize.js";
 export async function list(pool, today) {
     const { rows } = await pool.query(
         `SELECT subdivisions.id, subdivisions.name,
+                subdivisions.city,
                 (SELECT count(*)::int FROM properties WHERE properties.subdivision_id = subdivisions.id) AS properties,
                 (SELECT count(*)::int FROM area_days
                   WHERE area_days.subdivision_id = subdivisions.id AND area_days.day >= $1::date) AS upcoming_days
@@ -33,7 +35,7 @@ export async function daysForProperty(pool, propertyId, today) {
 }
 
 export async function find(pool, id) {
-    const { rows } = await pool.query("SELECT id, name FROM subdivisions WHERE id = $1", [id]);
+    const { rows } = await pool.query("SELECT id, name, city FROM subdivisions WHERE id = $1", [id]);
     return rows[0] ?? null;
 }
 
@@ -83,4 +85,31 @@ export async function addDays(pool, id, days) {
 export async function removeDay(pool, id, day) {
     const result = await pool.query("DELETE FROM area_days WHERE subdivision_id = $1 AND day = $2::date", [id, day]);
     return result.rowCount === 1;
+}
+
+// Sets the area's city (blank clears it). Properties in the area that have no city of their own were looked up, or
+// failed to be, with the old city, so their saved points are cleared and they are looked up again. Returns false when
+// there is no such area. A save that changes nothing leaves the points alone.
+export async function setCity(pool, id, city) {
+    return withTransaction(pool, async (client) => {
+        const { rows } = await client.query("SELECT city FROM subdivisions WHERE id = $1 FOR UPDATE", [id]);
+
+        if (!rows[0]) {
+            return false;
+        }
+
+        const next = city || null;
+
+        if ((rows[0].city ?? null) !== next) {
+            await client.query("UPDATE subdivisions SET city = $2 WHERE id = $1", [id, next]);
+            await client.query(
+                `UPDATE properties
+                 SET latitude = NULL, longitude = NULL, geocode_status = 'pending', geocoded_at = NULL
+                 WHERE subdivision_id = $1 AND city IS NULL`,
+                [id],
+            );
+        }
+
+        return true;
+    });
 }

@@ -1,0 +1,84 @@
+import * as Area from "../models/area.js";
+import * as LinkBatch from "../models/linkBatch.js";
+import * as Rebooking from "../models/rebooking.js";
+import { renderResult, renderResults } from "./linkBatches.js";
+import { notFound } from "../utils/errors.js";
+import { normalizePhone } from "../utils/normalize.js";
+import { parseId, todayString, validateRebooking, DEFAULT_REBOOK_MESSAGE } from "../utils/validation.js";
+
+// Names and phones, so the page is never cached.
+// choice is "all" (every customer), an area id, or null (nothing chosen yet).
+async function page(req, res, options) {
+    const { choice, year, days = 30, template = DEFAULT_REBOOK_MESSAGE, errors = [], status = 200 } = options;
+    const db = req.app.locals.db;
+    const areas = await Area.list(db, todayString());
+    const customers = choice ? await Rebooking.forArea(db, choice === "all" ? null : choice, year) : [];
+    const counts = Rebooking.countByGroup(customers);
+
+    res.set("Cache-Control", "no-store");
+    res.status(status).render("staff/rebooking", {
+        title: "Rebooking", areas, choice, year, days, template, errors, counts, limit: LinkBatch.MAX_BATCH,
+        groups: Rebooking.GROUPS.map((group) => {
+            return {
+                key: group,
+                customers: customers.filter((customer) => {
+                    return customer.group === group;
+                }).map((customer) => {
+                    return { ...customer, textable: normalizePhone(customer.phone ?? "").length >= 10 };
+                }),
+            };
+        }),
+    });
+}
+
+function yearFrom(value) {
+    const asked = /^\d{4}$/.test(String(value ?? "")) ? Number(value) : null;
+    return asked && asked >= 2000 && asked <= 2100 ? asked : Number(todayString().slice(0, 4));
+}
+
+export async function show(req, res) {
+    const areaId = req.query.areaId === "all" ? null : parseId(req.query.areaId);
+    const area = areaId ? await Area.find(req.app.locals.db, areaId) : null;
+    const choice = req.query.areaId === "all" ? "all" : area ? areaId : null;
+    await page(req, res, { choice, year: yearFrom(req.query.year) });
+}
+
+// Makes links for the ticked customers only, then shows them on the same one-time page as a link batch.
+export async function makeLinks(req, res) {
+    const { values, errors } = validateRebooking(req.body);
+
+    if (errors.length > 0) {
+        return page(req, res, {
+            choice: values.allAreas ? "all" : values.areaId, year: yearFrom(req.body.year), days: req.body.days,
+            template: values.template, errors, status: 400,
+        });
+    }
+
+    // Every area at once is one batch per owning area, so no single batch has to fit under the cap.
+    if (values.allAreas) {
+        const sections = await LinkBatch.createForAllAreas(req.app.locals.db, {
+            createdBy: req.session.user.id, days: values.days, includeActive: values.includeActive,
+            customerIds: values.customerIds,
+        });
+        return renderResults(req, res, { template: values.template, days: values.days, sections });
+    }
+
+    const result = await LinkBatch.create(req.app.locals.db, {
+        areaId: values.areaId, createdBy: req.session.user.id, days: values.days,
+        includeActive: values.includeActive, customerIds: values.customerIds,
+    });
+
+    if (result.error === "not_found") {
+        throw notFound();
+    }
+
+    if (result.error === "too_many") {
+        return page(req, res, {
+            choice: values.areaId, year: values.year, days: values.days,
+            template: values.template, status: 400,
+            errors: [`That would make ${result.count} links. A batch holds at most ${LinkBatch.MAX_BATCH}.`],
+        });
+    }
+
+    await renderResult(req, res, { areaId: values.areaId, template: values.template, days: values.days, result });
+}

@@ -39,7 +39,7 @@ Names are in [.env.example](.env.example) and [docs/setup/environment-variables.
 
 ## Database diagram
 
-ERD image: not exported yet. The schema is migrations `001` through `021` ([#29](https://github.com/masontuft/routemaster/issues/29)).
+ERD image: not exported yet. The schema is migrations `001` through `023` ([#29](https://github.com/masontuft/routemaster/issues/29)).
 
 ## Deployment
 

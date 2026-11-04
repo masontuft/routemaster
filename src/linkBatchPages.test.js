@@ -89,7 +89,7 @@ const make = (agent, fields = {}) => {
 };
 
 function csvOf(res) {
-    return res.text.match(/<textarea id="csv"[^>]*>([\s\S]*?)<\/textarea>/)[1].replaceAll("&#34;", '"').replaceAll("&amp;", "&");
+    return res.text.match(/<textarea id="csv-\d+"[^>]*>([\s\S]*?)<\/textarea>/)[1].replaceAll("&#34;", '"').replaceAll("&amp;", "&");
 }
 
 test("csv cells are quoted when needed and formula starters get a leading quote mark", () => {

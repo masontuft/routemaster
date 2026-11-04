@@ -11,6 +11,7 @@ import contactRoutes from "./routes/contact.js";
 import importRoutes from "./routes/import.js";
 import linkBatchRoutes from "./routes/linkBatches.js";
 import routePlanRoutes from "./routes/routePlans.js";
+import rebookingRoutes from "./routes/rebooking.js";
 import linkRoutes from "./routes/link.js";
 import scheduleRoutes from "./routes/schedule.js";
 import rateLimit from "./middleware/rateLimit.js";
@@ -65,7 +66,9 @@ export default function createApp({
     app.use(securityHeaders);
     app.use(express.static(path.join(here, "..", "public")));
     app.use(sessionMiddleware({ secret: sessionSecret, store: app.locals.sessionStore }));
-    app.use(express.urlencoded({ extended: false }));
+    // Ticking every customer on the rebooking page sends one field per customer, so the default limit of 1000 fields
+    // is raised. The 100 kb body limit still bounds the size.
+    app.use(express.urlencoded({ extended: false, parameterLimit: 5000 }));
     app.use(csrf);
     app.use((req, res, next) => {
         res.locals.user = req.session.user;
@@ -80,6 +83,7 @@ export default function createApp({
     app.use(importRoutes(limit));
     app.use(linkBatchRoutes(limit));
     app.use(routePlanRoutes(limit));
+    app.use(rebookingRoutes(limit));
     app.use(reviewRoutes);
     app.use(linkRoutes(limit));
     app.use(scheduleRoutes(limit));

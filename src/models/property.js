@@ -42,21 +42,29 @@ export async function update(pool, id, fields) {
         }
     }
 
-    // A different address means the saved point is stale, so it is cleared and looked up again. Saving the same
-    // address again keeps the point, because the edit form posts every field each time. Every SET expression sees
-    // the old row, so the comparison is between the old address and the new one.
-    if (["street", "city", "zip"].some((column) => {
-        return column in fields;
+    // A different address means the saved point is stale, so it is cleared and looked up again. A different area counts
+    // too, because a property with no city of its own is looked up with its area's city. Saving the same address
+    // again keeps the point, because the edit form posts every field each time. Every SET expression sees the old row,
+    // so the comparison is between the old values and the new ones.
+    const WATCHED = [
+        { column: "street", field: "street", cast: "text" },
+        { column: "city", field: "city", cast: "text" },
+        { column: "zip", field: "zip", cast: "text" },
+        { column: "subdivision_id", field: "subdivisionId", cast: "integer" },
+    ];
+
+    if (WATCHED.some(({ field }) => {
+        return field in fields;
     })) {
-        const next = ["street", "city", "zip"].map((column) => {
-            if (!(column in fields)) {
+        const next = WATCHED.map(({ column, field, cast }) => {
+            if (!(field in fields)) {
                 return column;
             }
 
-            values.push(column === "street" ? fields.street : fields[column] || null);
-            return `$${values.length}::text`;
+            values.push(column === "street" ? fields.street : fields[field] || null);
+            return `$${values.length}::${cast}`;
         });
-        const changed = `(street, city, zip) IS DISTINCT FROM (${next.join(", ")})`;
+        const changed = `(street, city, zip, subdivision_id) IS DISTINCT FROM (${next.join(", ")})`;
         sets.push(
             `latitude = CASE WHEN ${changed} THEN NULL ELSE latitude END`,
             `longitude = CASE WHEN ${changed} THEN NULL ELSE longitude END`,
@@ -107,12 +115,15 @@ export async function listByNormalizedAddresses(pool, addresses) {
     return rows;
 }
 
-// Properties from the given ids that still need a point, oldest first, at most limit of them.
+// Properties from the given ids that still need a point, oldest first, at most limit of them. A property with no city
+// of its own gets its area's city, if the area has one.
 export async function needingLocation(pool, ids, limit) {
     const { rows } = await pool.query(
-        `SELECT id, street, city, zip FROM properties
-         WHERE id = ANY($1::int[]) AND geocode_status = 'pending'
-         ORDER BY id LIMIT $2`,
+        `SELECT properties.id, properties.street, COALESCE(properties.city, subdivisions.city) AS city, properties.zip
+         FROM properties
+         LEFT JOIN subdivisions ON subdivisions.id = properties.subdivision_id
+         WHERE properties.id = ANY($1::int[]) AND properties.geocode_status = 'pending'
+         ORDER BY properties.id LIMIT $2`,
         [ids, limit],
     );
     return rows;

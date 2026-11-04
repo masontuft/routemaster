@@ -159,6 +159,12 @@ export function validateAreaName(value) {
     return name && name.length <= 80 ? { name, errors: [] } : { name, errors: ["Enter an area name of up to 80 characters."] };
 }
 
+// An area's city: blank clears it, otherwise up to 100 characters.
+export function validateAreaCity(value) {
+    const city = String(value ?? "").trim();
+    return city.length <= 100 ? { city, errors: [] } : { city, errors: ["Enter a city of up to 100 characters."] };
+}
+
 // One day ({ day }) or every chosen weekday between two dates ({ weekday, from, to }). Every date goes through
 // validatePreferredDate, so a day is a real date from today to a year out. weekday 0 is Sunday.
 export function validateAreaDays(body, today = todayString()) {
@@ -264,6 +270,8 @@ export function validateContact(body) {
     return { values: { name, email, phone, message }, errors };
 }
 
+export const DEFAULT_REBOOK_MESSAGE = "Hi {name}, it is time to book your sprinkler service for this year. Choose a day here: {link}";
+
 export const DEFAULT_LINK_MESSAGE = "Hi {name}, you can choose a day for your sprinkler service here: {link}";
 
 // Which area, how long the links last, whether customers who already have a working link get another, and the
@@ -319,4 +327,25 @@ export function validateRouteBuild(body, today = todayString()) {
     }
 
     return { values: { day, startAddress, startTime, serviceMinutes }, errors };
+}
+
+// The rebooking form: the same area, lifetime and message rules as a link batch, plus the year being rebooked and
+// the ticked customers. The ids are checked against the area again when the links are made.
+export function validateRebooking(body) {
+    // "all" means every customer, not one area. validateLinkBatch wants a real area id, so it is given a placeholder
+    // for that check and the area is cleared afterward.
+    const allAreas = String(body.areaId ?? "") === "all";
+    const { values, errors } = validateLinkBatch(allAreas ? { ...body, areaId: "1" } : body);
+    const year = /^\d{4}$/.test(String(body.year ?? "")) ? Number(body.year) : null;
+    const customerIds = [...new Set([].concat(body.customerIds ?? []).map(parseId).filter(Boolean))];
+
+    if (year === null || year < 2000 || year > 2100) {
+        errors.push("Choose a year.");
+    }
+
+    if (customerIds.length === 0) {
+        errors.push("Tick at least one customer.");
+    }
+
+    return { values: { ...values, areaId: allAreas ? null : values.areaId, allAreas, year, customerIds }, errors };
 }

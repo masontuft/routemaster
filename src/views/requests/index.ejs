@@ -13,7 +13,7 @@
                     <td><%= request.service_type %></td>
                     <td><%= formatAddress(request.street, request.city) %></td>
                     <td><%= request.preferred_date.toISOString().slice(0, 10) %></td>
-                    <td><%= request.status %></td>
+                    <td><%= request.status %><%= request.tentative ? " (please confirm)" : "" %></td>
                     <td><a href="/requests/<%= request.id %>">View</a></td>
                 </tr>
             <% }); %>

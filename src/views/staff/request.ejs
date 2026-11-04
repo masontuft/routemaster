@@ -2,7 +2,7 @@
 <h1>Request <%= request.id %></h1>
 <%- include("../partials/errors") %>
 <dl>
-    <dt>Status</dt><dd><%= request.status %></dd>
+    <dt>Status</dt><dd><%= request.status %><%= request.tentative ? " (tentative)" : "" %></dd>
     <dt>Service</dt><dd><%= request.service_type %></dd>
     <dt>Preferred Date</dt><dd><%= request.preferred_date %></dd>
     <% if (request.scheduled_date) { %><dt>Scheduled Date</dt><dd><%= request.scheduled_date %></dd><% } %>
@@ -24,6 +24,12 @@
 </form>
 <% if (request.status === "Needs Review") { %>
     <p><a href="/staff/requests/<%= request.id %>/match">Match to a Customer</a></p>
+<% } %>
+<% if (request.tentative && request.status === "Scheduled") { %>
+    <form method="post" action="/staff/requests/<%= request.id %>/confirm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit">Mark Confirmed</button>
+    </form>
 <% } %>
 <% next.forEach((name) => { %>
     <form method="post" action="/staff/requests/<%= request.id %>/status">

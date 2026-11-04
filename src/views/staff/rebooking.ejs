@@ -1,0 +1,78 @@
+<%- include("../partials/head") %>
+<h1>Rebooking</h1>
+<%- include("../partials/errors") %>
+<p>Reach out again to customers you served in an earlier year. Pick an area and the year you are booking for. The
+    customers not yet booked this year are listed first and ticked. Making links does not send anything.</p>
+<form method="get" action="/staff/rebooking">
+    <label for="areaPick">Area</label>
+    <select id="areaPick" name="areaId" required>
+        <option value="">Choose an area</option>
+        <option value="all" <%= choice === "all" ? "selected" : "" %>>All areas (every customer)</option>
+        <% areas.forEach((area) => { %>
+            <option value="<%= area.id %>" <%= Number(choice) === area.id ? "selected" : "" %>><%= area.name %> (<%= area.properties %> properties)</option>
+        <% }); %>
+    </select>
+    <label for="yearPick">Year</label>
+    <input id="yearPick" name="year" type="number" min="2000" max="2100" value="<%= year %>" required>
+    <button type="submit">Show Customers</button>
+</form>
+<% if (choice) { %>
+    <p><%= counts.not_yet_booked %> not yet booked, <%= counts.declined %> declined, <%= counts.never_served %> never served,
+        <%= counts.booked %> already booked.</p>
+    <% if (choice === "all") { %>
+        <p>Links for all areas are made one area at a time, by each customer's first property, so there is no limit on
+            how many you tick.</p>
+    <% } %>
+    <form method="post" action="/staff/rebooking/links" data-rebooking<%- choice === "all" ? "" : ` data-limit="${limit}"` %>>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="areaId" value="<%= choice %>">
+        <input type="hidden" name="year" value="<%= year %>">
+        <% const titles = { not_yet_booked: "Not Yet Booked", declined: "Declined", never_served: "Never Served", booked: "Already Booked" }; %>
+        <% groups.forEach((group) => { %>
+            <h2><%= titles[group.key] %></h2>
+            <% if (group.key !== "booked" && group.customers.length > 0) { %>
+                <p hidden data-needs-script>
+                    <button type="button" data-select="all" data-group="<%= group.key %>">Select All</button>
+                    <button type="button" data-select="none" data-group="<%= group.key %>">Clear</button>
+                </p>
+            <% } %>
+            <% if (group.customers.length === 0) { %>
+                <p>No customers.</p>
+            <% } else { %>
+                <div class="table-scroll" role="region" aria-label="<%= titles[group.key] %>" tabindex="0">
+                    <table>
+                        <thead><tr><th>Link</th><th>Customer</th><th>Address</th><th>Last Served</th><th>Link Sent This Year</th><th>Working Link</th><th>Phone</th></tr></thead>
+                        <tbody>
+                            <% group.customers.forEach((customer) => { %>
+                                <tr>
+                                    <td>
+                                        <% if (group.key !== "booked") { %>
+                                            <input type="checkbox" name="customerIds" value="<%= customer.id %>" data-group="<%= group.key %>" data-textable="<%= customer.textable ? "1" : "0" %>" aria-label="Make a link for <%= customer.name %>"<%= group.key === "not_yet_booked" && customer.textable ? " checked" : "" %>>
+                                        <% } %>
+                                    </td>
+                                    <td><a href="/staff/customers/<%= customer.id %>"><%= customer.name %></a></td>
+                                    <td><%= customer.streets %></td>
+                                    <td><%= customer.lastServed ?? "" %></td>
+                                    <td><%= customer.contacted ? "Yes" : "No" %></td>
+                                    <td><%= customer.hasActiveLink ? "Yes" : "No" %></td>
+                                    <td><%= customer.textable ? customer.phone : "No usable phone" %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% }); %>
+        <h2>Make Links</h2>
+        <p hidden data-ticked></p>
+        <label><input type="checkbox" name="includeActive" value="1"> Also include customers who already have a working link</label>
+        <label for="days">Link Lifetime (Days)</label>
+        <input id="days" name="days" type="number" min="1" max="120" value="<%= days %>" required>
+        <label for="template">Message</label>
+        <textarea id="template" name="template" maxlength="500" required><%= template %></textarea>
+        <p>Use <code>{name}</code> for the customer's name and <code>{link}</code> for their link.</p>
+        <button type="submit">Make Links for Ticked</button>
+    </form>
+<% } %>
+<script type="module" src="/js/rebooking.js"></script>
+<%- include("../partials/foot") %>

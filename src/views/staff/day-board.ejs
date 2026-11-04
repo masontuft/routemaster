@@ -51,7 +51,7 @@
 <% } else { %>
     <div class="table-scroll" role="region" aria-label="Booked requests" tabindex="0">
         <table>
-            <thead><tr><th>Customer</th><th>Area</th><th>Address</th><th>Service</th></tr></thead>
+            <thead><tr><th>Customer</th><th>Area</th><th>Address</th><th>Service</th><th>Confirmed</th></tr></thead>
             <tbody>
                 <% board.booked.forEach((item) => { %>
                     <tr>
@@ -59,10 +59,42 @@
                         <td><%= item.area ?? "No area" %></td>
                         <td><%= item.street %>, <%= item.city %></td>
                         <td><%= item.service_type %></td>
+                        <td><%= item.tentative ? "Tentative" : "Yes" %></td>
                     </tr>
                 <% }); %>
             </tbody>
         </table>
     </div>
+<% } %>
+<% if (allowTentative && day >= today) { %>
+    <h2>Not Confirmed Yet</h2>
+    <p>Customers in areas worked on this day who were served before and have not booked this year. Penciling one in
+        books this day as tentative until they or you confirm it.</p>
+    <% if (candidates.length === 0) { %>
+        <p>No customers to pencil in for this day.</p>
+    <% } else { %>
+        <form method="post" action="/staff/day-board/pencil">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="day" value="<%= day %>">
+            <div class="table-scroll" role="region" aria-label="Customers not confirmed" tabindex="0">
+                <table>
+                    <thead><tr><th>Pencil In</th><th>Customer</th><th>Area</th><th>Address</th><th>Last Served</th><th>Phone</th></tr></thead>
+                    <tbody>
+                        <% candidates.forEach((customer) => { %>
+                            <tr>
+                                <td><input type="checkbox" name="customerIds" value="<%= customer.id %>" aria-label="Pencil in <%= customer.name %>"></td>
+                                <td><a href="/staff/customers/<%= customer.id %>"><%= customer.name %></a></td>
+                                <td><%= customer.area %></td>
+                                <td><%= customer.streets %></td>
+                                <td><%= customer.lastServed ?? "" %></td>
+                                <td><%= customer.phone ?? "" %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit">Pencil In Ticked for <%= day %></button>
+        </form>
+    <% } %>
 <% } %>
 <%- include("../partials/foot") %>

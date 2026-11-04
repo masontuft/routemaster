@@ -2,17 +2,21 @@
 <h1>Areas</h1>
 <%- include("../partials/errors") %>
 <p>An area is a group of properties worked on the same days. Assign each property to an area on its edit page,
-    then give the area the days you will be there.</p>
+    then give the area the days you will be there. The city is used to find a property's address on a map when the property
+    has no city of its own.</p>
 <% if (areas.length === 0) { %>
     <p>No areas yet.</p>
 <% } else { %>
+    <form method="post" action="/staff/areas/cities">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="table-scroll" role="region" aria-label="Areas" tabindex="0">
     <table>
-        <thead><tr><th>Area</th><th>Properties</th><th>Upcoming Days</th><th></th></tr></thead>
+        <thead><tr><th>Area</th><th>City</th><th>Properties</th><th>Upcoming Days</th><th></th></tr></thead>
         <tbody>
             <% areas.forEach((area) => { %>
                 <tr>
                     <td><%= area.name %></td>
+                    <td><input name="city_<%= area.id %>" value="<%= area.city ?? "" %>" maxlength="100" aria-label="City for <%= area.name %>"></td>
                     <td><%= area.properties %></td>
                     <td><%= area.upcoming_days %></td>
                     <td><a href="/staff/areas/<%= area.id %>">Manage Days</a></td>
@@ -21,6 +25,8 @@
         </tbody>
     </table>
     </div>
+    <button type="submit">Save Cities</button>
+    </form>
 <% } %>
 <h2>Add an Area</h2>
 <form method="post" action="/staff/areas">
