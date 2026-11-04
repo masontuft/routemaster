@@ -111,8 +111,9 @@ export async function pencilInCandidates(pool, day) {
 // Pencils each customer in for the day: a Scheduled request marked tentative, on their property in an area that works
 // that day, for the service they last had done (or the first active service if that one is gone). Nothing but the
 // customer ids comes from the form. A customer is skipped when no property of theirs is in an area that works the day,
-// when they already have a live request that year, or when there is no active service. The customer row is locked, so
-// a customer who books themselves at the same moment is not double booked.
+// when they are not in the "not yet booked" group for the year (never served, declined, or already booked), or when
+// there is no active service. The customer row is locked, and the customer's own booking path takes the same lock,
+// so a customer who books themselves at the same moment is not double booked.
 export async function pencilIn(pool, customerIds, { day, changedBy }) {
     const result = { pencilledIn: 0, skipped: 0 };
     const year = Number(day.slice(0, 4));
@@ -126,17 +127,14 @@ export async function pencilIn(pool, customerIds, { day, changedBy }) {
                  WHERE properties.customer_id = $1 ORDER BY properties.id LIMIT 1`,
                 [customerId, day],
             );
-            const live = await client.query(
-                `SELECT 1 FROM service_requests
-                 JOIN request_statuses ON request_statuses.id = service_requests.status_id
-                 WHERE service_requests.customer_id = $1
-                   AND request_statuses.name IN ('Requested', 'Scheduled', 'Completed')
-                   AND EXTRACT(YEAR FROM COALESCE(service_requests.scheduled_date, service_requests.preferred_date)) = $2
-                 LIMIT 1`,
-                [customerId, year],
-            );
 
-            if (!locked.rows[0] || !property.rows[0] || live.rows[0]) {
+            if (!locked.rows[0] || !property.rows[0]) {
+                return false;
+            }
+
+            // The same test the candidate list uses, run again here with the row locked: only a customer served in
+            // an earlier year with nothing booked or cancelled this year may be penciled in, whatever the form says.
+            if (await Rebooking.groupOf(client, customerId, year) !== "not_yet_booked") {
                 return false;
             }
 

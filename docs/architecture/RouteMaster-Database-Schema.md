@@ -54,6 +54,7 @@ RouteMaster Database Schema
 | `phone_normalized` | `text` |  Nullable |
 | `email` | `text` |  Nullable |
 | `created_at` | `timestamptz` |  |
+| `import_batch_id` | `int4` |  Nullable |
 
 ## Table `properties`
 
@@ -64,11 +65,17 @@ RouteMaster Database Schema
 | `id` | `int4` | Primary |
 | `customer_id` | `int4` |  |
 | `street` | `text` |  |
-| `city` | `text` |  |
+| `city` | `text` |  Nullable |
 | `zip` | `text` |  Nullable |
 | `address_normalized` | `text` |  |
 | `notes` | `text` |  Nullable |
 | `created_at` | `timestamptz` |  |
+| `subdivision_id` | `int4` |  Nullable |
+| `import_batch_id` | `int4` |  Nullable |
+| `latitude` | `float8` |  Nullable |
+| `longitude` | `float8` |  Nullable |
+| `geocode_status` | `text` |  |
+| `geocoded_at` | `timestamptz` |  Nullable |
 
 ## Table `service_types`
 
@@ -111,6 +118,9 @@ RouteMaster Database Schema
 | `updated_at` | `timestamptz` |  |
 | `scheduled_date` | `date` |  Nullable |
 | `referred_by` | `text` |  Nullable |
+| `import_batch_id` | `int4` |  Nullable |
+| `amount_cents` | `int4` |  Nullable |
+| `tentative` | `bool` |  |
 
 ## Table `status_history`
 
@@ -138,6 +148,7 @@ RouteMaster Database Schema
 | `revoked_at` | `timestamptz` |  Nullable |
 | `created_by` | `int4` |  Nullable |
 | `created_at` | `timestamptz` |  |
+| `link_batch_id` | `int4` |  Nullable |
 
 ## Table `reviews`
 
@@ -171,3 +182,113 @@ RouteMaster Database Schema
 | `replied_at` | `timestamptz` |  Nullable |
 | `created_at` | `timestamptz` |  |
 
+## Table `import_batches`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `created_by` | `int4` |  Nullable |
+| `sheet_id` | `text` |  |
+| `sheet_name` | `text` |  |
+| `season_year` | `int4` |  |
+| `plan_hash` | `bpchar` |  |
+| `customers_created` | `int4` |  |
+| `properties_created` | `int4` |  |
+| `jobs_created` | `int4` |  |
+| `jobs_existing` | `int4` |  |
+| `rows_skipped` | `int4` |  |
+| `created_at` | `timestamptz` |  |
+
+## Table `import_mappings`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `sheet_id` | `text` |  |
+| `sheet_name` | `text` |  |
+| `header_row` | `int4` |  |
+| `columns` | `jsonb` |  |
+| `options` | `jsonb` |  |
+| `updated_at` | `timestamptz` |  |
+
+## Table `subdivisions`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `name` | `text` |  |
+| `name_normalized` | `text` |  Unique |
+| `city` | `text` |  Nullable |
+
+## Table `area_days`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `subdivision_id` | `int4` |  |
+| `day` | `date` |  |
+
+## Table `link_batches`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `subdivision_id` | `int4` |  Nullable |
+| `created_by` | `int4` |  Nullable |
+| `days` | `int4` |  |
+| `links_created` | `int4` |  |
+| `skipped_no_phone` | `int4` |  |
+| `skipped_active` | `int4` |  |
+| `created_at` | `timestamptz` |  |
+
+## Table `routes`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `route_day` | `date` |  Unique |
+| `created_by` | `int4` |  Nullable |
+| `start_address` | `text` |  |
+| `start_lat` | `float8` |  |
+| `start_lng` | `float8` |  |
+| `start_time` | `bpchar` |  |
+| `service_minutes` | `int4` |  |
+| `total_miles` | `numeric` |  |
+| `travel_minutes` | `int4` |  |
+| `created_at` | `timestamptz` |  |
+
+## Table `route_stops`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `route_id` | `int4` |  |
+| `position` | `int4` |  |
+| `service_request_id` | `int4` |  |
+| `leg_miles` | `numeric` |  |
+| `leg_minutes` | `int4` |  |
+| `arrive_minutes` | `int4` |  |
+| `depart_minutes` | `int4` |  |
+
+## Table `app_settings`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `key` | `text` | Primary |
+| `value` | `text` |  |
+| `updated_by` | `int4` |  Nullable |
+| `updated_at` | `timestamptz` |  |

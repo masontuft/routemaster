@@ -58,9 +58,13 @@
 <% } %>
 <% if (route) { %>
     <h2>Route for <%= route.route_day %></h2>
-    <% if (route.stale) { %>
-        <p role="alert">The jobs booked for this day have changed since this route was built. Rebuild it.</p>
+    <% if (route.unusable) { %>
+        <p role="alert">This route includes tentative jobs, and booking customers who have not confirmed is turned off.
+            Rebuild it before using it.</p>
+    <% } else if (route.stale) { %>
+        <p role="alert">The jobs or their map points have changed since this route was built. Rebuild it.</p>
     <% } %>
+    <% if (!route.unusable) { %>
     <p>Starts at <%= route.start_address %> at <%= route.start_time %>. <%= route.stops.length %> stops,
         <%= route.total_miles.toFixed(1) %> miles, about <%= route.travel_minutes %> minutes driving,
         done around <%= route.end %>.<% if (route.tentativeCount > 0) { %>
@@ -91,5 +95,6 @@
             <li><a href="<%= link.url %>" rel="noopener noreferrer" target="_blank">Part <%= index + 1 %>: stops <%= link.first - 1 || "start" %> to <%= link.last - 1 %></a></li>
         <% }); %>
     </ul>
+    <% } %>
 <% } %>
 <%- include("../partials/foot") %>

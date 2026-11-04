@@ -26,6 +26,12 @@ export async function create(pool, details) {
     const statusName = customerId ? "Requested" : "Needs Review";
 
     return withTransaction(pool, async (client) => {
+        // The same row lock penciling in takes, so a customer asking for a day and staff penciling them in for the
+        // same year are serialized: whichever comes second sees the first's request.
+        if (customerId) {
+            await client.query("SELECT id FROM customers WHERE id = $1 FOR UPDATE", [customerId]);
+        }
+
         const { rows } = await client.query(
             `INSERT INTO service_requests
                 (customer_id, property_id, service_type_id, status_id, preferred_date, notes,

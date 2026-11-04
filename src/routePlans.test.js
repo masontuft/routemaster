@@ -6,6 +6,7 @@ import createApp from "./app.js";
 import * as User from "./models/user.js";
 import * as Customer from "./models/customer.js";
 import * as Property from "./models/property.js";
+import * as Area from "./models/area.js";
 import * as ServiceRequest from "./models/serviceRequest.js";
 import * as DayBoard from "./models/dayBoard.js";
 import * as RoutePlan from "./models/routePlan.js";
@@ -192,6 +193,26 @@ test("a job booked after the route was built makes the page say the route is out
     assert.match((await dispatcher.get(PAGE)).text, /have changed since this route was built/);
 });
 
+test("changing an area's city after a route was built flags it, and finding the points again keeps it flagged", async () => {
+    const job = await booked(1);
+    const area = await Area.create(pool, "Oakwood");
+    await pool.query("UPDATE properties SET city = NULL, subdivision_id = $2 WHERE id = $1", [job.propertyId, area]);
+    await Area.setCity(pool, area, "Rexburg");
+    const dispatcher = await agentFor("dispatcher");
+    await locate(dispatcher);
+    await build(dispatcher);
+    const fresh = await dispatcher.get(PAGE);
+    assert.doesNotMatch(fresh.text, /have changed since/);
+    assert.match(fresh.text, /Map Links/);
+
+    await Area.setCity(pool, area, "Ammon");
+
+    const cleared = await dispatcher.get(PAGE);
+    assert.match(cleared.text, /map points have changed since this route was built/);
+    await locate(dispatcher);
+    assert.match((await dispatcher.get(PAGE)).text, /map points have changed since this route was built/);
+});
+
 test("addresses that are not found are listed with an edit link, left off the route, and can be retried", async () => {
     await booked(1);
     const lost = await booked(2);
@@ -323,5 +344,8 @@ test("turning the option off after a route was built flags the route as out of d
 
     await AppSetting.set(pool, "allow_tentative_booking", "off", null);
 
-    assert.match((await dispatcher.get(PAGE)).text, /have changed since this route was built/);
+    const page = await dispatcher.get(PAGE);
+    assert.match(page.text, /includes tentative jobs, and booking customers who have not confirmed is turned off/);
+    assert.doesNotMatch(page.text, /Route stops/);
+    assert.doesNotMatch(page.text, /Map Links/);
 });

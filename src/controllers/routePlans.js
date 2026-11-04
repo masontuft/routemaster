@@ -39,6 +39,7 @@ async function routePage(req, res, { day, values, errors = [], notice = null, st
     const db = req.app.locals.db;
     const state = req.app.locals.serviceState;
     const { booked, leftOff } = await jobsFor(db, day);
+    const allowTentative = await AppSetting.allowsTentativeBooking(db);
     const saved = await RoutePlan.findForDay(db, day);
     const located = booked.filter((stop) => {
         return stop.geocode_status === "ok";
@@ -67,10 +68,21 @@ async function routePage(req, res, { day, values, errors = [], notice = null, st
                 navigation: navigationText(stop, state),
             };
         });
+        // A route is out of date when the jobs changed, or when a stop's map point was cleared or found again after it
+        // was built (an address or an area city changed), since its distances and times came from the old points.
+        const moved = saved.stops.some((stop) => {
+            return stop.geocode_status !== "ok" || stop.geocoded_at > saved.created_at;
+        });
+        // A route holding tentative stops is not usable while the option is off: the page would show stops that the
+        // current rule leaves out. It is kept as out of date, with no table or map links, until it is rebuilt.
+        const unusable = !allowTentative && saved.stops.some((stop) => {
+            return stop.tentative;
+        });
         route = {
             ...saved,
             stops,
-            stale: bookedIds.join() !== savedIds.join(),
+            stale: unusable || moved || bookedIds.join() !== savedIds.join(),
+            unusable,
             tentativeCount: stops.filter((stop) => {
                 return stop.tentative;
             }).length,

@@ -22,6 +22,24 @@ export function classify({ booked, cancelledThisYear, servedBefore }) {
     return servedBefore ? "not_yet_booked" : "never_served";
 }
 
+// The group one customer falls in for a year, by the same rules as forArea. Used to recheck a customer on the server
+// before acting on a ticked box, so a forged form cannot reach a customer the page would not have listed.
+export async function groupOf(db, customerId, year) {
+    const { rows } = await db.query(
+        `SELECT bool_or(request_statuses.name IN ('Requested', 'Scheduled', 'Completed')
+                        AND ${YEAR_OF_REQUEST} = $2) AS booked,
+                bool_or(request_statuses.name = 'Cancelled' AND ${YEAR_OF_REQUEST} = $2) AS cancelled_this_year,
+                bool_or(request_statuses.name = 'Completed' AND ${YEAR_OF_REQUEST} < $2) AS served_before
+         FROM service_requests
+         JOIN request_statuses ON request_statuses.id = service_requests.status_id
+         WHERE service_requests.customer_id = $1`,
+        [customerId, year],
+    );
+    return classify({
+        booked: rows[0].booked, cancelledThisYear: rows[0].cancelled_this_year, servedBefore: rows[0].served_before,
+    });
+}
+
 // areaId null means every customer who has a property, in any area or none.
 export async function forArea(pool, areaId, year) {
     const { rows } = await pool.query(

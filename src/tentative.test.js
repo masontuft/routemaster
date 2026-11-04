@@ -185,6 +185,55 @@ test("a customer is skipped when already booked this year, outside a working are
     assert.strictEqual(rows[0].n, 2);
 });
 
+test("a forged form cannot pencil in a customer who was never served or who declined this year", async () => {
+    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    const never = await Customer.create(pool, { name: "Never Served", phone: "208-555-0102" });
+    const neverProperty = await Property.create(pool, never, { street: "3 Elm St", city: "Rexburg" });
+    await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [neverProperty, areaId]);
+    const declined = await servedLastYear("Declined", { street: "4 Elm St" });
+    const cancelled = await ServiceRequest.create(pool, {
+        customerId: declined.id, propertyId: declined.propertyId, serviceTypeId: 1, preferredDate: DAY,
+    });
+    await pool.query(
+        "UPDATE service_requests SET status_id = (SELECT id FROM request_statuses WHERE name = 'Cancelled') WHERE id = $1",
+        [cancelled],
+    );
+    const before = await pool.query("SELECT count(*)::int AS n FROM service_requests");
+    const dispatcher = await staffAgent();
+
+    const res = await pencil(dispatcher, { customerIds: [String(never), String(declined.id)] });
+
+    assert.match(res.text, /Penciled in 0 for/);
+    assert.match(res.text, /2 could not be penciled in/);
+    const after = await pool.query("SELECT count(*)::int AS n FROM service_requests");
+    assert.strictEqual(after.rows[0].n, before.rows[0].n);
+});
+
+test("a customer's own request waits for a penciling in that holds their row, so the two cannot both be made", async () => {
+    const ann = await servedLastYear("Ann Lee");
+    const holder = await pool.connect();
+    let finished = false;
+
+    try {
+        await holder.query("BEGIN");
+        await holder.query("SELECT id FROM customers WHERE id = $1 FOR UPDATE", [ann.id]);
+        const asking = ServiceRequest.create(pool, {
+            customerId: ann.id, propertyId: ann.propertyId, serviceTypeId: 1, preferredDate: DAY,
+        }).then(() => {
+            finished = true;
+        });
+        await new Promise((resolve) => {
+            globalThis.setTimeout(resolve, 300);
+        });
+        assert.strictEqual(finished, false);
+        await holder.query("COMMIT");
+        await asking;
+        assert.strictEqual(finished, true);
+    } finally {
+        holder.release();
+    }
+});
+
 test("the service falls back to the first active one when the last service is switched off", async () => {
     await AppSetting.set(pool, "allow_tentative_booking", "on", null);
     const ann = await servedLastYear("Ann Lee", { serviceTypeId: 2 });

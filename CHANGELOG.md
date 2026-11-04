@@ -5,6 +5,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 ## Unreleased
 
 ### Fixed
+- Review fixes on rebooking: penciling in checks on the server that a customer is in the not-yet-booked group (a forged form can no longer pencil in a never-served or declined customer), and a customer's own request takes the same row lock so the two cannot both book the same year. A saved route that holds tentative stops is shown as out of date, without its table or map links, while the option is off, and any route goes out of date when a stop's map point is cleared or found again (for example after an area's city changes). The schema reference now lists migrations through 023, and the roadmap marks rebooking as built.
 - The form parser now accepts up to 5,000 fields (it stopped at 1,000), so ticking about 1,000 or more customers on the rebooking page is no longer rejected with a 413 error.
 
 ### Added

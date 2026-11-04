@@ -21,12 +21,12 @@ The service is annual. After the first season, the work is reaching existing cus
 
 ## Decision
 
-- **Rebooking is a list and targeted links.** `/staff/rebooking` sorts the customers of one area, for one year, into not yet booked, declined, never served and already booked, from their requests alone. Links are made for the ticked customers with the same link maker as a batch. Contacted is derived from links already made, so there is no new table.
+- **Rebooking is a list and targeted links.** `/staff/rebooking` sorts the customers of one area, or of all areas, for one year, into not yet booked, declined, never served and already booked, from their requests alone. Links are made for the ticked customers with the same link maker as a batch. Contacted is derived from links already made, so there is no new table.
 - **A year is the year of the day a request was booked for** (`scheduled_date`, or `preferred_date` if never booked). A calendar year is the season.
 - **A new request each season.** Rebooking creates a new request. It does not reopen a Completed or Cancelled one, which stay final.
 - **Tentative is a flag.** `service_requests.tentative` marks a Scheduled request staff made without the customer asking. The customer confirms it, picks a different day (which drops it back to Requested), or declines it. Staff can mark it confirmed. Completing or cancelling clears the flag.
 - **One owner option.** `app_settings` holds `allow_tentative_booking`, off by default and stored as text from a fixed list of allowed values. Off hides pencil-ins and leaves tentative jobs off routes.
-- **The server decides the booking.** The form carries customer ids and a day. The server picks the property in an area that works the day and the last service done, and refuses a customer with a live request that year, inside a transaction with the customer row locked.
+- **The server decides the booking.** The form carries customer ids and a day. The server picks the property in an area that works the day and the last service done, and refuses any customer who is not in the not-yet-booked group for that year (never served, declined or already booked), inside a transaction with the customer row locked. The customer's own booking path takes the same lock, so the two cannot interleave.
 - **An area city.** `subdivisions.city` fills in for a property with no city when looking up an address.
 
 ## Alternatives considered
@@ -41,7 +41,7 @@ The service is annual. After the first season, the work is reaching existing cus
 
 - A service done twice a year, or a season spanning New Year, is not handled yet.
 - A penciled-in customer learns of it only by opening their link, which may have expired.
-- The rebooking list covers one area at a time, so a long list of small areas is tedious until areas are tidied.
+- Links for all areas are made one batch per area, by each customer's first property, so a customer with properties in several areas is linked once but under the first one; a property type would choose better. A long list of small areas makes a long result page until areas are tidied.
 - Settings keep only the last editor, with no history.
 
 ## References
