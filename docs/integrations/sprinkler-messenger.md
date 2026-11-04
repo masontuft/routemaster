@@ -1,8 +1,17 @@
 # Sprinkler Messenger Integration Spec
 
-Status: Parked. Proposed, and not being built until the open questions are answered. Nothing in this document is built, in Routemaster or in Sprinkler Messenger. The seven open questions below stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
+Status: In progress, Routemaster side first. Decided on 2026-11-04 in [ADR 0015](../adr/0015-messenger-handoff-api.md): the public host is `https://routemaster-8w24.onrender.com`, Routemaster is the source of truth for who was texted, and consent and opt-out handling is a roadmap item. Nothing here is built yet. The open questions below that are not marked answered stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
 
-This file is written to be handed to the Sprinkler Messenger project (React Native). It describes the feature from both sides so the mobile app can be built against it. Anything about Sprinkler Messenger's current code is an assumption to verify; it was written from a description of the app, not from reading its code.
+This file is written to be handed to the Sprinkler Messenger project (React Native). It describes the feature from both sides so the mobile app can be built against it. The Messenger facts below were checked against its code on 2026-11-04 (read-only), and are listed under "What Messenger does today".
+
+## What Messenger does today
+
+Checked in `/Users/masontuft/GitHub/TSB/SprinklerMessenger` on 2026-11-04.
+
+- The scheme `sprinklermessenger://` is registered, but no screen reads URL parameters, so a link can only open a screen today. There are no universal links or Android app links.
+- Recipients come from a Google Sheet, and its send queue holds `{key, name, phone}` and fills one shared template. It cannot send a different body to each customer yet (answers open question 1: no).
+- Every message opens the phone's text composer and the user taps Send, so nothing sends silently (answers open question 2: a tap per message, on iOS).
+- "Texted" is recorded in column H of the sheet through an Apps Script endpoint. That stops being the record when this lands.
 
 ## Goal
 
@@ -77,7 +86,7 @@ Returns the batch and mints one magic link per customer at this moment. Raw magi
 
 Errors: `404` for an unknown, expired or revoked token (the same response for all three), `429` when rate limited.
 
-Behavior to settle: fetching a second time should revoke the links minted by the first fetch and mint new ones, or return `409` so a batch cannot be sent twice by accident. Recommended: return `409` after the first successful fetch and let the dispatcher create a new batch.
+A second fetch revokes the links the first fetch minted for the same recipients and mints new ones, and it leaves out anyone already marked `sent`. So a dropped connection can be retried and nobody is texted twice (decided in ADR 0015, replacing the earlier `409` idea). Fetching works for 1 hour after the batch is staged, and results can be posted for 24 hours.
 
 ### `POST /api/messenger/batches/:batchToken/results`
 
@@ -142,10 +151,10 @@ These are from general knowledge, not verified against the current Messenger cod
 
 ## Open questions
 
-1. Can Messenger's mass-text feature send a different body to each recipient today?
-2. How does it deal with the iOS tap-per-message limit?
-3. Custom scheme or universal link first?
-4. Does the dispatcher use one phone, or several?
-5. What batch size is realistic given carrier filtering?
-6. Does the company already hold customer consent for texts?
-7. Should a texted magic link expire sooner than 30 days?
+1. Answered 2026-11-04: no. Messenger's queue sends one shared template, so it needs a per-recipient body.
+2. Answered 2026-11-04: the user taps Send in the text composer for each message.
+3. Custom scheme first (needs only a dev build). Universal links on `https://routemaster-8w24.onrender.com/m/<token>` later.
+4. Does the dispatcher use one phone, or several? Open.
+5. What batch size is realistic given carrier filtering? Open. The existing batch limit is 500.
+6. Answered 2026-11-04 for now: owners text from their own business phones, so opt-out handling is not built. It is on the [roadmap](../product/roadmap.md).
+7. Should a texted magic link expire sooner than 30 days? Open.
