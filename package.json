@@ -16,6 +16,7 @@
     "migrate": "node --env-file-if-exists=.env scripts/migrate.js",
     "seed": "node --env-file=.env scripts/seed-users.js",
     "dev:test": "node scripts/dev-on-test-db.js",
+    "stage:test-batch": "node scripts/stage-test-batch.js",
     "seed:test": "node --env-file=.env scripts/seed-test-data.js",
     "link:create": "node --env-file=.env scripts/create-link.js"
   },
