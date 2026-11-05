@@ -21,7 +21,12 @@ export async function fetchBatch(req, res) {
         return notFound(res);
     }
 
-    res.json({ batchId: result.batchId, expiresAt: result.expiresAt, recipients: result.recipients });
+    res.json({
+        batchId: result.batchId,
+        expiresAt: result.expiresAt,
+        template: result.template,
+        recipients: result.recipients,
+    });
 }
 
 export async function postResults(req, res) {

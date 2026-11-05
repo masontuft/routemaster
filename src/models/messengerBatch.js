@@ -71,10 +71,12 @@ export async function stage(pool, { createdBy, customerIds, messageTemplate, day
     });
 }
 
-// What Messenger fetches. Mints a fresh magic link for each customer not yet marked sent, and revokes the link an
-// earlier fetch made for them, so a retry after a dropped connection leaves one working link each and nobody already
-// texted is texted again. The batch row is locked so two fetches cannot interleave. Unknown, expired and wrong tokens
-// all give the same not_found. origin is the site's address, such as https://example.com, with no trailing slash.
+// What Messenger fetches. Each recipient carries the finished message and its parts (the template is on the batch, the
+// link on the recipient), so the app can let the dispatcher edit the wording and rebuild every message. Mints a fresh
+// magic link for each customer not yet marked sent, and revokes the link an earlier fetch made for them, so a retry
+// after a dropped connection leaves one working link each and nobody already texted is texted again. The batch row is
+// locked so two fetches cannot interleave. Unknown, expired and wrong tokens all give the same not_found. origin is
+// the site's address, such as https://example.com, with no trailing slash.
 export async function fetchBatch(pool, token, origin) {
     return withTransaction(pool, async (client) => {
         const found = await client.query(
@@ -109,17 +111,19 @@ export async function fetchBatch(pool, token, origin) {
                 customerId: row.customer_id, createdBy: batch.created_by, days: batch.link_days,
             });
             await client.query("UPDATE messenger_batch_recipients SET access_link_id = $2 WHERE id = $1", [row.id, link.id]);
+            const url = `${origin}/l/${link.token}`;
             recipients.push({
                 recipientId: row.id,
                 customerName: row.name,
                 phone: toE164(row.phone),
-                message: messageFor(batch.message_template, row.name, `${origin}/l/${link.token}`),
+                link: url,
+                message: messageFor(batch.message_template, row.name, url),
             });
         }
 
         await client.query("UPDATE messenger_batches SET fetched_at = COALESCE(fetched_at, now()) WHERE id = $1", [batch.id]);
 
-        return { batchId: batch.id, expiresAt: batch.fetch_expires_at, recipients };
+        return { batchId: batch.id, expiresAt: batch.fetch_expires_at, template: batch.message_template, recipients };
     });
 }
 
