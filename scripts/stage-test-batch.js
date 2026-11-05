@@ -21,6 +21,8 @@ const { values } = parseArgs({
     },
 });
 const directory = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "migrations");
+// The port `pnpm dev:test` uses unless PORT is set, which this script reads from the same environment.
+const DEV_TEST_PORT = "3100";
 const TEMPLATE = "Hi {name}, this is a test. Book here: {link}";
 
 // Only ever the database named by TEST_DATABASE_URL. The guard throws if it is missing or matches DATABASE_URL.
@@ -33,9 +35,8 @@ try {
     if (values.phone) {
         const existing = await pool.query("SELECT id FROM customers WHERE name = 'Test Me' ORDER BY id LIMIT 1");
         const id = existing.rows[0]?.id ?? await Customer.create(pool, { name: "Test Me", phone: values.phone });
-        await pool.query("UPDATE customers SET phone = $2, phone_normalized = $3 WHERE id = $1", [
-            id, values.phone, values.phone.replace(/\D/g, ""),
-        ]);
+        // The model's update normalizes the number the way the app does, so "+1 (208) 555-0101" still matches later.
+        await Customer.update(pool, id, { phone: values.phone });
         customerIds = [id];
     } else {
         const { rows } = await pool.query("SELECT id FROM customers ORDER BY id LIMIT 3");
@@ -56,7 +57,7 @@ try {
         console.log(`Staged ${result.staged} ${result.staged === 1 ? "customer" : "customers"}. Fetchable for 1 hour.`);
         console.log(`Expo Go:       ${expoGoLink(result.token, { port: values["expo-port"] })}`);
         console.log(`Dev build:     sprinklermessenger://batch/${result.token}`);
-        console.log("Server:        pnpm dev:test (port 3100)");
+        console.log(`Server:        pnpm dev:test (port ${process.env.PORT || DEV_TEST_PORT})`);
     }
 } finally {
     await pool.end();
