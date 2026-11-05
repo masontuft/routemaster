@@ -1,9 +1,10 @@
 import * as Area from "../models/area.js";
 import * as LinkBatch from "../models/linkBatch.js";
 import * as MessengerBatch from "../models/messengerBatch.js";
-import { expoGoLink, qrSvg } from "../utils/devAddress.js";
+import { expoGoLink } from "../utils/devAddress.js";
 import { isProduction } from "../utils/env.js";
 import { notFound } from "../utils/errors.js";
+import { qrSvg } from "../utils/qr.js";
 import { parseId, todayString, validateLinkBatch, DEFAULT_LINK_MESSAGE } from "../utils/validation.js";
 
 // Every page here carries names, or a deep link that opens a batch of them, so none may be cached or replayed.
@@ -55,6 +56,8 @@ export async function create(req, res) {
         });
     }
 
+    const deepLink = `sprinklermessenger://batch/${staged.token}`;
+    // Expo Go cannot open the custom scheme, so development also gets its own form of the link.
     const expoLink = isProduction() ? null : expoGoLink(staged.token);
 
     // The token exists only in this response, as for a magic link. Refreshing the page would stage a second batch.
@@ -69,10 +72,10 @@ export async function create(req, res) {
         days: values.days,
         fetchMinutes: MessengerBatch.FETCH_MINUTES,
         resultsHours: MessengerBatch.RESULTS_HOURS,
-        deepLink: `sprinklermessenger://batch/${staged.token}`,
-        // Expo Go cannot open the custom scheme, so development also gets its own form of the link.
+        deepLink,
+        deepQr: qrSvg(deepLink, "QR code for the Messenger link"),
         expoLink,
-        expoQr: expoLink ? await qrSvg(expoLink, "QR code for the Expo Go link") : null,
+        expoQr: expoLink ? qrSvg(expoLink, "QR code for the Expo Go link") : null,
     });
 }
 

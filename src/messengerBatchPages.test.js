@@ -101,7 +101,7 @@ test("the preview counts customers and stages nothing", async () => {
     assert.strictEqual(rows.rows[0].n, 0);
 });
 
-test("staging also shows an Expo Go link outside production, with the same token, and none in production", async () => {
+test("staging also shows an Expo Go link and QR outside production, and in production only the Messenger link and QR", async () => {
     await customerIn(areaId, "Ann Lee", "(208) 555-0101");
     const dispatcher = await agentFor("dispatcher");
     const res = await stage(dispatcher);
@@ -110,6 +110,7 @@ test("staging also shows an Expo Go link outside production, with the same token
     assert.ok(res.text.includes(`--/batch/${token}`), "the Expo Go link carries the batch token");
     assert.match(res.text, /value="exp:\/\/[^"]+:\d+\/--\/batch\//);
     assert.match(res.text, /<svg [^>]*aria-label="QR code for the Expo Go link"/);
+    assert.match(res.text, /<svg [^>]*aria-label="QR code for the Messenger link"/);
 
     const before = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
@@ -118,7 +119,8 @@ test("staging also shows an Expo Go link outside production, with the same token
         await customerIn(areaId, "Bob Ray", "(208) 555-0102", "3 Elm St");
         const live = await stage(dispatcher);
         assert.ok(!live.text.includes("exp://"), "production never shows the Expo Go link");
-        assert.ok(!live.text.includes("<svg"), "production never draws the QR code");
+        assert.ok(!live.text.includes("Expo Go"), "production never draws the Expo Go QR code");
+        assert.match(live.text, /<svg [^>]*aria-label="QR code for the Messenger link"/);
         assert.match(live.text, /sprinklermessenger:\/\/batch\//);
     } finally {
         process.env.NODE_ENV = before;

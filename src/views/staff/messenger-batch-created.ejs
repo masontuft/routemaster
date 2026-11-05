@@ -7,6 +7,8 @@
 <p><a href="<%= deepLink %>">Open in Messenger</a></p>
 <label for="deep-link">Link to Copy</label>
 <input id="deep-link" type="text" readonly value="<%= deepLink %>" size="70">
+<p>Or scan this with your phone's camera.</p>
+<%- deepQr %>
 <% if (expoLink) { %>
     <label for="expo-link">Expo Go Link (Development Only)</label>
     <input id="expo-link" type="text" readonly value="<%= expoLink %>" size="70">
