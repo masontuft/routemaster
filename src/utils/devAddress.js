@@ -21,3 +21,14 @@ export function lanAddress(interfaces = os.networkInterfaces()) {
 export function expoGoLink(token, { host = lanAddress(), port = process.env.EXPO_PORT || "8081" } = {}) {
     return `exp://${host}:${port}/--/batch/${token}`;
 }
+
+// The link as a QR code, drawn on the server as an inline SVG so nothing is fetched from anywhere. The library is a
+// development-only dependency, loaded here on first use, so a production install never needs it and never calls this.
+export async function qrSvg(text, label = "QR code") {
+    const { default: qrcode } = await import("qrcode-generator");
+    const code = qrcode(0, "M");
+    code.addData(text);
+    code.make();
+    return code.createSvgTag({ cellSize: 4, margin: 4, scalable: true })
+        .replace("<svg ", `<svg width="220" height="220" role="img" aria-label="${label}" `);
+}

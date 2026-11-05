@@ -10,7 +10,8 @@
 <% if (expoLink) { %>
     <label for="expo-link">Expo Go Link (Development Only)</label>
     <input id="expo-link" type="text" readonly value="<%= expoLink %>" size="70">
-    <p>Expo Go cannot open the link above. Copy this one to your phone instead.</p>
+    <p>Expo Go cannot open the link above. Scan this with your phone's camera, or copy the link to it.</p>
+    <%- expoQr %>
 <% } %>
 <ul>
     <li>Messenger can open the batch for <%= fetchMinutes %> minutes, and report results for <%= resultsHours %> hours.</li>

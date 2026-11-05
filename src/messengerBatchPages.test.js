@@ -109,6 +109,7 @@ test("staging also shows an Expo Go link outside production, with the same token
 
     assert.ok(res.text.includes(`--/batch/${token}`), "the Expo Go link carries the batch token");
     assert.match(res.text, /value="exp:\/\/[^"]+:\d+\/--\/batch\//);
+    assert.match(res.text, /<svg [^>]*aria-label="QR code for the Expo Go link"/);
 
     const before = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
@@ -117,6 +118,7 @@ test("staging also shows an Expo Go link outside production, with the same token
         await customerIn(areaId, "Bob Ray", "(208) 555-0102", "3 Elm St");
         const live = await stage(dispatcher);
         assert.ok(!live.text.includes("exp://"), "production never shows the Expo Go link");
+        assert.ok(!live.text.includes("<svg"), "production never draws the QR code");
         assert.match(live.text, /sprinklermessenger:\/\/batch\//);
     } finally {
         process.env.NODE_ENV = before;
