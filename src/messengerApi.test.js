@@ -51,6 +51,15 @@ test("GET returns the batch as private JSON with no cookie", async () => {
     assert.match(res.body.recipients[0].message, /^Hi Ann Lee: http:\/\/routemaster\.example\/l\/\S{43}$/);
 });
 
+test("GET returns the template and each recipient's link, which together make the message", async () => {
+    const res = await request(app).get(fetchPath(token)).set("Host", "routemaster.example");
+    const [first] = res.body.recipients;
+
+    assert.strictEqual(res.body.template, "Hi {name}: {link}");
+    assert.match(first.link, /^http:\/\/routemaster\.example\/l\/\S{43}$/);
+    assert.strictEqual(first.message, res.body.template.replace("{name}", first.customerName).replace("{link}", first.link));
+});
+
 test("an unknown, malformed or expired token all answer the same 404", async () => {
     const unknown = await request(app).get(fetchPath("A".repeat(43)));
     const malformed = await request(app).get(fetchPath("short"));
