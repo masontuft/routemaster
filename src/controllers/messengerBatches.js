@@ -5,7 +5,7 @@ import { expoGoLink } from "../utils/devAddress.js";
 import { isProduction } from "../utils/env.js";
 import { notFound } from "../utils/errors.js";
 import { qrSvg } from "../utils/qr.js";
-import { parseId, todayString, validateLinkBatch, DEFAULT_LINK_MESSAGE } from "../utils/validation.js";
+import { parseId, todayString, validateLinkBatch, isValidLinkMessage, DEFAULT_LINK_MESSAGE } from "../utils/validation.js";
 
 // Every page here carries names, or a deep link that opens a batch of them, so none may be cached or replayed.
 async function formPage(req, res, { values, errors = [], status = 200 }) {
@@ -15,6 +15,31 @@ async function formPage(req, res, { values, errors = [], status = 200 }) {
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/messenger-batch-new", {
         title: "Stage Links for Messenger", areas, values, errors, preview, max: MessengerBatch.MAX_BATCH,
+    });
+}
+
+// The page after staging. The token exists only in this response, as for a magic link, so refreshing the page that
+// posted here would stage a second batch.
+function renderCreated(res, { staged, areaName, days, noPhone = 0, skippedActive = 0 }) {
+    const deepLink = `sprinklermessenger://batch/${staged.token}`;
+    // Expo Go cannot open the custom scheme, so development also gets its own form of the link.
+    const expoLink = isProduction() ? null : expoGoLink(staged.token);
+
+    res.set("Cache-Control", "no-store");
+    res.render("staff/messenger-batch-created", {
+        title: "Batch Staged",
+        areaName,
+        batchId: staged.batchId,
+        staged: staged.staged,
+        noPhone,
+        skippedActive,
+        days,
+        fetchMinutes: MessengerBatch.FETCH_MINUTES,
+        resultsHours: MessengerBatch.RESULTS_HOURS,
+        deepLink,
+        deepQr: qrSvg(deepLink, "QR code for the Messenger link"),
+        expoLink,
+        expoQr: expoLink ? qrSvg(expoLink, "QR code for the Expo Go link") : null,
     });
 }
 
@@ -56,27 +81,37 @@ export async function create(req, res) {
         });
     }
 
-    const deepLink = `sprinklermessenger://batch/${staged.token}`;
-    // Expo Go cannot open the custom scheme, so development also gets its own form of the link.
-    const expoLink = isProduction() ? null : expoGoLink(staged.token);
+    renderCreated(res, { staged, areaName: area.name, days: values.days, noPhone, skippedActive });
+}
 
-    // The token exists only in this response, as for a magic link. Refreshing the page would stage a second batch.
-    res.set("Cache-Control", "no-store");
-    res.render("staff/messenger-batch-created", {
-        title: "Batch Staged",
-        areaName: area.name,
-        batchId: staged.batchId,
-        staged: staged.staged,
-        noPhone,
-        skippedActive,
-        days: values.days,
-        fetchMinutes: MessengerBatch.FETCH_MINUTES,
-        resultsHours: MessengerBatch.RESULTS_HOURS,
-        deepLink,
-        deepQr: qrSvg(deepLink, "QR code for the Messenger link"),
-        expoLink,
-        expoQr: expoLink ? qrSvg(expoLink, "QR code for the Expo Go link") : null,
+// Starts a Messenger batch from the results page of a link batch, for the customers that batch made links for.
+export async function createFromLinkBatch(req, res) {
+    const linkBatchId = parseId(req.body.linkBatchId);
+    const template = String(req.body.template ?? "").trim();
+
+    if (!linkBatchId || !isValidLinkMessage(template)) {
+        throw notFound();
+    }
+
+    const staged = await MessengerBatch.stageFromLinkBatch(req.app.locals.db, linkBatchId, {
+        createdBy: req.session.user.id, messageTemplate: template,
     });
+
+    if (staged.error === "not_found") {
+        throw notFound();
+    }
+
+    // Nobody left to text, or more than a batch holds: show the stage form for the area with the reason.
+    if (staged.error) {
+        const errors = [staged.error === "too_many"
+            ? `That would stage ${staged.count} customers. A batch holds at most ${MessengerBatch.MAX_BATCH}.`
+            : "Nobody in that batch can be texted."];
+        return formPage(req, res, {
+            values: { areaId: staged.areaId, days: staged.days, includeActive: true, template }, errors, status: 400,
+        });
+    }
+
+    renderCreated(res, { staged, areaName: staged.areaName, days: staged.days, noPhone: staged.noPhone });
 }
 
 export async function index(req, res) {

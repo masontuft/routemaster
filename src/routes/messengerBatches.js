@@ -10,6 +10,7 @@ export default function messengerBatchRoutes(limit) {
     router.get("/staff/messenger-batches/new", messengerBatches.showNew);
     router.get("/staff/messenger-batches", messengerBatches.index);
     router.post("/staff/messenger-batches", limit, messengerBatches.create);
+    router.post("/staff/messenger-batches/from-link-batch", limit, messengerBatches.createFromLinkBatch);
     router.get("/staff/messenger-batches/:id", messengerBatches.show);
 
     return router;
