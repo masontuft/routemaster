@@ -52,7 +52,8 @@ body > header nav a {
 }
 
 body > header nav a:hover,
-body > header nav a[aria-current="page"] {
+body > header nav a[aria-current="page"],
+body > header nav summary[aria-current="page"] {
     text-decoration: underline;
     text-underline-offset: 0.3em;
 }
