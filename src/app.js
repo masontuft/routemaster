@@ -78,6 +78,7 @@ export default function createApp({
     app.use(csrf);
     app.use((req, res, next) => {
         res.locals.user = req.session.user;
+        res.locals.currentPath = req.path;
         next();
     });
     app.use(routes);

@@ -46,6 +46,99 @@ body > header nav form {
     margin: 0;
 }
 
+/* The page you are on is underlined and bold; other links keep the default underline only on hover. */
+body > header nav a {
+    text-decoration: none;
+}
+
+body > header nav a:hover,
+body > header nav a[aria-current="page"],
+body > header nav summary[aria-current="page"] {
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+}
+
+body > header nav [aria-current="page"] {
+    font-weight: var(--weight-strong);
+}
+
+/* Menus: a <details> whose list floats under its summary. */
+body > header .menu {
+    position: relative;
+}
+
+body > header .menu summary {
+    min-block-size: var(--target-min);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    cursor: pointer;
+    list-style: none;
+}
+
+body > header .menu summary::-webkit-details-marker {
+    display: none;
+}
+
+body > header .menu summary::after {
+    content: "\25BE";
+}
+
+body > header .menu.account summary {
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+}
+
+body > header .menu summary:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+}
+
+body > header .menu ul {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline-end: 0;
+    z-index: 20;
+    min-inline-size: 100%;
+    inline-size: max-content;
+    margin: 0;
+    padding: var(--space-2);
+    list-style: none;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-card);
+}
+
+body > header .menu li {
+    display: block;
+}
+
+body > header .menu li a {
+    display: flex;
+    padding-inline: var(--space-3);
+}
+
+body > header .menu li button {
+    inline-size: 100%;
+}
+
+/* On a narrow screen the menu list flows in the page instead of floating, so it cannot run off the edge. */
+@media (max-width: 40rem) {
+    body > header nav {
+        margin-inline-start: 0;
+        inline-size: 100%;
+    }
+
+    body > header .menu[open] {
+        inline-size: 100%;
+    }
+
+    body > header .menu ul {
+        position: static;
+        inline-size: auto;
+    }
+}
+
 body > footer {
     border-block-start: var(--border-width) solid var(--color-border);
     padding: var(--space-4) max(var(--space-4), var(--safe-right)) max(var(--space-4), var(--safe-bottom)) max(var(--space-4), var(--safe-left));

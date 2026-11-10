@@ -10,22 +10,49 @@
     <a class="skip-link" href="#main">Skip to Main Content</a>
     <header>
         <a class="brand" href="/">Routemaster</a>
+        <%
+            // A link is current on its own page and on pages beneath it, so Staff stays marked inside /staff/day-board.
+            const here = locals.currentPath || "";
+            const cur = (path) => (here === path || here.startsWith(path + "/") ? ' aria-current="page"' : "");
+            const isOwner = locals.user && locals.user.role === "owner";
+            const adminLinks = [
+                ["/admin/users", "Users"],
+                ["/admin/service-types", "Manage Services"],
+                ["/admin/import", "Import"],
+                ["/admin/settings", "Settings"],
+                ["/admin/clear", "Clear Customers"],
+            ];
+            const inAdmin = adminLinks.some(([path]) => cur(path));
+        %>
         <nav aria-label="Main">
-            <a href="/services">Services</a>
-            <a href="/reviews">Reviews</a>
-            <a href="/contact">Contact</a>
+            <a href="/services"<%- cur("/services") %>>Services</a>
+            <a href="/reviews"<%- cur("/reviews") %>>Reviews</a>
+            <a href="/contact"<%- cur("/contact") %>>Contact</a>
             <% if (locals.user) { %>
-                <% if (locals.user.role === "customer") { %><a href="/requests">My Requests</a><% } %>
-                <% if (["owner", "dispatcher"].includes(locals.user.role)) { %><a href="/staff">Staff</a><% } %>
-                <% if (locals.user.role === "owner") { %><a href="/admin/users">Users</a><a href="/admin/service-types">Manage Services</a><a href="/admin/import">Import</a><a href="/admin/settings">Settings</a><a href="/admin/clear">Clear Customers</a><% } %>
-                <span><%= locals.user.displayName %></span>
-                <form method="post" action="/logout">
-                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-                    <button type="submit">Log Out</button>
-                </form>
+                <% if (locals.user.role === "customer") { %><a href="/requests"<%- cur("/requests") %>>My Requests</a><% } %>
+                <% if (["owner", "dispatcher"].includes(locals.user.role)) { %><a href="/staff"<%- cur("/staff") %>>Staff</a><% } %>
+                <% if (isOwner) { %>
+                    <details class="menu">
+                        <summary<%- inAdmin ? ' aria-current="page"' : "" %>>Admin</summary>
+                        <ul>
+                            <% adminLinks.forEach(([path, label]) => { %><li><a href="<%= path %>"<%- cur(path) %>><%= label %></a></li><% }) %>
+                        </ul>
+                    </details>
+                <% } %>
+                <details class="menu account">
+                    <summary><%= locals.user.displayName %></summary>
+                    <ul>
+                        <li>
+                            <form method="post" action="/logout">
+                                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                                <button type="submit">Log Out</button>
+                            </form>
+                        </li>
+                    </ul>
+                </details>
             <% } else { %>
-                <a href="/login">Log In</a>
-                <a href="/register">Create Account</a>
+                <a href="/login"<%- cur("/login") %>>Log In</a>
+                <a href="/register"<%- cur("/register") %>>Create Account</a>
             <% } %>
         </nav>
     </header>
