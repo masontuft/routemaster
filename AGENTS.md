@@ -68,3 +68,10 @@ Agents share context through the channels below. Use the matching skill for deta
 
   Both are placeholders. They may differ per project, so confirm them with Mason before relying on them.
 - **Server and cloud agents:** They cannot reach Mason's local Postgres. Rely on CI for database tests. Record any database step you could not verify in the ledger so the next local agent picks it up.
+
+## Skills sync
+
+- At session start, run `git submodule update --init --remote skills`.
+- If the pointer moved, mention it and commit the bump on the working branch, never directly on main.
+- Never commit skill edits in this repo. Skill changes go to masontuft/Skills via branch and PR, per skills/AGENTS.md.
+- Read skills/README.md and skills/AGENTS.md.

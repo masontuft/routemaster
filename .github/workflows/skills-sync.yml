@@ -1,0 +1,205 @@
+name: Skills sync
+
+on:
+  schedule:
+    - cron: "0 15 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: skills-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out routemaster
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Move skills to Skills main
+        shell: bash
+        env:
+          SKILLS_TOKEN: ${{ secrets.SKILLS_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          export GIT_TERMINAL_PROMPT=0
+
+          read_skills_gitlink() {
+              if [[ ! -f .gitmodules ]]; then
+                  printf '%s\n' "No .gitmodules file. Skipping skills sync."
+                  return 1
+              fi
+              local configured_paths=""
+              configured_paths="$(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' || true)"
+              local skills_configured=0
+              if [[ -n "$configured_paths" ]]; then
+                  local configured_path=""
+                  while IFS= read -r configured_path; do
+                      if [[ "$configured_path" == "skills" ]]; then
+                          skills_configured=1
+                      fi
+                  done < <(printf '%s\n' "$configured_paths" | awk '{ print $2 }')
+              fi
+              if [[ "$skills_configured" -ne 1 ]]; then
+                  printf '%s\n' ".gitmodules has no skills submodule. Skipping skills sync."
+                  return 1
+              fi
+              local gitlink=""
+              gitlink="$(git ls-files -s -- skills || true)"
+              local mode=""
+              mode="$(printf '%s\n' "$gitlink" | awk 'NR == 1 { print $1 }')"
+              if [[ "$mode" != "160000" ]]; then
+                  printf '%s\n' "skills is not a 160000 gitlink. Skipping skills sync."
+                  return 1
+              fi
+              old_sha="$(printf '%s\n' "$gitlink" | awk 'NR == 1 { print $2 }')"
+              return 0
+          }
+
+          if ! read_skills_gitlink; then
+              exit 0
+          fi
+          if [[ -z "${DEFAULT_BRANCH:-}" ]]; then
+              printf '%s\n' "The default branch name is missing."
+              exit 1
+          fi
+
+          remote_status=0
+          git ls-remote --exit-code --heads origin skills-sync >/dev/null || remote_status=$?
+          if [[ "$remote_status" -eq 0 ]]; then
+              git fetch --no-tags origin skills-sync
+              git checkout --force -B skills-sync origin/skills-sync
+              git reset --hard origin/skills-sync
+              git clean -ffd
+          elif [[ "$remote_status" -eq 2 ]]; then
+              git checkout -B skills-sync
+          else
+              printf '%s\n' "Could not list the skills-sync branch on origin."
+              exit "$remote_status"
+          fi
+
+          if ! read_skills_gitlink; then
+              exit 0
+          fi
+          if [[ -z "${SKILLS_TOKEN:-}" ]]; then
+              printf '%s\n' "SKILLS_TOKEN is not set."
+              exit 1
+          fi
+
+          helper="$(mktemp)"
+          header_file="$(mktemp)"
+          chmod 700 "$helper"
+          chmod 600 "$header_file"
+          : >"$header_file"
+          restored=0
+          # $SKILLS_TOKEN stays literal in the helper file. Git expands it when the helper runs.
+          # shellcheck disable=SC2016
+          printf '%s\n' \
+              '#!/bin/sh' \
+              'if [ "${1:-}" != "get" ]; then' \
+              '    exit 0' \
+              'fi' \
+              'while IFS= read -r line; do' \
+              '    if [ -z "$line" ]; then' \
+              '        break' \
+              '    fi' \
+              'done' \
+              'printf "username=x-access-token\n"' \
+              'printf "password=%s\n" "$SKILLS_TOKEN"' \
+              >"$helper"
+
+          restore_header() {
+              if [[ "$restored" -eq 1 ]]; then
+                  return 0
+              fi
+              restored=1
+              if [[ ! -s "$header_file" ]]; then
+                  return 0
+              fi
+              git config --global --unset-all http.https://github.com/.extraheader || true
+              local line=""
+              while IFS= read -r line || [[ -n "$line" ]]; do
+                  if [[ -n "$line" ]]; then
+                      git config --global --add http.https://github.com/.extraheader "$line"
+                  fi
+              done <"$header_file"
+          }
+
+          cleanup() {
+              status=$?
+              set +e
+              restore_header
+              git config --global --unset-all credential.https://github.com/masontuft/Skills.git.helper
+              git config --global --unset-all credential.https://github.com/masontuft/Skills.git.useHttpPath
+              git config --global --unset-all credential.useHttpPath
+              rm -f "$helper" "$header_file"
+              exit "$status"
+          }
+          trap cleanup EXIT
+
+          git config --global credential.useHttpPath true
+          git config --global credential.https://github.com/masontuft/Skills.git.useHttpPath true
+          git config --global credential.https://github.com/masontuft/Skills.git.helper "$helper"
+          if git config --global --get-all http.https://github.com/.extraheader >"$header_file"; then
+              git config --global --unset-all http.https://github.com/.extraheader
+          else
+              : >"$header_file"
+          fi
+
+          git submodule update --init -- skills
+          git -C skills fetch origin main:refs/remotes/origin/main
+          if [[ -n "$(git -C skills rev-list --max-count=1 HEAD ^origin/main)" ]]; then
+              printf '%s\n' "skills HEAD has commits that are not on Skills main. Not bumping."
+              exit 0
+          fi
+          new_sha="$(git -C skills rev-parse origin/main)"
+          if [[ "$old_sha" == "$new_sha" ]]; then
+              printf '%s\n' "skills is already at Skills main. Nothing to commit."
+              exit 0
+          fi
+          git -C skills checkout --detach "$new_sha"
+          restore_header
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- skills
+          mode="$(git ls-files -s -- skills | awk 'NR == 1 { print $1 }')"
+          if [[ "$mode" != "160000" ]]; then
+              git restore --staged -- skills || true
+              printf '%s\n' "Refusing to commit because skills is not a gitlink."
+              exit 1
+          fi
+          if git diff --cached --quiet -- skills; then
+              printf '%s\n' "The skills pointer did not change."
+              exit 0
+          fi
+          staged="$(git diff --cached --name-only)"
+          if [[ "$staged" != "skills" ]]; then
+              printf '%s\n' "Refusing to commit because the index has more than the skills gitlink."
+              exit 1
+          fi
+          git commit -m "Bump skills to Skills main"
+          git push origin HEAD:skills-sync
+
+          existing="$(gh pr list --repo "$GH_REPO" --head skills-sync --base "$DEFAULT_BRANCH" \
+              --state open --json number --jq '.[0].number // empty')"
+          title="Bump skills to Skills main"
+          body="$(printf '%s\n' \
+              "Updates the skills submodule pointer to the latest commit on Skills main." \
+              "" \
+              "Old pointer: ${old_sha}" \
+              "New pointer: ${new_sha}")"
+          if [[ -n "$existing" && "$existing" != "null" ]]; then
+              gh pr edit "$existing" --repo "$GH_REPO" --title "$title" --body "$body"
+          else
+              gh pr create --repo "$GH_REPO" --base "$DEFAULT_BRANCH" --head skills-sync --title "$title" --body "$body"
+          fi

@@ -52,3 +52,26 @@ See [docs/product/known-limitations.md](docs/product/known-limitations.md).
 ## Contributing and security
 
 [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md).
+
+## Skills submodule
+
+`skills/` is a git submodule of [masontuft/Skills](https://github.com/masontuft/Skills), tracking `main`.
+
+Clone with the submodule:
+
+```bash
+git clone --recurse-submodules https://github.com/masontuft/routemaster.git
+```
+
+Move the pointer to the latest Skills `main` and commit that pointer on your branch:
+
+```bash
+git submodule update --remote skills
+```
+
+Change a skill in masontuft/Skills, on a branch and a pull request.
+Do not commit skill edits in this repo. See `skills/AGENTS.md`.
+
+The workflow in `.github/workflows/skills-sync.yml` reads the private submodule with the `SKILLS_TOKEN` Actions secret.
+It needs `contents: write` and `pull-requests: write`.
+In the repository settings, set workflow permissions to read and write, and allow Actions to create pull requests.

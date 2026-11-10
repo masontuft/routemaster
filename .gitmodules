@@ -1,0 +1,4 @@
+[submodule "skills"]
+	path = skills
+	url = https://github.com/masontuft/Skills.git
+	branch = main

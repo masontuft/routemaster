@@ -6,6 +6,7 @@ import stylistic from "@stylistic/eslint-plugin";
 // this project is plain JavaScript as ES modules.
 export default defineConfig([
     globalIgnores(["node_modules/**", "coverage/**"]),
+    globalIgnores(["skills/**"]),
     {
         name: "spirit-of-the-law",
         files: ["**/*.{js,mjs,cjs}"],
