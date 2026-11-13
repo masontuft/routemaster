@@ -1,9 +1,10 @@
+import net from "node:net";
 import { test, mock } from "node:test";
 import assert from "node:assert";
 import request from "supertest";
 import session from "express-session";
 import createApp from "./app.js";
-import { createPool } from "./db/pool.js";
+import { createPool, CONNECTION_TIMEOUT_MS } from "./db/pool.js";
 import { missingEnvVariables, sessionSecretProblem } from "./utils/env.js";
 
 function silence() {}
@@ -46,6 +47,43 @@ test("an idle pool error is logged and does not throw", async () => {
     } finally {
         logged.mock.restore();
         await pool.end();
+    }
+});
+
+test("a pool gives up on a connection after 10 seconds unless the caller says otherwise", async () => {
+    const standard = createPool("postgres://user:password@localhost:5432/none");
+    const custom = createPool("postgres://user:password@localhost:5432/none", { connectionTimeoutMillis: 250 });
+    try {
+        assert.strictEqual(standard.options.connectionTimeoutMillis, CONNECTION_TIMEOUT_MS);
+        assert.strictEqual(CONNECTION_TIMEOUT_MS, 10_000);
+        assert.strictEqual(custom.options.connectionTimeoutMillis, 250);
+    } finally {
+        await standard.end();
+        await custom.end();
+    }
+});
+
+test("a database that accepts the socket but never answers makes the query fail, not hang", async () => {
+    const sockets = new Set();
+    const silent = net.createServer((socket) => {
+        sockets.add(socket);
+    });
+    await new Promise((resolve) => {
+        silent.listen(0, "127.0.0.1", resolve);
+    });
+    const pool = createPool(`postgres://user:password@127.0.0.1:${silent.address().port}/none`, {
+        connectionTimeoutMillis: 250,
+    });
+    try {
+        await assert.rejects(pool.query("SELECT 1"), /timeout/i);
+    } finally {
+        await pool.end();
+        sockets.forEach((socket) => {
+            socket.destroy();
+        });
+        await new Promise((resolve) => {
+            silent.close(resolve);
+        });
     }
 });
 
