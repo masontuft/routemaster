@@ -292,3 +292,33 @@ RouteMaster Database Schema
 | `value` | `text` |  |
 | `updated_by` | `int4` |  Nullable |
 | `updated_at` | `timestamptz` |  |
+
+## Table `messenger_batches`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `created_by` | `int4` |  Nullable |
+| `token_hash` | `bpchar` |  Unique |
+| `message_template` | `text` |  |
+| `link_days` | `int4` |  |
+| `fetch_expires_at` | `timestamptz` |  |
+| `results_expires_at` | `timestamptz` |  |
+| `fetched_at` | `timestamptz` |  Nullable |
+| `created_at` | `timestamptz` |  |
+
+## Table `messenger_batch_recipients`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `batch_id` | `int4` |  |
+| `customer_id` | `int4` |  |
+| `status` | `text` |  |
+| `access_link_id` | `int4` |  Nullable |
+| `sent_at` | `timestamptz` |  Nullable |
+| `error` | `text` |  Nullable |
