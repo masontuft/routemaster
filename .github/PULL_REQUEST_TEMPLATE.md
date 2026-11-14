@@ -3,7 +3,12 @@
 ## Related issues
 
 ## Type of change
-- [ ] feat  - [ ] fix  - [ ] docs  - [ ] refactor  - [ ] chore  - [ ] design
+- [ ] feat
+- [ ] fix
+- [ ] docs
+- [ ] refactor
+- [ ] chore
+- [ ] design
 
 ## Testing performed
 

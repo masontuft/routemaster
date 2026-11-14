@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createPool } from "../src/db/pool.js";
+import { createStartupPool } from "../src/db/pool.js";
 import { runMigrations } from "../src/db/migrate.js";
 
 const url = process.env.DATABASE_URL;
@@ -11,7 +11,7 @@ if (!url) {
 }
 
 const directory = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "migrations");
-const pool = createPool(url);
+const pool = createStartupPool(url);
 
 try {
     const applied = await runMigrations(pool, directory);

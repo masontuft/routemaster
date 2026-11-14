@@ -1,9 +1,10 @@
+import net from "node:net";
 import { test, mock } from "node:test";
 import assert from "node:assert";
 import request from "supertest";
 import session from "express-session";
 import createApp from "./app.js";
-import { createPool } from "./db/pool.js";
+import { createPool, createStartupPool, CONNECTION_TIMEOUT_MS } from "./db/pool.js";
 import { missingEnvVariables, sessionSecretProblem } from "./utils/env.js";
 
 function silence() {}
@@ -46,6 +47,47 @@ test("an idle pool error is logged and does not throw", async () => {
     } finally {
         logged.mock.restore();
         await pool.end();
+    }
+});
+
+test("only the startup pool gives up on a connection, after 10 seconds unless the caller says otherwise", async () => {
+    const url = "postgres://user:password@localhost:5432/none";
+    const app = createPool(url);
+    const startup = createStartupPool(url);
+    const custom = createStartupPool(url, { connectionTimeoutMillis: 250 });
+    try {
+        assert.strictEqual(CONNECTION_TIMEOUT_MS, 10_000);
+        assert.strictEqual(app.options.connectionTimeoutMillis, undefined);
+        assert.strictEqual(startup.options.connectionTimeoutMillis, CONNECTION_TIMEOUT_MS);
+        assert.strictEqual(custom.options.connectionTimeoutMillis, 250);
+    } finally {
+        await app.end();
+        await startup.end();
+        await custom.end();
+    }
+});
+
+test("a database that accepts the socket but never answers makes a startup query fail, not hang", async () => {
+    const sockets = new Set();
+    const silent = net.createServer((socket) => {
+        sockets.add(socket);
+    });
+    await new Promise((resolve) => {
+        silent.listen(0, "127.0.0.1", resolve);
+    });
+    const pool = createStartupPool(`postgres://user:password@127.0.0.1:${silent.address().port}/none`, {
+        connectionTimeoutMillis: 250,
+    });
+    try {
+        await assert.rejects(pool.query("SELECT 1"), /timeout/i);
+    } finally {
+        await pool.end();
+        sockets.forEach((socket) => {
+            socket.destroy();
+        });
+        await new Promise((resolve) => {
+            silent.close(resolve);
+        });
     }
 });
 
