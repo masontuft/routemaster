@@ -67,4 +67,5 @@ Agents share context through the channels below. Use the matching skill for deta
   - Script: `generate schema` (placeholder)
 
   Both are placeholders. They may differ per project, so confirm them with Mason before relying on them.
+- **Supabase MCP** (`.mcp.json`): A read-only connection to the live Supabase project, for docs, logs, advisors and looking at schema and data. Do not remove `read_only=true` from its URL. Schema changes still go through `migrations/` and a pull request, never through the MCP. Mason authenticates it himself with `claude /mcp`.
 - **Server and cloud agents:** They cannot reach Mason's local Postgres. Rely on CI for database tests. Record any database step you could not verify in the ledger so the next local agent picks it up.
