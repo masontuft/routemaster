@@ -4,7 +4,7 @@ import assert from "node:assert";
 import request from "supertest";
 import session from "express-session";
 import createApp from "./app.js";
-import { createPool, CONNECTION_TIMEOUT_MS } from "./db/pool.js";
+import { createPool, createStartupPool, CONNECTION_TIMEOUT_MS } from "./db/pool.js";
 import { missingEnvVariables, sessionSecretProblem } from "./utils/env.js";
 
 function silence() {}
@@ -50,20 +50,24 @@ test("an idle pool error is logged and does not throw", async () => {
     }
 });
 
-test("a pool gives up on a connection after 10 seconds unless the caller says otherwise", async () => {
-    const standard = createPool("postgres://user:password@localhost:5432/none");
-    const custom = createPool("postgres://user:password@localhost:5432/none", { connectionTimeoutMillis: 250 });
+test("only the startup pool gives up on a connection, after 10 seconds unless the caller says otherwise", async () => {
+    const url = "postgres://user:password@localhost:5432/none";
+    const app = createPool(url);
+    const startup = createStartupPool(url);
+    const custom = createStartupPool(url, { connectionTimeoutMillis: 250 });
     try {
-        assert.strictEqual(standard.options.connectionTimeoutMillis, CONNECTION_TIMEOUT_MS);
         assert.strictEqual(CONNECTION_TIMEOUT_MS, 10_000);
+        assert.strictEqual(app.options.connectionTimeoutMillis, undefined);
+        assert.strictEqual(startup.options.connectionTimeoutMillis, CONNECTION_TIMEOUT_MS);
         assert.strictEqual(custom.options.connectionTimeoutMillis, 250);
     } finally {
-        await standard.end();
+        await app.end();
+        await startup.end();
         await custom.end();
     }
 });
 
-test("a database that accepts the socket but never answers makes the query fail, not hang", async () => {
+test("a database that accepts the socket but never answers makes a startup query fail, not hang", async () => {
     const sockets = new Set();
     const silent = net.createServer((socket) => {
         sockets.add(socket);
@@ -71,7 +75,7 @@ test("a database that accepts the socket but never answers makes the query fail,
     await new Promise((resolve) => {
         silent.listen(0, "127.0.0.1", resolve);
     });
-    const pool = createPool(`postgres://user:password@127.0.0.1:${silent.address().port}/none`, {
+    const pool = createStartupPool(`postgres://user:password@127.0.0.1:${silent.address().port}/none`, {
         connectionTimeoutMillis: 250,
     });
     try {
