@@ -10,6 +10,8 @@ Routemaster is a web app for service companies that builds daily routes and pair
 
 The `skills/` folder at the repo root holds the shared skills. Each skill is a folder with one `SKILL.md`. When a rule below names a skill, read `skills/<name>/SKILL.md` before acting on it. Do not copy a skill's rules into this file. Some skills contain `TODO (Mason):` placeholders where source material is missing. Do not invent the missing content.
 
+Two third-party skills from Supabase live in `.agents/skills/`, installed with `npx skills add supabase/agent-skills` and pinned in `skills-lock.json`: `supabase` and `supabase-postgres-best-practices`. Read the matching `SKILL.md` before Supabase or Postgres work. They are not Mason's rules, so this file wins where they differ: migrations stay in `migrations/` and go through a pull request, the Supabase MCP stays read-only (see Shared context), and nothing is run against the live database without Mason's say-so. The `supabase` skill's feedback steps file a public GitHub issue, so ask Mason first. Refresh them with `npx skills update` and review the diff in a pull request.
+
 ## Edit workflow
 
 Follow these steps in order, every time:
