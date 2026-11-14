@@ -274,6 +274,11 @@ export const DEFAULT_REBOOK_MESSAGE = "Hi {name}, it is time to book your sprink
 
 export const DEFAULT_LINK_MESSAGE = "Hi {name}, you can choose a day for your sprinkler service here: {link}";
 
+// A link message must hold {link}, or the customer would be texted nothing to open.
+export function isValidLinkMessage(template) {
+    return template !== "" && template.length <= 500 && template.includes("{link}");
+}
+
 // Which area, how long the links last, whether customers who already have a working link get another, and the
 // text of the message. The message must hold {link}, or the customer would be texted nothing to open.
 export function validateLinkBatch(body) {
@@ -290,7 +295,7 @@ export function validateLinkBatch(body) {
         errors.push("Choose a link lifetime from 1 to 120 days.");
     }
 
-    if (!template || template.length > 500 || !template.includes("{link}")) {
+    if (!isValidLinkMessage(template)) {
         errors.push("Write a message of up to 500 characters that includes {link}.");
     }
 

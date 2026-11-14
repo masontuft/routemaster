@@ -9,6 +9,7 @@ import * as Property from "./models/property.js";
 import * as Area from "./models/area.js";
 import * as AccessLink from "./models/accessLink.js";
 import * as MessengerBatch from "./models/messengerBatch.js";
+import * as LinkBatch from "./models/linkBatch.js";
 import { hashPassword } from "./utils/password.js";
 
 const db = testDb("messengerpages");
@@ -216,4 +217,59 @@ test("an unknown batch id is a 404", async () => {
 
     assert.strictEqual((await dispatcher.get("/staff/messenger-batches/999")).status, 404);
     assert.strictEqual((await dispatcher.get("/staff/messenger-batches/abc")).status, 404);
+});
+
+const FROM_LINK_BATCH = "/staff/messenger-batches/from-link-batch";
+const TEMPLATE = "Hi {name}, choose a day: {link}";
+
+async function linkBatchFor(agent, customerIds) {
+    const user = await pool.query("SELECT id FROM users LIMIT 1");
+    const made = await LinkBatch.create(pool, { areaId, createdBy: user.rows[0].id, days: 14, customerIds });
+    return made.batchId;
+}
+
+test("starting from a link batch stages exactly its customers, for its lifetime, and makes no new link yet", async () => {
+    const ann = await customerIn(areaId, "Ann Lee", "208-555-0101");
+    await customerIn(areaId, "Bo Kim", "208-555-0102", "2 Elm St");
+    const dispatcher = await agentFor("dispatcher");
+    const linkBatchId = await linkBatchFor(dispatcher, [ann]);
+    const before = await pool.query("SELECT count(*)::int AS n FROM access_links");
+    const res = await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId, template: TEMPLATE });
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.headers["cache-control"], /no-store/);
+    assert.match(res.text, /sprinklermessenger:\/\/batch\//);
+    const recipients = await pool.query("SELECT customer_id FROM messenger_batch_recipients");
+    assert.deepStrictEqual(recipients.rows.map((row) => {
+        return row.customer_id;
+    }), [ann]);
+    const batch = await pool.query("SELECT link_days, message_template FROM messenger_batches");
+    assert.deepStrictEqual(batch.rows, [{ link_days: 14, message_template: TEMPLATE }]);
+    const after = await pool.query("SELECT count(*)::int AS n FROM access_links");
+    assert.strictEqual(after.rows[0].n, before.rows[0].n);
+});
+
+test("starting from a link batch refuses an unknown batch, a bad template and a customer account", async () => {
+    const ann = await customerIn(areaId, "Ann Lee", "208-555-0101");
+    const dispatcher = await agentFor("dispatcher");
+    const linkBatchId = await linkBatchFor(dispatcher, [ann]);
+
+    assert.strictEqual((await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId: 9999, template: TEMPLATE })).status, 404);
+    assert.strictEqual((await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId, template: "no link here" })).status, 404);
+    assert.strictEqual((await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId: "abc", template: TEMPLATE })).status, 404);
+    const customer = await agentFor("customer");
+    assert.strictEqual((await send(customer, "/login", FROM_LINK_BATCH, { linkBatchId, template: TEMPLATE })).status, 403);
+    const staged = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(staged.rows[0].n, 0);
+});
+
+test("starting from a link batch whose customers can no longer be texted shows the form with a reason", async () => {
+    const ann = await customerIn(areaId, "Ann Lee", "208-555-0101");
+    const dispatcher = await agentFor("dispatcher");
+    const linkBatchId = await linkBatchFor(dispatcher, [ann]);
+    await pool.query("UPDATE customers SET phone = '' WHERE id = $1", [ann]);
+    const res = await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId, template: TEMPLATE });
+
+    assert.strictEqual(res.status, 400);
+    assert.match(res.text, /Nobody in that batch can be texted/);
 });
