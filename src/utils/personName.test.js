@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { classifyName, extractRental, normalizePersonName, tidyName } from "./personName.js";
+import { classifyName, extractRental, normalizePersonName, personKey, tidyName } from "./personName.js";
 
 function codes(value) {
     return classifyName(value).reasons.map((entry) => {
@@ -152,4 +152,13 @@ test("every reason has a code, a message a person can read, and a blocks flag", 
         assert.ok(entry.message.length > 0);
         assert.strictEqual(typeof entry.blocks, "boolean");
     }
+});
+
+test("personKey leaves the rental note out, so a person with and without it share one key", () => {
+    assert.strictEqual(personKey("Nina Sample (rental)"), "nina sample");
+    assert.strictEqual(personKey("Nina Sample"), personKey("Nina Sample (rental)"));
+    assert.strictEqual(personKey("Max Sample's rental"), "max sample");
+    assert.strictEqual(personKey("Sam & Ruth Example"), "sam and ruth example");
+    assert.strictEqual(personKey("rental"), "rental");
+    assert.strictEqual(personKey(null), "");
 });

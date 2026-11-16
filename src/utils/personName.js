@@ -80,6 +80,12 @@ export function extractRental(value) {
     return { name: rest, rental: true };
 }
 
+// The key a customer is stored and matched under: the rental note is left out, then the name is normalized.
+// "Nina Sample (rental)" and "Nina Sample" are the same person, so they get the same key.
+export function personKey(value) {
+    return normalizePersonName(extractRental(value).name);
+}
+
 // blocks: true means a row with this reason is skipped until a person fixes it. false means it still imports
 // and is listed for review.
 function reason(code, message, blocks = true) {
