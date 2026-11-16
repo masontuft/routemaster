@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { normalizeAddress, normalizeName, normalizePhone } from "../utils/normalize.js";
+import { normalizeAddress, normalizePhone } from "../utils/normalize.js";
+import { personKey } from "../utils/personName.js";
 
 // Turns classified rows plus the import-wide options into the exact list of things to create.
 // Pure: no database and no network, so the same inputs always give the same plan and the same hash.
@@ -42,9 +43,9 @@ function newCustomerKeys(live) {
     for (const row of live) {
         const phone = row.phone === null ? "" : normalizePhone(row.phone);
         if (row.match.kind === "new" && phone !== "") {
-            const key = `${normalizeName(row.name)}|${phone}`;
+            const key = `${personKey(row.name)}|${phone}`;
             keys.set(row.rowNumber, key);
-            const spot = `${normalizeName(row.name)}|${normalizeAddress(row.street)}`;
+            const spot = `${personKey(row.name)}|${normalizeAddress(row.street)}`;
             if (byNameAndStreet.has(spot) === false) {
                 byNameAndStreet.set(spot, key);
             }
@@ -53,8 +54,8 @@ function newCustomerKeys(live) {
 
     for (const row of live) {
         if (row.match.kind === "new" && keys.has(row.rowNumber) === false) {
-            const spot = `${normalizeName(row.name)}|${normalizeAddress(row.street)}`;
-            keys.set(row.rowNumber, byNameAndStreet.get(spot) ?? `${normalizeName(row.name)}|`);
+            const spot = `${personKey(row.name)}|${normalizeAddress(row.street)}`;
+            keys.set(row.rowNumber, byNameAndStreet.get(spot) ?? `${personKey(row.name)}|`);
         }
     }
 

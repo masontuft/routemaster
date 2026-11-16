@@ -4,6 +4,9 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 
 ## Unreleased
 
+### Added
+- Person name rules ([ADR 0016](docs/adr/0016-person-name-rules.md)). Customers are saved and matched under a new key, so "Sam & Ruth Example" and "Sam and Ruth Example" are one customer, "O'Brien" is "obrien", and Jr and Sr stay apart. The import preview cleans each name: a rental note is taken out, a name that needs a person (a relative's note, a business, a number, last name first) is skipped with its reason until the sheet is fixed, and a one-word name only warns. `pnpm names:renormalize` recomputes stored keys (a dry run unless given `--apply`) and must be run after deploying. No schema change.
+
 ### Fixed
 - Review fixes on rebooking: penciling in checks on the server that a customer is in the not-yet-booked group (a forged form can no longer pencil in a never-served or declined customer), and a customer's own request takes the same row lock so the two cannot both book the same year. A saved route that holds tentative stops is shown as out of date, without its table or map links, while the option is off, and any route goes out of date when a stop's map point is cleared or found again (for example after an area's city changes). The schema reference now lists migrations through 023, and the roadmap marks rebooking as built.
 - The form parser now accepts up to 5,000 fields (it stopped at 1,000), so ticking about 1,000 or more customers on the rebooking page is no longer rejected with a 413 error.

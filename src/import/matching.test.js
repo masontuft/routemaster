@@ -179,3 +179,17 @@ test("a long sheet takes three queries, not one per row", async () => {
     assert.strictEqual(summary.new, 300);
     assert.ok(queries <= 3, `used ${queries} queries`);
 });
+
+test("a joint name matches the same couple spelled with an ampersand or with and", async () => {
+    const { customerId, propertyId } = await customerWithProperty("Sam & Ruth Example", "801-555-0155", "9 Test Street");
+
+    const { rows } = await classifyCandidates(pool, [
+        candidate(2, { name: "Sam and Ruth Example", phone: "801-555-0155", street: "9 Test St" }),
+        candidate(3, { name: "SAM & RUTH EXAMPLE", phone: "801-555-0155", street: "9 test street" }),
+    ]);
+
+    assert.deepStrictEqual(rows.map((row) => { return row.match; }), [
+        { kind: "existing", customerId, propertyId },
+        { kind: "existing", customerId, propertyId },
+    ]);
+});

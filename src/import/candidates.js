@@ -1,5 +1,6 @@
 import { cellText } from "./columns.js";
 import { normalizePhone } from "../utils/normalize.js";
+import { classifyName } from "../utils/personName.js";
 import { parsePriceCents } from "../utils/money.js";
 
 const PHONE_DIGITS = 10;
@@ -61,6 +62,24 @@ export function parseAmountCents(text) {
     return parsePriceCents(text.replace(/,/g, ""));
 }
 
+// Cleans the name and turns what classifyName finds into issues. A reason that blocks skips the row: the owner
+// fixes that cell in the sheet and runs the import again. One word only warns, so the row still imports.
+function applyNameRules(candidate) {
+    const result = classifyName(candidate.name);
+    candidate.name = result.name;
+
+    if (result.rental) {
+        candidate.issues.push("Rental note taken out of the name.");
+    }
+
+    for (const entry of result.reasons) {
+        candidate.issues.push(`Name: ${entry.message}`);
+        if (entry.blocks) {
+            candidate.blocked = true;
+        }
+    }
+}
+
 function candidateFor(row, mapping) {
     const text = (key) => {
         const index = mapping.columns[key];
@@ -85,6 +104,8 @@ function candidateFor(row, mapping) {
     if (candidate.name === null) {
         candidate.issues.push("Missing customer name.");
         candidate.blocked = true;
+    } else {
+        applyNameRules(candidate);
     }
 
     if (candidate.street === null) {

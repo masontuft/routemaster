@@ -1,6 +1,7 @@
 import * as Property from "../models/property.js";
 import * as Customer from "../models/customer.js";
-import { normalizeAddress, normalizeName, normalizePhone } from "../utils/normalize.js";
+import { normalizeAddress, normalizePhone } from "../utils/normalize.js";
+import { personKey } from "../utils/personName.js";
 
 // What the preview says will happen to a row. Nothing here writes to the database.
 //   blocked       missing name or street; never imported
@@ -13,7 +14,7 @@ export const MATCH_KINDS = ["blocked", "flagged", "existing", "new_property", "n
 function keysFor(candidate) {
     return {
         street: normalizeAddress(candidate.street),
-        name: normalizeName(candidate.name),
+        name: personKey(candidate.name),
         phone: candidate.phone === null ? "" : normalizePhone(candidate.phone),
     };
 }
@@ -105,7 +106,7 @@ function annotateGroups(rows) {
 
     for (const group of groups.values()) {
         const names = new Set(group.map((row) => {
-            return normalizeName(row.name);
+            return personKey(row.name);
         }));
 
         for (const row of group) {
