@@ -1,4 +1,4 @@
-// Recomputes customers.name_normalized with the person-name rules (docs/adr/0016-name-normalization.md).
+// Recomputes customers.name_normalized with the person-name rules (docs/adr/0016-person-name-rules.md).
 //   pnpm names:renormalize              dry run: says how many keys would change and shows examples, writes nothing
 //   pnpm names:renormalize --dry-run    the same
 //   pnpm names:renormalize --apply      writes the new keys in one transaction
