@@ -363,7 +363,8 @@ test("the preview says what confirming would do and offers a confirm form with t
     assert.strictEqual(res.status, 200);
     assert.match(res.text, /2 new customers and 2 new properties/);
     assert.match(res.text, /3 jobs, each dated by its own day and marked Completed/);
-    assert.match(res.text, /Skipped: 1 with no name or street, 1 on another customer(?:'|&#39;)s street/);
+    assert.match(res.text, /Skipped: 1 that cannot be imported \(no name or street, or a name to fix\),/);
+    assert.match(res.text, /1 on another customer(?:'|&#39;)s street/);
     assert.doesNotMatch(res.text, /have no city/);
     assert.match(res.text, /action="\/admin\/import\/confirm"/);
     assert.ok(res.text.includes('name="serviceTypeId" value="1"'));
@@ -507,4 +508,41 @@ test("choosing the same tab again starts from the mapping saved at the last impo
     assert.match(res.text, /<option value="1" selected>/);
     assert.match(res.text, /<option value="Scheduled" selected>/);
     assert.ok(res.text.includes('value="Testville"'));
+});
+
+test("the preview skips names that need a person, warns on one word, and says how to fix them", async () => {
+    fetchSheet = async () => {
+        return {
+            bytes: await workbookBytes([
+                ["Name", "Phone", "Street", "Date", "Amount"],
+                ["Sam & Ruth Example", "801-555-0101", "1 Test St", "10/14", "45"],
+                ["Nina Sample (rental)", "801-555-0102", "2 Test St", "10/15", "45"],
+                ["Example", "801-555-0103", "3 Test St", "10/16", "45"],
+                ["Max's son", "801-555-0104", "4 Test St", "10/17", "45"],
+            ]),
+        };
+    };
+    const agent = await ownerAgent();
+    const before = await counts();
+
+    const res = await stepPost(agent, "/admin/import/preview", MAPPING);
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /1 cannot be imported/);
+    assert.match(res.text, /Cannot Import \(1\)/);
+    assert.match(res.text, /Fix these cells in the Google Sheet and run the import again/);
+    assert.match(res.text, /Name: Has (?:'|&#39;)s, so it may be a note about someone(?:'|&#39;)s relative\./);
+    assert.match(res.text, /Rental note taken out of the name\./);
+    assert.match(res.text, /Name: Is one word, so there may be no surname\./);
+    assert.match(res.text, /3 new customers and 3 new properties/);
+    assert.deepStrictEqual(await counts(), before);
+
+    const confirmed = await stepPost(agent, "/admin/import/confirm", { ...MAPPING, planHash: hashFrom(res) });
+    assert.strictEqual(confirmed.status, 303);
+    const names = await pool.query("SELECT name, name_normalized FROM customers ORDER BY name");
+    assert.deepStrictEqual(names.rows, [
+        { name: "Example", name_normalized: "example" },
+        { name: "Nina Sample", name_normalized: "nina sample" },
+        { name: "Sam & Ruth Example", name_normalized: "sam and ruth example" },
+    ]);
 });
