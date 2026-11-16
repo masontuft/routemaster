@@ -33,10 +33,10 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - **Who:** owner.
 - **Where:** `/admin/import`, then `/admin/import/mapping`, `/admin/import/preview` and `/admin/import/confirm`. The result of a run is at `/admin/import/batches/:id`.
 - **What happens:** the owner pastes a public Google Sheet link, picks a tab, maps the columns and sees a read-only preview. Confirming writes customers, properties and past jobs in one transaction. Running it twice changes nothing.
-- **Rules:** a row with no city keeps its street and is flagged. Customers are matched on normalized name, phone and street. The import creates areas from the sheet's area column but never adds days.
+- **Rules:** a row with no city keeps its street and is flagged. Customers are matched on normalized name, phone and street. A name is cleaned and checked first ([ADR 0016](../adr/0016-person-name-rules.md)): "Sam & Ruth Example" and "Sam and Ruth Example" are the same customer, and a rental note such as "(rental)" is taken out of the stored name. A row whose name needs a person (a note about a relative, a business or an association, a number, a character that is not normally in a name, last name first) is skipped and listed under Cannot Import with its reason. The owner fixes the cell in the sheet and runs the import again, which is safe to repeat. A name of one word only still imports, with a warning. The import creates areas from the sheet's area column but never adds days.
 - **Undo:** the owner can clear customers by import batch (`/admin/clear/batches/:id`) or all at once (`/admin/clear/all`), starting from `/admin/clear`. Each shows what would go first.
 - **Code:** `src/import/`, `src/controllers/import.js`.
-- **Gaps:** no `.xlsx` upload. One status applies to every row of a tab, so cancelled rows are not told apart from completed ones. A free-text area column ("Sub") creates one area per spelling, so a large sheet can produce close to a hundred areas to tidy. A tab with no city column imports properties with no city (see the area city in step 2).
+- **Gaps:** no `.xlsx` upload. A rental note taken out of a name is not recorded anywhere yet. One status applies to every row of a tab, so cancelled rows are not told apart from completed ones. A free-text area column ("Sub") creates one area per spelling, so a large sheet can produce close to a hundred areas to tidy. A tab with no city column imports properties with no city (see the area city in step 2).
 
 ## 2. Set up areas and their days
 
@@ -123,6 +123,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-16 | Step 1: import names follow the person-name rules. A joint name matches however it is spelled, a rental note is taken out of the name, a name that needs a person is skipped with a reason until the sheet is fixed, and a one-word name imports with a warning. Customers are matched under the new key, so `pnpm names:renormalize` must be run after deploying. |
 | 2026-11-10 | Step 4: a Stage for Messenger button on the link results page stages a Messenger batch for that link batch's customers whose link is still live. |
 | 2026-11-04 | Step 4 can stage a batch for Sprinkler Messenger: a staff page to stage it, a list of batches and who was texted, and two token-authenticated API routes the Messenger app will call. |
 | 2026-11-04 | Review fixes: penciling in rechecks eligibility on the server and shares the customer lock with the customer's own request; a route with tentative stops is unusable while the option is off; a route goes out of date when a stop's map point changes. |
