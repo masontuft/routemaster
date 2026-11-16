@@ -23,6 +23,13 @@
     <h2><%= section.areaName %></h2>
     <p><%= section.rows.length %> <%= section.rows.length === 1 ? "link" : "links" %> (batch <%= section.batchId %>).
         <a href="<%= section.csvHref %>" download="scheduling-links-<%= section.batchId %>.csv">Download CSV</a></p>
+    <form method="post" action="/staff/messenger-batches/from-link-batch">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="linkBatchId" value="<%= section.batchId %>">
+        <input type="hidden" name="template" value="<%= template %>">
+        <button type="submit">Stage for Messenger</button>
+        <span>Texts these <%= section.rows.length %> <%= section.rows.length === 1 ? "customer" : "customers" %> from your phone. Messenger makes its own links, and the ones on this page stay good too.</span>
+    </form>
     <details>
         <summary>CSV to Copy</summary>
         <label for="csv-<%= section.batchId %>">CSV to Copy for <%= section.areaName %></label>

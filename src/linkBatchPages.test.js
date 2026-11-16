@@ -223,3 +223,16 @@ test("a customer and a visitor are refused, and a post without the CSRF token ma
     assert.strictEqual(denied.status, 403);
     assert.strictEqual(await count("access_links"), 0);
 });
+
+test("the results page offers Stage for Messenger for each batch, carrying the batch id and the message", async () => {
+    await customerIn(areaId, "Ann Lee", "(208) 555-0101");
+    const dispatcher = await agentFor("dispatcher");
+
+    const res = await make(dispatcher, { template: "Hi {name}, pick a day: {link}" });
+    const batchId = (await pool.query("SELECT id FROM link_batches")).rows[0].id;
+
+    assert.match(res.text, /action="\/staff\/messenger-batches\/from-link-batch"/);
+    assert.match(res.text, new RegExp(`name="linkBatchId" value="${batchId}"`));
+    assert.match(res.text, /name="template" value="Hi \{name\}, pick a day: \{link\}"/);
+    assert.match(res.text, /Stage for Messenger/);
+});

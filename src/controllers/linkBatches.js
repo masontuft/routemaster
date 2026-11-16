@@ -96,7 +96,7 @@ export async function renderResults(req, res, { template, days, sections }) {
     // The links exist only in this response. Refreshing it would run the batches again.
     res.set("Cache-Control", "no-store");
     res.render("staff/link-batch-result", {
-        title: "Scheduling Links", sections: made, failed, noPhone, skippedActive, linkCount, days,
+        title: "Scheduling Links", sections: made, failed, noPhone, skippedActive, linkCount, days, template,
     });
 }
 
