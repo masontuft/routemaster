@@ -52,7 +52,7 @@ test("a request with no customer is stored as Needs Review with the typed contac
 
 test("one customer cannot read, change or cancel another customer's request", async () => {
     const id = await newRequest();
-    const otherId = await Customer.create(pool, { name: "Bo Kim" });
+    const otherId = await Customer.create(pool, { name: "Bo Kay" });
     assert.strictEqual(await ServiceRequest.findForCustomer(pool, id, otherId), null);
     assert.strictEqual(await ServiceRequest.updateDetails(pool, id, otherId, { preferredDate: "2027-02-01" }), false);
     assert.strictEqual(await ServiceRequest.cancel(pool, id, otherId, null), false);
