@@ -71,6 +71,42 @@ export async function stage(pool, { createdBy, customerIds, messageTemplate, day
     });
 }
 
+// Stages a Messenger batch for exactly the customers a link batch made links for, so a batch made on the results page
+// can be started from that page. The links on the page stay valid; Messenger makes its own when it fetches, because a
+// raw link is shown once and never stored. The link batch decides who and for how long. not_found for an id that is
+// not a link batch. Only customers whose link from that batch is still live are staged, by the same test a customer's
+// link must pass (not revoked, not expired), so an old batch id cannot text people whose links are gone. A link batch
+// holds at most MAX_BATCH customers, so "too_many" cannot come back from here.
+export async function stageFromLinkBatch(pool, linkBatchId, { createdBy, messageTemplate }) {
+    const { rows } = await pool.query(
+        `SELECT link_batches.days, link_batches.subdivision_id, subdivisions.name AS area_name
+         FROM link_batches
+         LEFT JOIN subdivisions ON subdivisions.id = link_batches.subdivision_id
+         WHERE link_batches.id = $1`,
+        [linkBatchId],
+    );
+
+    if (rows.length === 0) {
+        return { error: "not_found" };
+    }
+
+    const { rows: links } = await pool.query(
+        `SELECT DISTINCT customer_id FROM access_links
+         WHERE link_batch_id = $1 AND revoked_at IS NULL AND expires_at > now()`,
+        [linkBatchId],
+    );
+    const staged = await stage(pool, {
+        createdBy,
+        customerIds: links.map((link) => {
+            return link.customer_id;
+        }),
+        messageTemplate,
+        days: rows[0].days,
+    });
+
+    return { ...staged, areaName: rows[0].area_name ?? "No area", days: rows[0].days };
+}
+
 // What Messenger fetches. Each recipient carries the finished message and its parts (the template is on the batch, the
 // link on the recipient), so the app can let the dispatcher edit the wording and rebuild every message. Mints a fresh
 // magic link for each customer not yet marked sent, and revokes the link an earlier fetch made for them, so a retry
