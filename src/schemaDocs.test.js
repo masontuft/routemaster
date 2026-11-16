@@ -153,8 +153,9 @@ test("the schema reference lists every table and column with its type and nullab
 });
 
 test("the diagram does not depend on the order the database returned the keys in", () => {
+    // Only the constraints are reversed. Columns keep their order, because that order is the table's own.
     const shuffled = {
-        columns: [...FAKE.columns].reverse(),
+        columns: FAKE.columns,
         constraints: [...FAKE.constraints].reverse(),
     };
 
