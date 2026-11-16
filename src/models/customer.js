@@ -1,11 +1,12 @@
 import { withTransaction } from "../db/transaction.js";
-import { normalizeName, normalizePhone, normalizeAddress } from "../utils/normalize.js";
+import { normalizePhone, normalizeAddress } from "../utils/normalize.js";
+import { normalizePersonName, personKey } from "../utils/personName.js";
 
 export async function create(pool, { name, phone, email, userId = null }) {
     const { rows } = await pool.query(
         `INSERT INTO customers (user_id, name, name_normalized, phone, phone_normalized, email)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [userId, name, normalizeName(name), phone ?? null, phone ? normalizePhone(phone) : null, email ?? null],
+        [userId, name, personKey(name), phone ?? null, phone ? normalizePhone(phone) : null, email ?? null],
     );
     return rows[0].id;
 }
@@ -33,7 +34,7 @@ export async function update(pool, id, fields) {
 
     if ("name" in fields) {
         set("name", fields.name);
-        set("name_normalized", normalizeName(fields.name));
+        set("name_normalized", personKey(fields.name));
     }
 
     if ("phone" in fields) {
@@ -86,7 +87,7 @@ export async function findByContact(pool, { name, phone, address }) {
            AND properties.address_normalized = $3
          ORDER BY properties.id
          LIMIT 1`,
-        [normalizeName(name), normalizePhone(phone), normalizeAddress(address)],
+        [personKey(name), normalizePhone(phone), normalizeAddress(address)],
     );
     return rows[0] ?? null;
 }
@@ -140,7 +141,7 @@ export async function search(pool, term, { needsCity = false } = {}) {
            AND ($4::boolean = false OR (properties.id IS NOT NULL AND properties.city IS NULL))
          ORDER BY customers.name, customers.id
          LIMIT 50`,
-        [`%${normalizeName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`, needsCity],
+        [`%${normalizePersonName(term)}%`, digits.length >= 3 ? `%${digits}%` : null, `%${normalizeAddress(term)}%`, needsCity],
     );
     return rows;
 }

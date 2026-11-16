@@ -77,8 +77,8 @@ test("a good row becomes a candidate with no issues", () => {
 test("a missing name or street blocks the row; a bad phone, date, or amount only warns", () => {
     const { candidates } = buildCandidates(sheetOf(
         { rowNumber: 2, values: [null, "801 555 0100", "1 Test St", null, null] },
-        { rowNumber: 3, values: ["Bob", null, null, null, null] },
-        { rowNumber: 4, values: ["Cy", "555", "3 Test St", "someday", "lots"] },
+        { rowNumber: 3, values: ["Bob Example", null, null, null, null] },
+        { rowNumber: 4, values: ["Cy Other", "555", "3 Test St", "someday", "lots"] },
     ), mapping);
 
     assert.deepStrictEqual(candidates.map((candidate) => {
@@ -101,7 +101,7 @@ test("rows above and at the header are ignored, and blank spacer rows are counte
         rows: [
             { rowNumber: 1, values: ["Title row", null, null, null, null] },
             { rowNumber: 2, values: ["Name", "Phone", "Street", "Date", "Amount"] },
-            { rowNumber: 3, values: ["Ada", null, "1 Test St", null, null] },
+            { rowNumber: 3, values: ["Ada Example", null, "1 Test St", null, null] },
             { rowNumber: 4, values: [null, null, null, "x", "y"] },
             { rowNumber: 5, values: ["", " ", null] },
         ],
@@ -118,10 +118,30 @@ test("rows above and at the header are ignored, and blank spacer rows are counte
 
 test("numbers and booleans from the parser are read as text", () => {
     const { candidates } = buildCandidates(sheetOf(
-        { rowNumber: 2, values: ["Ada", 8015550100, "1 Test St", null, 45] },
+        { rowNumber: 2, values: ["Ada Example", 8015550100, "1 Test St", null, 45] },
     ), mapping);
 
     assert.strictEqual(candidates[0].phone, "8015550100");
     assert.strictEqual(candidates[0].amountCents, 4500);
     assert.deepStrictEqual(candidates[0].issues, []);
+});
+
+test("a name is cleaned, and a name that needs a person blocks the row with a reason", () => {
+    const { candidates } = buildCandidates(sheetOf(
+        { rowNumber: 2, values: ["Sam & Ruth Example", null, "1 Test St", null, null] },
+        { rowNumber: 3, values: ["Nina Sample (rental)", null, "2 Test St", null, null] },
+        { rowNumber: 4, values: ["Example", null, "3 Test St", null, null] },
+        { rowNumber: 5, values: ["Max's son", null, "4 Test St", null, null] },
+        { rowNumber: 6, values: ["Sample Cove HOA", null, "5 Test St", null, null] },
+    ), mapping);
+
+    assert.deepStrictEqual(candidates.map((candidate) => {
+        return candidate.blocked;
+    }), [false, false, false, true, true]);
+    assert.deepStrictEqual(candidates[0].issues, []);
+    assert.strictEqual(candidates[1].name, "Nina Sample");
+    assert.deepStrictEqual(candidates[1].issues, ["Rental note taken out of the name."]);
+    assert.deepStrictEqual(candidates[2].issues, ["Name: Is one word, so there may be no surname."]);
+    assert.deepStrictEqual(candidates[3].issues, ["Name: Has 's, so it may be a note about someone's relative."]);
+    assert.deepStrictEqual(candidates[4].issues, ["Name: Looks like a business, not a person."]);
 });

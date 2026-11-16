@@ -2,6 +2,7 @@ import { withTransaction } from "../db/transaction.js";
 import * as ImportBatch from "../models/importBatch.js";
 import { SpreadsheetImportError } from "./errors.js";
 import { normalizeAddress, normalizeName, normalizePhone } from "../utils/normalize.js";
+import { personKey } from "../utils/personName.js";
 
 // Writes a plan. Everything happens in one transaction, so a failure anywhere leaves the database as it was.
 // The statements are set-based (a few per thousand rows), because a 20,000-row sheet written one row at a time
@@ -94,7 +95,7 @@ async function writeCustomers(client, plan, batchId) {
                     return customer.name;
                 }),
                 group.map((customer) => {
-                    return normalizeName(customer.name);
+                    return personKey(customer.name);
                 }),
                 group.map((customer) => {
                     return customer.phone;

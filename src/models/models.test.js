@@ -52,7 +52,7 @@ test("a request with no customer is stored as Needs Review with the typed contac
 
 test("one customer cannot read, change or cancel another customer's request", async () => {
     const id = await newRequest();
-    const otherId = await Customer.create(pool, { name: "Bo Kim" });
+    const otherId = await Customer.create(pool, { name: "Bo Kay" });
     assert.strictEqual(await ServiceRequest.findForCustomer(pool, id, otherId), null);
     assert.strictEqual(await ServiceRequest.updateDetails(pool, id, otherId, { preferredDate: "2027-02-01" }), false);
     assert.strictEqual(await ServiceRequest.cancel(pool, id, otherId, null), false);
@@ -170,4 +170,30 @@ test("updating a property's street renormalizes it, and a blank city or ZIP beco
     const found = await Customer.findByContact(pool, { name: "Ann Lee", phone: "208-555-0101", address: "99 elm ave" });
     assert.strictEqual(found.property_id, propertyId);
     assert.strictEqual(await Property.update(pool, propertyId, {}), false);
+});
+
+test("a joint name matches however it is spelled, and a rental note does not change who the customer is", async () => {
+    const coupleId = await Customer.create(pool, { name: "Sam & Ruth Example", phone: "(208) 555-0111" });
+    await Property.create(pool, coupleId, { street: "5 Elm Street", city: "Rexburg" });
+    const renterId = await Customer.create(pool, { name: "Nina Sample (rental)", phone: "(208) 555-0122" });
+    await Property.create(pool, renterId, { street: "7 Elm Street", city: "Rexburg" });
+
+    const couple = await Customer.findByContact(pool, {
+        name: "sam AND ruth example", phone: "208-555-0111", address: "5 elm st",
+    });
+    assert.strictEqual(couple.customer_id, coupleId);
+    const renter = await Customer.findByContact(pool, {
+        name: "Nina Sample", phone: "208-555-0122", address: "7 elm st",
+    });
+    assert.strictEqual(renter.customer_id, renterId);
+    assert.strictEqual((await Customer.findById(pool, renterId)).name, "Nina Sample (rental)");
+
+    const results = await Customer.search(pool, "Sam & Ruth");
+    assert.deepStrictEqual(results.map((row) => { return row.id; }), [coupleId]);
+});
+
+test("updating a name recomputes the key with the person-name rules", async () => {
+    await Customer.update(pool, customerId, { name: "Ann O'Lee-Smith" });
+    const { rows } = await pool.query("SELECT name_normalized FROM customers WHERE id = $1", [customerId]);
+    assert.strictEqual(rows[0].name_normalized, "ann olee smith");
 });

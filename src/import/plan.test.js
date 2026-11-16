@@ -234,3 +234,14 @@ test("options refuse an unknown type, an unknown or unusable status, and a long 
     const longCity = parseOptions({ serviceTypeId: "1", defaultCity: "x".repeat(101) }, types);
     assert.deepStrictEqual(longCity.errors, ["Default city must be at most 100 characters."]);
 });
+
+test("one couple spelled with an ampersand and with and is one new customer", () => {
+    const result = plan([
+        row(2, { name: "Sam & Ruth Example", date: "2025-10-14" }),
+        row(3, { name: "Sam and Ruth Example", date: "2025-11-01" }),
+    ]);
+
+    assert.strictEqual(result.customers.length, 1);
+    assert.strictEqual(result.properties.length, 1);
+    assert.strictEqual(result.jobs.length, 2);
+});
