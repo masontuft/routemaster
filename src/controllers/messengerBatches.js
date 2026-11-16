@@ -101,13 +101,14 @@ export async function createFromLinkBatch(req, res) {
         throw notFound();
     }
 
-    // Nobody left to text, or more than a batch holds: show the stage form for the area with the reason.
+    // Nobody left to text. A link batch holds at most MAX_BATCH customers, so "too_many" cannot happen here. The form
+    // comes back with no area chosen: an area preview would list the area's customers, not the batch's, beside a
+    // message about the batch.
     if (staged.error) {
-        const errors = [staged.error === "too_many"
-            ? `That would stage ${staged.count} customers. A batch holds at most ${MessengerBatch.MAX_BATCH}.`
-            : "Nobody in that batch can be texted."];
         return formPage(req, res, {
-            values: { areaId: staged.areaId, days: staged.days, includeActive: true, template }, errors, status: 400,
+            values: { areaId: null, days: staged.days, includeActive: false, template },
+            errors: ["Nobody in that batch can be texted. Their links may have been revoked or have expired, or they have no usable phone."],
+            status: 400,
         });
     }
 

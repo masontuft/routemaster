@@ -263,8 +263,9 @@ test("starting from a link batch refuses an unknown batch, a bad template and a 
     assert.strictEqual(staged.rows[0].n, 0);
 });
 
-test("starting from a link batch whose customers can no longer be texted shows the form with a reason", async () => {
+test("starting from a link batch whose customers can no longer be texted shows the form with a reason, not the area", async () => {
     const ann = await customerIn(areaId, "Ann Lee", "208-555-0101");
+    await customerIn(areaId, "Bo Kim", "208-555-0102", "2 Elm St");
     const dispatcher = await agentFor("dispatcher");
     const linkBatchId = await linkBatchFor(dispatcher, [ann]);
     await pool.query("UPDATE customers SET phone = '' WHERE id = $1", [ann]);
@@ -272,4 +273,35 @@ test("starting from a link batch whose customers can no longer be texted shows t
 
     assert.strictEqual(res.status, 400);
     assert.match(res.text, /Nobody in that batch can be texted/);
+    assert.doesNotMatch(res.text, /Bo Kim/);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM messenger_batches")).rows[0].n, 0);
+});
+
+test("starting from a link batch leaves out customers whose link from it was revoked or has expired", async () => {
+    const ann = await customerIn(areaId, "Ann Lee", "208-555-0101");
+    const bo = await customerIn(areaId, "Bo Kim", "208-555-0102", "2 Elm St");
+    const cy = await customerIn(areaId, "Cy Fox", "208-555-0103", "3 Elm St");
+    const dispatcher = await agentFor("dispatcher");
+    const linkBatchId = await linkBatchFor(dispatcher, [ann, bo, cy]);
+    await pool.query("UPDATE access_links SET revoked_at = now() WHERE customer_id = $1", [bo]);
+    await pool.query("UPDATE access_links SET expires_at = now() - interval '1 day' WHERE customer_id = $1", [cy]);
+    const res = await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId, template: TEMPLATE });
+
+    assert.strictEqual(res.status, 200);
+    const recipients = await pool.query("SELECT customer_id FROM messenger_batch_recipients");
+    assert.deepStrictEqual(recipients.rows.map((row) => {
+        return row.customer_id;
+    }), [ann]);
+});
+
+test("starting from a link batch whose links are all revoked stages nothing", async () => {
+    const ann = await customerIn(areaId, "Ann Lee", "208-555-0101");
+    const dispatcher = await agentFor("dispatcher");
+    const linkBatchId = await linkBatchFor(dispatcher, [ann]);
+    await pool.query("UPDATE access_links SET revoked_at = now()");
+    const res = await send(dispatcher, "/staff/link-batches/new", FROM_LINK_BATCH, { linkBatchId, template: TEMPLATE });
+
+    assert.strictEqual(res.status, 400);
+    assert.match(res.text, /Nobody in that batch can be texted/);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM messenger_batches")).rows[0].n, 0);
 });
