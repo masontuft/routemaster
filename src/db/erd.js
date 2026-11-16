@@ -21,8 +21,7 @@ const CONSTRAINTS_SQL = `
               JOIN pg_attribute AS attribute ON attribute.attrelid = con.conrelid AND attribute.attnum = key.number
            ) AS columns
     FROM pg_constraint AS con
-    WHERE con.connamespace = current_schema()::regnamespace AND con.contype IN ('p', 'u', 'f')
-    ORDER BY child, parent, columns`;
+    WHERE con.connamespace = current_schema()::regnamespace AND con.contype IN ('p', 'u', 'f')`;
 
 // Returns { columns: [{ table, name, type, nullable }], constraints: [{ kind, child, parent, columns }] }.
 // Works on the schema the pool's search_path points at.
@@ -43,6 +42,21 @@ export async function readSchema(pool) {
             return { kind: row.kind, child: row.child, parent: row.parent, columns: row.columns };
         }),
     };
+}
+
+// Plain character-code order, so the same schema gives the same text on every machine. The database's own
+// ORDER BY follows its collation, which treats "_" differently from one install to the next.
+function compareText(left, right) {
+    if (left < right) {
+        return -1;
+    }
+    return left > right ? 1 : 0;
+}
+
+function compareForeignKeys(left, right) {
+    return compareText(left.child, right.child)
+        || compareText(left.parent, right.parent)
+        || compareText(left.columns.join(","), right.columns.join(","));
 }
 
 function sameColumns(left, right) {
@@ -101,7 +115,7 @@ export function buildMermaid(schema) {
     }));
     const foreignKeys = schema.constraints.filter((constraint) => {
         return constraint.kind === "f";
-    });
+    }).sort(compareForeignKeys);
     const uniqueKeys = schema.constraints.filter((constraint) => {
         return constraint.kind === "u" || constraint.kind === "p";
     });

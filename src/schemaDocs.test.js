@@ -151,3 +151,33 @@ test("the schema reference lists every table and column with its type and nullab
 
     assert.deepStrictEqual(problems, [], "RouteMaster-Database-Schema.md is out of date with the migrations.");
 });
+
+test("the diagram does not depend on the order the database returned the keys in", () => {
+    const shuffled = {
+        columns: [...FAKE.columns].reverse(),
+        constraints: [...FAKE.constraints].reverse(),
+    };
+
+    assert.strictEqual(buildMermaid(shuffled), buildMermaid(FAKE));
+});
+
+test("names are ordered by character code, so an underscore sorts before a letter on every machine", () => {
+    const schema = {
+        columns: [
+            column("parent", "id"),
+            column("batch_items", "id"), column("batch_items", "parent_id"),
+            column("batches", "id"), column("batches", "parent_id"),
+        ],
+        constraints: [
+            { kind: "p", child: "parent", parent: null, columns: ["id"] },
+            { kind: "p", child: "batch_items", parent: null, columns: ["id"] },
+            { kind: "p", child: "batches", parent: null, columns: ["id"] },
+            { kind: "f", child: "batches", parent: "parent", columns: ["parent_id"] },
+            { kind: "f", child: "batch_items", parent: "parent", columns: ["parent_id"] },
+        ],
+    };
+    const text = buildMermaid(schema);
+
+    assert.ok(text.indexOf("parent ||--o{ batch_items") < text.indexOf("parent ||--o{ batches"));
+    assert.ok(text.indexOf("    batch_items {") < text.indexOf("    batches {"));
+});
