@@ -1,6 +1,6 @@
 # Customer Lifecycle: From Import to Route
 
-**Last verified:** 2026-11-03 against the code on `main`.
+**Last verified:** 2026-11-16 against the code on `main`.
 
 This is the end-to-end process as the app does it today: how a customer gets onto the list, hears about service, picks a day, is booked, and is driven to. It is a living document. Processes change, so the sections below say where each step lives in the code, and a test keeps the page paths in this file honest.
 
@@ -123,6 +123,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-16 | Re-read every step against the code and updated the date above. The routes, roles, limits (500 links and customers, 1 to 120 days, 200 jobs a day, 15 lookups a click, 1 hour and 24 hours for a Messenger batch), status moves and rebooking groups all matched. No step changed. |
 | 2026-11-16 | Step 1: import names follow the person-name rules. A joint name matches however it is spelled, a rental note is taken out of the name, a name that needs a person is skipped with a reason until the sheet is fixed, and a one-word name imports with a warning. Customers are matched under the new key, so `pnpm names:renormalize` must be run after deploying. |
 | 2026-11-10 | Step 4: a Stage for Messenger button on the link results page stages a Messenger batch for that link batch's customers whose link is still live. |
 | 2026-11-04 | Step 4 can stage a batch for Sprinkler Messenger: a staff page to stage it, a list of batches and who was texted, and two token-authenticated API routes the Messenger app will call. |
