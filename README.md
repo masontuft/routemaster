@@ -39,7 +39,7 @@ Names are in [.env.example](.env.example) and [docs/setup/environment-variables.
 
 ## Database diagram
 
-ERD image: not exported yet. The schema is migrations `001` through `023` ([#29](https://github.com/masontuft/routemaster/issues/29)).
+The ERD is in [docs/architecture/database-erd.md](docs/architecture/database-erd.md). It is made from the migrations (`pnpm erd`), and a test fails if it goes stale. The column lists are in [the schema reference](docs/architecture/RouteMaster-Database-Schema.md). The course's ERD image is not exported ([#29](https://github.com/masontuft/routemaster/issues/29)).
 
 ## Deployment
 
