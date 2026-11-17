@@ -18,6 +18,7 @@
     "seed": "node --env-file=.env scripts/seed-users.js",
     "dev:test": "node scripts/dev-on-test-db.js",
     "stage:test-batch": "node scripts/stage-test-batch.js",
+    "erd": "node --env-file=.env scripts/generate-erd.js",
     "seed:test": "node --env-file=.env scripts/seed-test-data.js",
     "link:create": "node --env-file=.env scripts/create-link.js"
   },
