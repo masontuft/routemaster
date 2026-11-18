@@ -1,24 +1,46 @@
 # Roadmap
 
-Post-course or optional.
+Work is grouped by how close it is, not by date. Nothing here has a deadline, and nothing outside "Built recently" is a commitment.
 
-- Email or text delivery of customer links. The staff pages already create and revoke links and work the Needs Review queue.
+- **Now:** being built, or the next thing to pick up.
+- **Next:** wanted, not started.
+- **Later:** optional, or waiting on a decision or on another app.
+
+Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, from the owner's own phone, and Routemaster holds the customers, links and requests. Items below that touch sending are placed with that in mind.
+
+## Built recently
+
+- Leads for visitors who match no customer ([ADR 0017](../adr/0017-leads-for-unmatched-visitors.md)): one lead per person, converted when staff match them, deleted with their customer.
+- Rebooking last season's customers ([ADR 0014](../adr/0014-rebooking-and-tentative-bookings.md)): a list of customers served in an earlier year who have not booked this year, links for just those customers (for one area or all areas), and, as an owner option, booking unconfirmed customers as tentative. See [the process doc](../process/customer-lifecycle.md).
+- Person name rules ([ADR 0016](../adr/0016-person-name-rules.md)): joint names are handled automatically; a "last, first" order, a business, a rental or a one-word name are flagged for staff at import.
+- Messenger handoff API, Routemaster side ([ADR 0015](../adr/0015-messenger-handoff-api.md)): a batch can be staged and served to the app through two token-authenticated routes.
+- Bulk customer links by area, and import from a public Google Sheet link ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
+
+## Now
+
 - Send customer links in bulk through Sprinkler Messenger. In progress, Routemaster side first (decided 2026-11-04, [ADR 0015](../adr/0015-messenger-handoff-api.md)). A manual version exists: `/staff/link-batches/new` makes the links for an area and lists them to copy, and nothing is sent. The plan is two token-authenticated endpoints in Routemaster, tested with `curl`, then a `batch` route in Messenger. Routemaster becomes the record of who was texted. Viability still depends on Messenger sending a different message to each customer (it cannot yet) and on iOS and carrier limits. Spec: [docs/integrations/sprinkler-messenger.md](../integrations/sprinkler-messenger.md) ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
-- Opt-out and consent for texted links. Not built, and not needed today because owners text from their own business phones. Revisit before any shared or company-owned sending number is used, since consent and opt-out rules vary by country and state. Not legal advice.
-- Universal links and App Links for Messenger on `https://routemaster-8w24.onrender.com/m/<token>`, with a web page when the app is not installed. Needs `apple-app-site-association` and `assetlinks.json` on the Routemaster host and a new Messenger native build.
 - More variables for the Messenger message. Built: the dispatcher can edit the wording on the batch screen, with `{name}` and `{link}` filled in for each customer. Next: more placeholders, such as first name only, street address, area, the booking deadline and the company's name and phone number, with a small picker so a dispatcher does not have to remember the spelling. Routemaster fills them in, because it holds the customer data, so Messenger would receive each recipient's values next to `template` and `link` and rebuild the text on the phone. A placeholder with no value for a customer (no street address, say) needs a rule: leave a visible gap to fix, or fall back to a default. Unknown placeholders already stay as typed.
-- Rebooking last season's customers is built: a list of customers who were served in an earlier year and have not booked this year, links for just those customers (for one area or all areas), and, as an owner option, booking unconfirmed customers as tentative. See [the process doc](../process/customer-lifecycle.md). Still open: recording that a customer replied by phone, sending the links, and the two entries below.
+
+## Next
+
+- Record that a customer replied by phone. The app records that a link was made, not that the customer answered a call or text.
+- Property type: mark each property as a residence, a rental or a second home. A customer with several properties usually lives at one and is the landlord of the rest. Today the customer's first property (the lowest id) decides which area owns them when links are made for all areas, and that is only a stand-in for "the residence". A type would let the app pick the residence, and let rebooking tell a homeowner from a landlord. Open question: how it is captured, since the import sheet has no such column.
 - Service frequency per company: the rebooking list treats a customer served earlier this year as booked, which suits a once-a-year service. A company that serves twice a year would need a setting for how many visits a year, so the list shows who is due for another.
 - Season definition setting: a season is a calendar year today. A setting would let a company define it, for example a winter season that spans New Year, so a season's requests and the rebooking list group correctly.
-- Property type: mark each property as a residence, a rental or a second home. A customer with several properties usually lives at one and is the landlord of the rest. Today the customer's first property (the lowest id) decides which area owns them when links are made for all areas, and that is only a stand-in for "the residence". A type would let the app pick the residence, and let rebooking tell a homeowner from a landlord. Open question: how it is captured, since the import sheet has no such column.
 - Customer review of unusual names. Planned, not a commitment, and it comes after the name rules (a "last, first" order, a business, a rental or a one-word name are flagged for staff at import; a joint name such as "Sam & Ruth Example" is handled automatically). On the customer's link page, a customer would confirm how their name is written or suggest a correction. Confirming goes straight through. A correction waits for staff approval, because a link is a bearer token and anyone it is forwarded to could otherwise rename the customer. It also fixes the greeting in Messenger texts, since `{name}` comes from the customer's name. Needs a column that remembers each customer's review state. Staff review at import stays, because many customers never open their link. Today customers cannot edit their own details and the name is owner-only, so this changes who may do a step and updates the [process doc](../process/customer-lifecycle.md). TODO (Mason): whether a customer can also set a first name for greetings, and how long a suggestion may wait for approval.
+- Spam control on public forms. Planned, not a commitment. See [Spam Control](#spam-control).
+
+## Later
+
+- Email or text delivery of customer links. The staff pages already create and revoke links and work the Needs Review queue.
+- Universal links and App Links for Messenger on `https://routemaster-8w24.onrender.com/m/<token>`, with a web page when the app is not installed. Needs `apple-app-site-association` and `assetlinks.json` on the Routemaster host and a new Messenger native build.
 - Fix a flagged name in the import preview. Option, not a commitment. Today a flagged row is skipped, the preview lists its row number and reason, and the owner fixes the cell in the Google Sheet and runs the import again (safe to repeat, since jobs already on file are skipped). Fixing in the preview would let the owner type the right name there instead. The catch: a sheet row has no stable id ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)), and each import step downloads the sheet again and carries only the sheet id, so a fix keyed by row number breaks when someone inserts a row, and the sheet stays unchanged so the next import flags the row again. It needs a saved list of fixes, matched to rows some other way (for example by the row's name, phone and street), that the plan hash also covers. Worth building only if the owner finds switching between the sheet and the app too slow. TODO (Mason): how a fix is matched to its row, and whether it should also be written back to the sheet.
-- Branded business workspaces (multi-tenant). Planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
 - Import of expenses, mileage and compressor schedule tabs.
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
 - An instructor-hosted database as an optional target for server agents.
 - Technician logins. Planned, not a commitment. See [Technician Logins](#technician-logins).
-- Spam control on public forms. Planned, not a commitment. See [Spam Control](#spam-control).
+- Branded business workspaces (multi-tenant). Planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
+- Opt-out and consent for texted links. Not built, and not needed today: this web app is a partner to Sprinkler Messenger, and owners text from their own business phones, so a shared company number is not planned. If that changes, do this first, since consent and opt-out rules vary by country and state. Not legal advice.
 
 ## Branded Business Workspaces
 
