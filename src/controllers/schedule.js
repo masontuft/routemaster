@@ -1,4 +1,5 @@
 import * as Customer from "../models/customer.js";
+import * as Lead from "../models/lead.js";
 import * as ServiceRequest from "../models/serviceRequest.js";
 import * as ServiceType from "../models/serviceType.js";
 import { parseId, validateIdentity, validatePreferredDate, todayString } from "../utils/validation.js";
@@ -58,13 +59,15 @@ export async function submitDate(req, res) {
         return dateForm(req, res, 400, errors, { serviceTypeId, preferredDate });
     }
 
+    // No match: the visitor becomes a lead, and asking again reuses that lead instead of copying their details.
     const match = await Customer.findByContact(db, contact);
+    const leadId = match ? null : await Lead.findOrCreate(db, contact);
     await ServiceRequest.create(db, {
         customerId: match?.customer_id,
         propertyId: match?.property_id,
+        leadId,
         serviceTypeId,
         preferredDate,
-        contact: match ? undefined : contact,
     });
 
     delete req.session.schedule;

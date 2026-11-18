@@ -110,7 +110,7 @@ export async function setReferrer(req, res) {
 
 async function renderMatch(req, res, request, { errors = [], status = 200 } = {}) {
     const db = req.app.locals.db;
-    const q = String(req.query.q ?? request.contact_name ?? "").trim().slice(0, 100);
+    const q = String(req.query.q ?? request.lead_name ?? "").trim().slice(0, 100);
     const customers = await Customer.search(db, q);
     const properties = await Property.listForCustomers(db, customers.map((customer) => {
         return customer.id;
@@ -163,7 +163,7 @@ export async function matchExisting(req, res) {
 export async function matchNew(req, res) {
     const request = await loadRequest(req);
     const { values, errors } = validateProperty({
-        street: request.contact_address, city: req.body.city, zip: req.body.zip,
+        street: request.lead_address, city: req.body.city, zip: req.body.zip,
     });
 
     if (errors.length) {

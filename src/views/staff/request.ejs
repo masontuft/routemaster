@@ -10,9 +10,9 @@
         <dt>Customer</dt><dd><a href="/staff/customers/<%= request.customer_id %>"><%= request.customer_name %></a> <%= request.customer_phone ?? "" %></dd>
         <dt>Property</dt><dd><%= formatAddress(request.street, request.city) %></dd>
     <% } else { %>
-        <dt>Typed Name</dt><dd><%= request.contact_name %></dd>
-        <dt>Typed Phone</dt><dd><%= request.contact_phone %></dd>
-        <dt>Typed Address</dt><dd><%= request.contact_address %></dd>
+        <dt>Typed Name</dt><dd><%= request.lead_name %></dd>
+        <dt>Typed Phone</dt><dd><%= request.lead_phone %></dd>
+        <dt>Typed Address</dt><dd><%= request.lead_address %></dd>
     <% } %>
     <% if (request.notes) { %><dt>Notes</dt><dd><%= request.notes %></dd><% } %>
     <dt>Referred by</dt><dd><%= request.referred_by || "None" %></dd>

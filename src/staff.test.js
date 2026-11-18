@@ -7,6 +7,8 @@ import * as User from "./models/user.js";
 import * as Customer from "./models/customer.js";
 import * as Property from "./models/property.js";
 import * as ServiceRequest from "./models/serviceRequest.js";
+import * as Lead from "./models/lead.js";
+import * as Staff from "./models/staff.js";
 import { hashPassword } from "./utils/password.js";
 
 const db = testDb("staff");
@@ -72,8 +74,10 @@ async function matchedRequest(name = "Ann Lee", street = "12 Oak Street", phone 
     return { id, customerId, propertyId };
 }
 
+// Asking again with the same details reuses the lead, as the public form does.
 async function unmatchedRequest(contact = { name: "Cy Doe", phone: "208-555-0303", address: "7 Birch Lane" }) {
-    return ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: daysAhead(10), contact });
+    const leadId = await Lead.findOrCreate(pool, contact);
+    return ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: daysAhead(10), leadId });
 }
 
 async function statusOf(id) {
@@ -286,6 +290,76 @@ test("matching as a new customer creates the customer and property from the type
          JOIN properties ON properties.id = service_requests.property_id
          WHERE service_requests.id = $1`, [id]);
     assert.deepStrictEqual(rows[0], { name: "Cy Doe", street: "7 Birch Lane", city: "Rexburg" });
+});
+
+test("matching one request matches the same lead's other open requests too, and marks the lead converted", async () => {
+    const first = await unmatchedRequest();
+    const second = await unmatchedRequest();
+    const cancelled = await unmatchedRequest();
+    const stranger = await unmatchedRequest({ name: "Di Roe", phone: "208-555-0404", address: "3 Elm Street" });
+    const agent = await staffAgent();
+    await post(agent, `/staff/requests/${cancelled}`, `/staff/requests/${cancelled}/status`, { status: "Cancelled" });
+
+    const page = `/staff/requests/${first}/match`;
+    assert.match((await agent.get(page)).text, /This visitor has 1 other request waiting for review/);
+
+    const created = await post(agent, page, `${page}/new`, { city: "Rexburg", zip: "83440" });
+    assert.strictEqual(created.status, 302);
+
+    const { rows } = await pool.query(
+        `SELECT id, customer_id, property_id FROM service_requests WHERE id = ANY($1) ORDER BY id`,
+        [[first, second, cancelled, stranger]],
+    );
+    const [one, two, cancelledRow, strangerRow] = rows;
+    assert.ok(one.customer_id);
+    assert.deepStrictEqual([two.customer_id, two.property_id], [one.customer_id, one.property_id]);
+    assert.strictEqual(cancelledRow.customer_id, null);
+    assert.strictEqual(strangerRow.customer_id, null);
+    assert.deepStrictEqual(
+        [await statusOf(first), await statusOf(second), await statusOf(cancelled), await statusOf(stranger)],
+        ["Requested", "Requested", "Cancelled", "Needs Review"],
+    );
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS total FROM customers")).rows[0].total, 1);
+
+    const leads = await pool.query("SELECT customer_id FROM leads ORDER BY id");
+    assert.strictEqual(leads.rows[0].customer_id, one.customer_id);
+    assert.strictEqual(leads.rows[1].customer_id, null);
+
+    const history = await ServiceRequest.historyFor(pool, second);
+    assert.match(history.at(-1).note, new RegExp(`Matched together with request ${first}`));
+});
+
+test("matching to an existing customer also matches the lead's other open requests", async () => {
+    const existing = await matchedRequest("Cy Doe", "7 Birch Lane");
+    const first = await unmatchedRequest();
+    const second = await unmatchedRequest();
+    const agent = await staffAgent();
+    const page = `/staff/requests/${first}/match`;
+
+    await post(agent, page, page, { propertyId: existing.propertyId });
+
+    const { rows } = await pool.query("SELECT customer_id, property_id FROM service_requests WHERE id = $1", [second]);
+    assert.deepStrictEqual(rows[0], { customer_id: existing.customerId, property_id: existing.propertyId });
+    assert.strictEqual((await pool.query("SELECT customer_id FROM leads")).rows[0].customer_id, existing.customerId);
+});
+
+test("two staff matching different requests of one lead at once make one customer and do not deadlock", async () => {
+    const first = await unmatchedRequest();
+    const second = await unmatchedRequest();
+    const results = await Promise.all([
+        Staff.matchAsNew(pool, first, { city: "Rexburg", zip: "" }, null),
+        Staff.matchAsNew(pool, second, { city: "Rexburg", zip: "" }, null),
+    ]);
+
+    // Whichever got the lead's lock first wins; the other then finds its request already matched.
+    assert.strictEqual(results.filter((result) => {
+        return result.ok === true;
+    }).length, 1);
+    assert.strictEqual(results.filter((result) => {
+        return result.error === "transition";
+    }).length, 1);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS total FROM customers")).rows[0].total, 1);
+    assert.deepStrictEqual([await statusOf(first), await statusOf(second)], ["Requested", "Requested"]);
 });
 
 test("contact details typed by a stranger are escaped for staff", async () => {

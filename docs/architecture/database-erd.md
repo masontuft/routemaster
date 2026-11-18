@@ -31,6 +31,7 @@ erDiagram
     import_batches |o--o{ customers : "import_batch_id"
     users |o--o| customers : "user_id"
     users |o--o{ import_batches : "created_by"
+    customers |o--o{ leads : "customer_id"
     subdivisions |o--o{ link_batches : "subdivision_id"
     users |o--o{ link_batches : "created_by"
     access_links |o--o{ messenger_batch_recipients : "access_link_id"
@@ -47,6 +48,7 @@ erDiagram
     users |o--o{ routes : "created_by"
     customers |o--o{ service_requests : "customer_id"
     import_batches |o--o{ service_requests : "import_batch_id"
+    leads |o--o{ service_requests : "lead_id"
     properties |o--o{ service_requests : "property_id"
     request_statuses ||--o{ service_requests : "status_id"
     service_types ||--o{ service_requests : "service_type_id"
@@ -80,6 +82,10 @@ erDiagram
     import_batches {
         int4 id PK
         int4 created_by FK "nullable"
+    }
+    leads {
+        int4 id PK
+        int4 customer_id FK "nullable"
     }
     link_batches {
         int4 id PK
@@ -129,6 +135,7 @@ erDiagram
         int4 service_type_id FK
         int4 status_id FK
         int4 import_batch_id FK "nullable"
+        int4 lead_id FK "nullable"
     }
     service_types {
         int4 id PK

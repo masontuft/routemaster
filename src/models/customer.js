@@ -60,7 +60,11 @@ export async function countRelated(pool, id) {
     const { rows } = await pool.query(
         `SELECT customers.id,
                 (SELECT count(*)::int FROM properties WHERE customer_id = customers.id) AS properties,
-                (SELECT count(*)::int FROM service_requests WHERE customer_id = customers.id) AS requests,
+                (SELECT count(*)::int FROM service_requests WHERE customer_id = customers.id)
+                + (SELECT count(*)::int FROM service_requests
+                   WHERE customer_id IS NULL
+                     AND lead_id IN (SELECT id FROM leads WHERE customer_id = customers.id)) AS requests,
+                (SELECT count(*)::int FROM leads WHERE customer_id = customers.id) AS leads,
                 (SELECT count(*)::int FROM reviews WHERE customer_id = customers.id) AS reviews,
                 (SELECT count(*)::int FROM access_links WHERE customer_id = customers.id) AS links
          FROM customers
@@ -70,10 +74,28 @@ export async function countRelated(pool, id) {
     return rows[0] ?? null;
 }
 
-// One statement, so the cascade is atomic. Returns false when there was no such customer.
+// Deletes the requests that were never matched but still point at a lead of the customers chosen by `where`. They
+// have no customer, so the cascade from customers does not reach them, and they carry the typed details of the
+// person being deleted. The leads themselves go with the customers (migration 027). A request that was matched to
+// another customer keeps living and only loses its link to the lead. `where` is a fixed string written in this file,
+// never user input; the values are parameters.
+async function deleteUnmatchedRequestsOfLeads(client, where, params) {
+    await client.query(
+        `DELETE FROM service_requests
+         WHERE customer_id IS NULL
+           AND lead_id IN (SELECT leads.id FROM leads JOIN customers ON customers.id = leads.customer_id WHERE ${where})`,
+        params,
+    );
+}
+
+// One transaction, so the customer, their cascade and their leads' leftovers go together or not at all. Returns
+// false when there was no such customer.
 export async function remove(pool, id) {
-    const result = await pool.query("DELETE FROM customers WHERE id = $1", [id]);
-    return result.rowCount === 1;
+    return withTransaction(pool, async (client) => {
+        await deleteUnmatchedRequestsOfLeads(client, "customers.id = $1", [id]);
+        const result = await client.query("DELETE FROM customers WHERE id = $1", [id]);
+        return result.rowCount === 1;
+    });
 }
 
 // Name, phone and street must all match. Returns the customer and that property, or null.
@@ -173,8 +195,9 @@ export async function listByNamePhonePairs(pool, pairs) {
 }
 
 // Bulk delete. batchId null means every customer; a number means the customers that import batch created.
-// Properties, requests, history, reviews and links go with them through the CASCADE keys. Unmatched requests
-// (no customer) are not customer data and stay.
+// Properties, requests, history, reviews, links and leads go with them through the CASCADE keys. The unmatched
+// requests of those customers' leads go too (see deleteUnmatchedRequestsOfLeads). Other unmatched requests, from
+// visitors who never became customers, are not customer data and stay.
 async function countClearScope(client, batchId) {
     const { rows } = await client.query(
         `SELECT
@@ -183,7 +206,13 @@ async function countClearScope(client, batchId) {
             (SELECT count(*)::int FROM properties JOIN customers ON customers.id = properties.customer_id
               WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS properties,
             (SELECT count(*)::int FROM service_requests JOIN customers ON customers.id = service_requests.customer_id
-              WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS requests,
+              WHERE $1::int IS NULL OR customers.import_batch_id = $1)
+            + (SELECT count(*)::int FROM service_requests
+                JOIN leads ON leads.id = service_requests.lead_id
+                JOIN customers ON customers.id = leads.customer_id
+              WHERE service_requests.customer_id IS NULL AND ($1::int IS NULL OR customers.import_batch_id = $1)) AS requests,
+            (SELECT count(*)::int FROM leads JOIN customers ON customers.id = leads.customer_id
+              WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS leads,
             (SELECT count(*)::int FROM reviews JOIN customers ON customers.id = reviews.customer_id
               WHERE $1::int IS NULL OR customers.import_batch_id = $1) AS reviews,
             (SELECT count(*)::int FROM access_links JOIN customers ON customers.id = access_links.customer_id
@@ -210,6 +239,7 @@ export async function clear(pool, batchId, expected) {
             return { deleted: false, counts };
         }
 
+        await deleteUnmatchedRequestsOfLeads(client, "$1::int IS NULL OR customers.import_batch_id = $1", [batchId]);
         await client.query("DELETE FROM customers WHERE $1::int IS NULL OR import_batch_id = $1", [batchId]);
         return { deleted: true, counts };
     });

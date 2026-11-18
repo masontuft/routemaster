@@ -44,9 +44,9 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET | `/staff/requests/:id` | | Details, history and the allowed next statuses |
 | POST | `/staff/requests/:id/status` | `status`, `scheduledDate` (required for Scheduled), `note` | Apply a transition from the table in `src/utils/transitions.js` |
 | POST | `/staff/requests/:id/referrer` | `referredBy` | Record who referred the job, or clear it. Payouts are not stored |
-| GET | `/staff/requests/:id/match` | `q` | Search customers for a Needs Review request |
-| POST | `/staff/requests/:id/match` | `propertyId` | Attach the request to an existing customer's property |
-| POST | `/staff/requests/:id/match/new` | `city`, `zip` | Create a customer and property from the typed details |
+| GET | `/staff/requests/:id/match` | `q` | Search customers for a Needs Review request; the page shows the lead's typed details |
+| POST | `/staff/requests/:id/match` | `propertyId` | Attach the request, and the same lead's other Needs Review requests, to an existing customer's property |
+| POST | `/staff/requests/:id/match/new` | `city`, `zip` | Create a customer and property from the lead's typed details, and attach the lead's other Needs Review requests to them |
 | GET | `/staff/customers` | `q`, `needs=city` (optional) | Search by name, phone or street; `needs=city` keeps customers with a property that has no city |
 | GET | `/staff/customers/:id` | | Properties, requests and links |
 | GET, POST | `/staff/customers/:id/edit` | `name`, `phone`, `email` | Owner edits all three; a dispatcher edits phone and email. A posted field the role may not change is a 403 and nothing is saved |
