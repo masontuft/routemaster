@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. Mason answered the domain, source-of-truth, consent and build-order questions on 2026-11-04. It stays Proposed until the two endpoints are built and the Messenger app has fetched a real batch from them.
+Accepted. Mason answered the domain, source-of-truth, consent and build-order questions on 2026-11-04. It was Proposed until the two endpoints were built and the Messenger app had fetched a real batch from them. Both are done: Mason reported on 2026-11-18 that the Messenger batch screen is shipped and tested in production.
 
 ## Date
 

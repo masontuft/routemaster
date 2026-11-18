@@ -18,7 +18,7 @@ One file per decision, numbered, named for the decision. Status is "Accepted" on
 | [0012](0012-customer-access-by-link.md) | Customer access by link | Accepted |
 | [0013](0013-route-ordering-and-map-lookups.md) | Route ordering and map lookups | Proposed |
 | [0014](0014-rebooking-and-tentative-bookings.md) | Rebooking and tentative bookings | Proposed |
-| [0015](0015-messenger-handoff-api.md) | Messenger handoff API | Proposed |
+| [0015](0015-messenger-handoff-api.md) | Messenger handoff API | Accepted |
 | [0016](0016-person-name-rules.md) | Person name rules | Proposed |
 | [0017](0017-leads-for-unmatched-visitors.md) | Leads for unmatched visitors | Proposed |
 
