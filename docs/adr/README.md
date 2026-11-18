@@ -20,5 +20,6 @@ One file per decision, numbered, named for the decision. Status is "Accepted" on
 | [0014](0014-rebooking-and-tentative-bookings.md) | Rebooking and tentative bookings | Proposed |
 | [0015](0015-messenger-handoff-api.md) | Messenger handoff API | Proposed |
 | [0016](0016-person-name-rules.md) | Person name rules | Proposed |
+| [0017](0017-leads-for-unmatched-visitors.md) | Leads for unmatched visitors | Proposed |
 
 Each ADR has: Title, Status, Date, Context, Decision drivers, Decision, Alternatives considered, Consequences and References. References are links that were opened and checked when the ADR was written. Where a page did not confirm a claim, the ADR says so.

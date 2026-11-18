@@ -3,7 +3,7 @@ import * as ImportBatch from "../models/importBatch.js";
 import { notFound } from "../utils/errors.js";
 import { parseId } from "../utils/validation.js";
 
-const COUNT_KEYS = ["customers", "properties", "requests", "reviews", "links"];
+const COUNT_KEYS = ["customers", "properties", "requests", "leads", "reviews", "links"];
 const ALL_PHRASE = "delete all customers";
 
 // The counts the owner saw come back as hidden fields. Anything that is not a plain whole number fails the match.

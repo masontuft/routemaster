@@ -218,11 +218,37 @@ test("the generic link with no match makes a Needs Review request with the typed
     await post(agent, "/schedule/date", "/schedule/date", { serviceTypeId: 1, preferredDate: FUTURE });
 
     const { rows } = await pool.query(
-        `SELECT customer_id, contact_name, contact_address, request_statuses.name AS status FROM service_requests
-         JOIN request_statuses ON request_statuses.id = status_id`);
+        `SELECT service_requests.customer_id, leads.name AS lead_name, leads.address AS lead_address, request_statuses.name AS status
+         FROM service_requests
+         JOIN request_statuses ON request_statuses.id = status_id
+         JOIN leads ON leads.id = service_requests.lead_id`);
     assert.deepStrictEqual(rows, [{
-        customer_id: null, contact_name: "Nobody Here", contact_address: "1 Nowhere Rd", status: "Needs Review",
+        customer_id: null, lead_name: "Nobody Here", lead_address: "1 Nowhere Rd", status: "Needs Review",
     }]);
+});
+
+test("a visitor with no match who asks twice makes one lead and two requests", async () => {
+    for (const typed of [
+        { name: "Nobody Here", phone: "2085559999", address: "1 Nowhere Rd" },
+        { name: "nobody  here", phone: "(208) 555-9999", address: "1 nowhere road" },
+    ]) {
+        const agent = request.agent(server);
+        await post(agent, "/schedule", "/schedule", typed);
+        await post(agent, "/schedule/date", "/schedule/date", { serviceTypeId: 1, preferredDate: FUTURE });
+    }
+
+    const { rows } = await pool.query("SELECT count(*)::int AS requests, count(DISTINCT lead_id)::int AS leads FROM service_requests");
+    assert.deepStrictEqual(rows[0], { requests: 2, leads: 1 });
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS total FROM leads")).rows[0].total, 1);
+});
+
+test("a visitor who matches a customer makes no lead", async () => {
+    await customerWithProperty();
+    const agent = request.agent(server);
+    await post(agent, "/schedule", "/schedule", { name: "Ann Lee", phone: "2085550101", address: "12 Oak St" });
+    await post(agent, "/schedule/date", "/schedule/date", { serviceTypeId: 1, preferredDate: FUTURE });
+
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS total FROM leads")).rows[0].total, 0);
 });
 
 test("a generic-link match and a miss show the visitor exactly the same pages", async () => {

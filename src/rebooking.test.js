@@ -6,6 +6,7 @@ import * as Property from "./models/property.js";
 import * as Area from "./models/area.js";
 import * as ServiceRequest from "./models/serviceRequest.js";
 import * as AccessLink from "./models/accessLink.js";
+import * as Lead from "./models/lead.js";
 import { forArea, classify, countByGroup } from "./models/rebooking.js";
 
 const db = testDb("rebooking");
@@ -145,9 +146,8 @@ test("contacted means a link made this year, and an active link is one that stil
 });
 
 test("an unmatched request, with no customer, is ignored", async () => {
-    await ServiceRequest.create(pool, {
-        serviceTypeId: 1, preferredDate: "2026-10-10", contact: { name: "Walk In", phone: "208-555-0100", address: "9 Oak" },
-    });
+    const leadId = await Lead.findOrCreate(pool, { name: "Walk In", phone: "208-555-0100", address: "9 Oak" });
+    await ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2026-10-10", leadId });
     await customerIn(areaId, "Ann");
 
     assert.deepStrictEqual((await forArea(pool, areaId, 2026)).map((row) => {

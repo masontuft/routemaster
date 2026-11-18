@@ -52,8 +52,8 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - **Who:** owner, dispatcher.
 - **Where:** for a whole area, `/staff/link-batches/new` then `/staff/link-batches`. For one customer, `/staff/customers/:id/links`, revoked at `/staff/customers/:id/links/:linkId/revoke`.
 - **What happens:** one link per customer, shown once on the result page and as a CSV. Only a hash is stored. By default a customer who already has a working link is skipped, and customers with no usable phone are listed, not linked. A batch holds at most 500 links and lasts 1 to 120 days (30 by default). Each run is recorded in `link_batches`.
-- **The generic link:** `/schedule` is one public page for anyone. Name, phone and street that all match a customer create a Requested request. No match creates a Needs Review request. The visitor sees the same page either way.
-- **Code:** `src/models/linkBatch.js`, `src/models/accessLink.js`.
+- **The generic link:** `/schedule` is one public page for anyone. Name, phone and street that all match a customer create a Requested request. No match creates a Needs Review request that points at a lead, a record of who typed those details (see step 6). The same person asking again reuses their lead. The visitor sees the same page either way.
+- **Code:** `src/models/linkBatch.js`, `src/models/accessLink.js`, `src/models/lead.js`.
 
 ## 4. Send the links
 
@@ -75,6 +75,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 - **Who:** owner, dispatcher.
 - **Matching:** a Needs Review request is matched to an existing customer or made into a new one at `/staff/requests/:id/match` and `/staff/requests/:id/match/new`. Until it is matched it cannot be scheduled.
+- **Leads:** the name, phone and street a visitor typed are kept once, on a lead, not on each request. A lead is matched on all three typed together, so one person at two streets is two leads. Matching one request, to an existing property or as a new customer, matches that lead's other Needs Review requests to the same customer and property in the same step and marks the lead as converted. A request cancelled before it was matched stays as it was. The match page says how many others will be matched. Deleting a customer deletes their leads, and the unmatched requests still pointing at those leads, with them; the delete pages count both. A request that was matched to a different customer only loses its link to the lead. A lead of a visitor who never became a customer is not customer data and stays.
 - **One at a time:** `/staff/requests` lists requests, `/staff/requests/:id` shows one, and `/staff/requests/:id/status` moves it, with a date when scheduling.
 - **Many at once, the day board:** `/staff/day-board` shows the Requested jobs that asked for a day, grouped by area and street, with the jobs already booked for it. `/staff/day-board/schedule` books the ticked ones. Each is a normal status change to Scheduled with `scheduled_date`, and a history entry. Only Requested jobs are booked there, at most 200 at a time, and a day in the past is refused.
 - **Penciling in (only when the owner option is on):** `/staff/day-board` also lists customers in areas worked that day who were served in an earlier year and have nothing booked in that year. `/staff/day-board/pencil` books the ticked ones as **tentative**: a new Scheduled request for the day, on their property in that area, for the service they last had done. The form carries only the customer ids. A customer is skipped if no property of theirs is in an area that works the day, or if they are not in the not-yet-booked group for that year (never served, declined or already booked), which the server checks again with the customer's row locked, so a forged form cannot pencil in anyone the list would not show. A customer's own request takes the same lock. The day board marks tentative bookings.
@@ -123,6 +124,8 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-17 | Deleting a customer, one or in bulk, also deletes the leads made into that customer and their unmatched requests (migration 027). The delete pages list the lead count. |
+| 2026-11-17 | Steps 3 and 6: a visitor with no match becomes a lead (`leads`, migrations 025 and 026), and the typed name, phone and street live there instead of on each request. Matching one request matches the same lead's other Needs Review requests too. The date above is unchanged, because only these two steps were re-read. |
 | 2026-11-16 | Re-read every step against the code and updated the date above. The routes, roles, limits (500 links and customers, 1 to 120 days, 200 jobs a day, 15 lookups a click, 1 hour and 24 hours for a Messenger batch), status moves and rebooking groups all matched. No step changed. |
 | 2026-11-16 | Step 1: import names follow the person-name rules. A joint name matches however it is spelled, a rental note is taken out of the name, a name that needs a person is skipped with a reason until the sheet is fixed, and a one-word name imports with a warning. Customers are matched under the new key, so `pnpm names:renormalize` must be run after deploying. |
 | 2026-11-10 | Step 4: a Stage for Messenger button on the link results page stages a Messenger batch for that link batch's customers whose link is still live. |

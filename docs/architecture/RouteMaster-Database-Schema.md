@@ -111,9 +111,6 @@ RouteMaster Database Schema
 | `status_id` | `int4` |  |
 | `preferred_date` | `date` |  |
 | `notes` | `text` |  Nullable |
-| `contact_name` | `text` |  Nullable |
-| `contact_phone` | `text` |  Nullable |
-| `contact_address` | `text` |  Nullable |
 | `created_at` | `timestamptz` |  |
 | `updated_at` | `timestamptz` |  |
 | `scheduled_date` | `date` |  Nullable |
@@ -121,6 +118,7 @@ RouteMaster Database Schema
 | `import_batch_id` | `int4` |  Nullable |
 | `amount_cents` | `int4` |  Nullable |
 | `tentative` | `bool` |  |
+| `lead_id` | `int4` |  Nullable |
 
 ## Table `status_history`
 
@@ -322,3 +320,19 @@ RouteMaster Database Schema
 | `access_link_id` | `int4` |  Nullable |
 | `sent_at` | `timestamptz` |  Nullable |
 | `error` | `text` |  Nullable |
+
+## Table `leads`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `name` | `text` |  |
+| `name_normalized` | `text` |  |
+| `phone` | `text` |  |
+| `phone_normalized` | `text` |  |
+| `address` | `text` |  |
+| `address_normalized` | `text` |  |
+| `customer_id` | `int4` |  Nullable |
+| `created_at` | `timestamptz` |  |

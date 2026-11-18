@@ -5,6 +5,7 @@ import * as Customer from "./customer.js";
 import * as Property from "./property.js";
 import * as ServiceRequest from "./serviceRequest.js";
 import * as AccessLink from "./accessLink.js";
+import * as Lead from "./lead.js";
 
 const db = testDb("models");
 const pool = db.pool;
@@ -39,15 +40,20 @@ test("a request starts as Requested with one history row", async () => {
     }), ["Requested"]);
 });
 
-test("a request with no customer is stored as Needs Review with the typed contact details", async () => {
-    const id = await ServiceRequest.create(pool, {
-        serviceTypeId: 1, preferredDate: "2027-01-15",
-        contact: { name: "Stranger", phone: "2085550000", address: "1 Elm St" },
-    });
+test("a request with no customer is stored as Needs Review and points at its lead", async () => {
+    const leadId = await Lead.findOrCreate(pool, { name: "Stranger", phone: "2085550000", address: "1 Elm St" });
+    const id = await ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2027-01-15", leadId });
     const { rows } = await pool.query(
-        `SELECT request_statuses.name AS status, contact_name FROM service_requests
-         JOIN request_statuses ON request_statuses.id = status_id WHERE service_requests.id = $1`, [id]);
-    assert.deepStrictEqual(rows[0], { status: "Needs Review", contact_name: "Stranger" });
+        `SELECT request_statuses.name AS status, leads.name AS lead_name FROM service_requests
+         JOIN request_statuses ON request_statuses.id = status_id
+         JOIN leads ON leads.id = service_requests.lead_id WHERE service_requests.id = $1`, [id]);
+    assert.deepStrictEqual(rows[0], { status: "Needs Review", lead_name: "Stranger" });
+});
+
+test("a request with neither a customer nor a lead is refused by the database", async () => {
+    await assert.rejects(ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2027-01-15" }), {
+        constraint: "service_requests_matched_or_unmatched",
+    });
 });
 
 test("one customer cannot read, change or cancel another customer's request", async () => {

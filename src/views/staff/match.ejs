@@ -1,7 +1,10 @@
 <%- include("../partials/head") %>
 <h1>Match Request <%= request.id %></h1>
 <%- include("../partials/errors") %>
-<p>Typed by the visitor: <%= request.contact_name %>, <%= request.contact_phone %>, <%= request.contact_address %></p>
+<p>Typed by the visitor: <%= request.lead_name %>, <%= request.lead_phone %>, <%= request.lead_address %></p>
+<% if (request.lead_other_open > 0) { %>
+    <p>This visitor has <%= request.lead_other_open %> other request<%= request.lead_other_open === 1 ? "" : "s" %> waiting for review. Matching this one matches them to the same customer and property.</p>
+<% } %>
 <form method="get" action="/staff/requests/<%= request.id %>/match">
     <label>Search Customers <input type="search" name="q" value="<%= q %>" maxlength="100"></label>
     <button type="submit">Search</button>

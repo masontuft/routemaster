@@ -20,9 +20,9 @@ export async function addHistory(client, requestId, statusName, changedBy, note)
     );
 }
 
-// Matched request: needs customerId and propertyId. Unmatched request: pass contact instead.
+// Matched request: needs customerId and propertyId. Unmatched request: pass leadId instead (see models/lead.js).
 export async function create(pool, details) {
-    const { customerId, propertyId, serviceTypeId, preferredDate, notes, contact, changedBy } = details;
+    const { customerId, propertyId, leadId, serviceTypeId, preferredDate, notes, changedBy } = details;
     const statusName = customerId ? "Requested" : "Needs Review";
 
     return withTransaction(pool, async (client) => {
@@ -34,13 +34,12 @@ export async function create(pool, details) {
 
         const { rows } = await client.query(
             `INSERT INTO service_requests
-                (customer_id, property_id, service_type_id, status_id, preferred_date, notes,
-                 contact_name, contact_phone, contact_address)
-             SELECT $1, $2, $3, id, $4, $5, $6, $7, $8 FROM request_statuses WHERE name = $9
+                (customer_id, property_id, lead_id, service_type_id, status_id, preferred_date, notes)
+             SELECT $1, $2, $3, $4, id, $5, $6 FROM request_statuses WHERE name = $7
              RETURNING id`,
             [
-                customerId ?? null, propertyId ?? null, serviceTypeId, preferredDate, notes || null,
-                contact?.name ?? null, contact?.phone ?? null, contact?.address ?? null, statusName,
+                customerId ?? null, propertyId ?? null, leadId ?? null, serviceTypeId, preferredDate, notes || null,
+                statusName,
             ],
         );
         await addHistory(client, rows[0].id, statusName, changedBy ?? null, "Request received");

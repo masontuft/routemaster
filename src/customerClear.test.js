@@ -88,7 +88,7 @@ async function count(table) {
     return rows[0].n;
 }
 
-const SAW = { customers: 1, properties: 1, requests: 1, reviews: 1, links: 1 };
+const SAW = { customers: 1, properties: 1, requests: 1, leads: 0, reviews: 1, links: 1 };
 const batchPage = () => {
     return `/admin/clear/batches/${batchId}`;
 };
@@ -144,7 +144,7 @@ test("missing or malformed counts delete nothing", async () => {
 test("delete all needs the typed phrase, then removes every customer but keeps logins and batches", async () => {
     await addHandMadeCustomer();
     const owner = await agentFor("owner");
-    const saw = { customers: 2, properties: 2, requests: 1, reviews: 1, links: 1 };
+    const saw = { customers: 2, properties: 2, requests: 1, leads: 0, reviews: 1, links: 1 };
 
     const wrong = await send(owner, "/admin/clear/all", "/admin/clear/all", { ...saw, phrase: "yes" });
     assert.strictEqual(wrong.status, 400);
