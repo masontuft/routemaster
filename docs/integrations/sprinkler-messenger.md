@@ -1,12 +1,12 @@
 # Sprinkler Messenger Integration Spec
 
-Status: In progress, Routemaster side built (staff page and both API routes); Messenger side not started. Decided on 2026-11-04 in [ADR 0015](../adr/0015-messenger-handoff-api.md): the public host is `https://routemaster-8w24.onrender.com`, Routemaster is the source of truth for who was texted, and consent and opt-out handling is a roadmap item. Nothing here is built yet. The open questions below that are not marked answered stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
+Status: Built on both sides. Routemaster has the staff pages and both API routes. The Messenger app has the batch screen (its PR 16, version 1.2.0). Mason reported on 2026-11-18 that it is shipped and tested in production. Decided on 2026-11-04 in [ADR 0015](../adr/0015-messenger-handoff-api.md): the public host is `https://routemaster-8w24.onrender.com`, Routemaster is the source of truth for who was texted, and consent and opt-out handling is a roadmap item. The open questions below that are not marked answered stay open ([issue 37](https://github.com/masontuft/routemaster/issues/37)).
 
 This file is written to be handed to the Sprinkler Messenger project (React Native). It describes the feature from both sides so the mobile app can be built against it. The Messenger facts below were checked against its code on 2026-11-04 (read-only), and are listed under "What Messenger does today".
 
 ## What Messenger does today
 
-Checked in `/Users/masontuft/GitHub/TSB/SprinklerMessenger` on 2026-11-04.
+Checked in `/Users/masontuft/GitHub/TSB/SprinklerMessenger` on 2026-11-04. **This list is out of date.** It is what Messenger did before the batch screen was built. Since then Messenger reads the `batch/<token>` link, sends each customer their own message, and reports results back; see `docs/routemaster-batch.md` in the Messenger repo.
 
 - The scheme `sprinklermessenger://` is registered, but no screen reads URL parameters, so a link can only open a screen today. There are no universal links or Android app links.
 - Recipients come from a Google Sheet, and its send queue holds `{key, name, phone}` and fills one shared template. It cannot send a different body to each customer yet (answers open question 1: no).

@@ -60,7 +60,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 - **Who:** owner, dispatcher.
 - **By hand:** staff copy the list from step 3 into their own texting tool. The app sends nothing.
 - **Through Sprinkler Messenger:** `/staff/messenger-batches/new` previews an area, and its POST to `/staff/messenger-batches` stages a batch of the customers who could be texted. The result page shows a deep link once. Opening it in Messenger fetches the batch from the Messenger API (see ADR 0015), which makes each customer's link at that moment. `/staff/messenger-batches` lists past batches and `/staff/messenger-batches/:id` shows who was texted, from what Messenger reports back. A batch holds at most 500 customers, can be opened for 1 hour and reported on for 24. A batch can also be started from the results page of a link batch (step 3, or step 9), with the **Stage for Messenger** button under each area, which posts to `/staff/messenger-batches/from-link-batch`. It stages the customers that link batch made links for whose link is still live (not revoked or expired), for its lifetime in days. The links already on the page stay good; Messenger makes its own when it fetches the batch, so those customers have two working links.
-- **Gaps:** the Messenger app does not yet open these links or report results (Sprinkler Messenger, [#37](https://github.com/masontuft/routemaster/issues/37)), so a staged batch stays at "not yet reported" until it does. Hand-copied links have no record of which were texted.
+- **Gaps:** "sent" means the phone's messaging app took the message, not that the customer got it, and iOS needs a tap per customer, so a large batch takes a while. Messenger shows only `{name}` and `{link}` in the message (more placeholders are on the [roadmap](../product/roadmap.md)). Hand-copied links have no record of which were texted. Opt-out and consent are not built.
 - **Code:** `src/models/messengerBatch.js`, `src/controllers/messengerBatches.js`, `src/controllers/messengerApi.js`.
 
 ## 5. The customer picks a day
@@ -124,6 +124,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-18 | Step 4, Messenger: the Messenger app now opens the deep link, texts each customer their own message and reports results (Mason shipped it and tested it in production). The Gaps line no longer says it cannot. The "Last verified" date is unchanged, because only this step was re-read: the routes and pages named in it match the code. |
 | 2026-11-17 | Deleting a customer, one or in bulk, also deletes the leads made into that customer and their unmatched requests (migration 027). The delete pages list the lead count. |
 | 2026-11-17 | Steps 3 and 6: a visitor with no match becomes a lead (`leads`, migrations 025 and 026), and the typed name, phone and street live there instead of on each request. Matching one request matches the same lead's other Needs Review requests too. The date above is unchanged, because only these two steps were re-read. |
 | 2026-11-16 | Re-read every step against the code and updated the date above. The routes, roles, limits (500 links and customers, 1 to 120 days, 200 jobs a day, 15 lookups a click, 1 hour and 24 hours for a Messenger batch), status moves and rebooking groups all matched. No step changed. |
