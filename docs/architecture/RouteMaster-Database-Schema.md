@@ -18,6 +18,17 @@ RouteMaster Database Schema
 | `id` | `int4` | Primary |
 | `name` | `text` |  Unique |
 
+## Table `companies`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `name` | `text` |  |
+| `slug` | `text` |  Unique |
+| `created_at` | `timestamptz` |  |
+
 ## Table `users`
 
 ### Columns
@@ -29,6 +40,7 @@ RouteMaster Database Schema
 | `password_hash` | `text` |  Nullable |
 | `role_id` | `int4` |  |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `session`
 
@@ -55,6 +67,7 @@ RouteMaster Database Schema
 | `email` | `text` |  Nullable |
 | `created_at` | `timestamptz` |  |
 | `import_batch_id` | `int4` |  Nullable |
+| `company_id` | `int4` |  |
 
 ## Table `properties`
 
@@ -119,6 +132,7 @@ RouteMaster Database Schema
 | `amount_cents` | `int4` |  Nullable |
 | `tentative` | `bool` |  |
 | `lead_id` | `int4` |  Nullable |
+| `company_id` | `int4` |  |
 
 ## Table `status_history`
 
@@ -179,6 +193,7 @@ RouteMaster Database Schema
 | `replied_by` | `int4` |  Nullable |
 | `replied_at` | `timestamptz` |  Nullable |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `import_batches`
 
@@ -198,6 +213,7 @@ RouteMaster Database Schema
 | `jobs_existing` | `int4` |  |
 | `rows_skipped` | `int4` |  |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `import_mappings`
 
@@ -212,6 +228,7 @@ RouteMaster Database Schema
 | `columns` | `jsonb` |  |
 | `options` | `jsonb` |  |
 | `updated_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `subdivisions`
 
@@ -223,6 +240,7 @@ RouteMaster Database Schema
 | `name` | `text` |  |
 | `name_normalized` | `text` |  Unique |
 | `city` | `text` |  Nullable |
+| `company_id` | `int4` |  |
 
 ## Table `area_days`
 
@@ -247,6 +265,7 @@ RouteMaster Database Schema
 | `skipped_no_phone` | `int4` |  |
 | `skipped_active` | `int4` |  |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `routes`
 
@@ -265,6 +284,7 @@ RouteMaster Database Schema
 | `total_miles` | `numeric` |  |
 | `travel_minutes` | `int4` |  |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `route_stops`
 
@@ -290,6 +310,7 @@ RouteMaster Database Schema
 | `value` | `text` |  |
 | `updated_by` | `int4` |  Nullable |
 | `updated_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `messenger_batches`
 
@@ -306,6 +327,7 @@ RouteMaster Database Schema
 | `results_expires_at` | `timestamptz` |  |
 | `fetched_at` | `timestamptz` |  Nullable |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |
 
 ## Table `messenger_batch_recipients`
 
@@ -336,3 +358,4 @@ RouteMaster Database Schema
 | `address_normalized` | `text` |  |
 | `customer_id` | `int4` |  Nullable |
 | `created_at` | `timestamptz` |  |
+| `company_id` | `int4` |  |

@@ -63,7 +63,7 @@ The flow being mirrored is the public service sign-up a customer uses today: the
 
 **Open questions.**
 
-- TODO (Mason): How tenants are isolated. A `tenant_id` column on shared tables, a schema per business, and a database per business are all open. ADR 0001 rejected multi-tenant on day one because a tenant column would touch every table and query, and isolation would be a security surface. That rejection does not choose the later design.
+- Decided (Mason, 2026-11-18): how tenants are isolated. Rows in shared tables, each tagged with a company (`companies` table, `company_id` column), in the one database. See [ADR 0018](../adr/0018-companies-and-company-scoped-data.md). Only the first step is built: migration 028 adds the table and the columns, and nothing reads them yet. A schema per business and a database per business were rejected. ADR 0001 rejected a tenant column on day one because it would touch every table and query, and the later steps are that work.
 - TODO (Mason): The URL scheme for a branded sign-up. A subdomain and a path are both open.
 - TODO (Mason): Pricing or plans. Nothing is decided, including whether a business pays, and no price should be invented.
 - TODO (Mason): What a business can customize. Logo, colors, and copy are examples, not a decided list.

@@ -23,7 +23,7 @@ Routemaster is a web app for service companies that builds daily routes and pair
 - Product: a customer-facing site with staff dashboards for a single company. Customers submit service requests. Dispatchers build daily routes from those requests. The owner manages everything.
 - App type: one server-side rendered web application.
 - Repo shape: one repository, one deployable.
-- Tenancy: single company. Multi-tenant support is a post-course goal and is on the roadmap.
+- Tenancy: single company. Multi-tenant support is a post-course goal and is on the roadmap. Update 2026-11-18: [ADR 0018](0018-companies-and-company-scoped-data.md) starts that work with a `companies` table and a `company_id` on shared tables. Everything in the database belongs to company 1 for now, and the app still behaves as one company.
 
 ## Alternatives considered
 
