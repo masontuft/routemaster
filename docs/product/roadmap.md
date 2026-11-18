@@ -10,6 +10,8 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 
 ## Built recently
 
+"Built" means merged into the main branch. Leads, the person name rules and the Messenger handoff API have ADRs that stay Proposed until they are checked on the live database or by the Messenger app, so they are built but not yet proven in use.
+
 - Leads for visitors who match no customer ([ADR 0017](../adr/0017-leads-for-unmatched-visitors.md)): one lead per person, converted when staff match them, deleted with their customer.
 - Rebooking last season's customers ([ADR 0014](../adr/0014-rebooking-and-tentative-bookings.md)): a list of customers served in an earlier year who have not booked this year, links for just those customers (for one area or all areas), and, as an owner option, booking unconfirmed customers as tentative. See [the process doc](../process/customer-lifecycle.md).
 - Person name rules ([ADR 0016](../adr/0016-person-name-rules.md)): joint names are handled automatically; a "last, first" order, a business, a rental or a one-word name are flagged for staff at import.
