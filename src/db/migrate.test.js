@@ -1,6 +1,6 @@
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, readdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,6 +67,7 @@ test("applies the real migrations in order and records them", async () => {
         "025_create_leads.sql",
         "026_drop_request_contact_columns.sql",
         "027_leads_go_with_their_customer.sql",
+        "028_create_companies.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -119,4 +120,98 @@ test("a user cannot reference a role that does not exist", async () => {
         pool.query("INSERT INTO users (email, password_hash, role_id) VALUES ('a@b.c', 'x', 999)"),
         /foreign key/,
     );
+});
+
+// Migrations up to a name, copied to a temp folder, so a test can add rows first and then apply the later ones.
+async function migrationsBefore(lastName) {
+    const files = {};
+
+    for (const name of (await readdir(realMigrations)).sort()) {
+        if (name <= lastName) {
+            files[name] = await readFile(path.join(realMigrations, name), "utf8");
+        }
+    }
+
+    return tempDir(files);
+}
+
+test("028 puts every row that already exists in company 1 and makes the next company 2", async () => {
+    const before = await migrationsBefore("027_leads_go_with_their_customer.sql");
+
+    try {
+        await runMigrations(pool, before);
+        await pool.query("INSERT INTO users (email, password_hash, role_id) VALUES ('o@example.com', 'x', 1)");
+        const customer = await pool.query(
+            "INSERT INTO customers (name, name_normalized, phone, phone_normalized) VALUES ('Pat', 'pat', '208', '208') RETURNING id",
+        );
+        const property = await pool.query(
+            "INSERT INTO properties (customer_id, street, city, address_normalized) VALUES ($1, '1 Main St', 'Rexburg', '1 main st') RETURNING id",
+            [customer.rows[0].id],
+        );
+        await pool.query(
+            `INSERT INTO service_requests (customer_id, property_id, service_type_id, status_id, preferred_date)
+             VALUES ($1, $2, 1, 1, '2026-10-20')`,
+            [customer.rows[0].id, property.rows[0].id],
+        );
+        await pool.query(
+            `INSERT INTO leads (name, name_normalized, phone, phone_normalized, address, address_normalized)
+             VALUES ('Sam', 'sam', '208', '208', '2 Oak St', '2 oak st')`,
+        );
+        await pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('Oak Park', 'oak park')");
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'on')");
+        await pool.query("INSERT INTO contact_messages (name, email, message) VALUES ('A', 'a@example.com', 'Hi')");
+
+        assert.deepStrictEqual(await runMigrations(pool, realMigrations), ["028_create_companies.sql"]);
+
+        const first = await pool.query("SELECT id, name, slug FROM companies");
+        assert.deepStrictEqual(first.rows, [{ id: 1, name: "Tuft Sprinkler Blowouts", slug: "tuft-sprinkler-blowouts" }]);
+
+        for (const table of ["users", "customers", "leads", "subdivisions", "service_requests", "app_settings", "contact_messages"]) {
+            const { rows } = await pool.query(`SELECT company_id FROM ${table}`);
+            assert.ok(rows.length > 0, `${table} lost its rows`);
+            assert.ok(rows.every((row) => {
+                return row.company_id === 1;
+            }), `${table} has a row outside company 1`);
+        }
+
+        const next = await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co') RETURNING id");
+        assert.strictEqual(next.rows[0].id, 2);
+    } finally {
+        await rm(before, { recursive: true });
+    }
+});
+
+test("a row without a company_id goes to company 1, so code from before 028 still works during a deploy", async () => {
+    await runMigrations(pool, realMigrations);
+    const { rows } = await pool.query(
+        "INSERT INTO customers (name, name_normalized) VALUES ('Lee', 'lee') RETURNING company_id",
+    );
+
+    assert.strictEqual(rows[0].company_id, 1);
+});
+
+test("a company id that does not exist is refused, and a company that has data cannot be deleted", async () => {
+    await runMigrations(pool, realMigrations);
+
+    await assert.rejects(
+        pool.query("INSERT INTO customers (name, name_normalized, company_id) VALUES ('Lee', 'lee', 99)"),
+        /foreign key/,
+    );
+    await pool.query("INSERT INTO customers (name, name_normalized) VALUES ('Lee', 'lee')");
+    await assert.rejects(pool.query("DELETE FROM companies WHERE id = 1"), /foreign key/);
+});
+
+test("a company slug must be lower-case words joined by hyphens, and each slug is used once", async () => {
+    await runMigrations(pool, realMigrations);
+
+    for (const slug of ["Has Caps", "-lead", "trail-", "two--hyphens", "under_score", ""]) {
+        await assert.rejects(
+            pool.query("INSERT INTO companies (name, slug) VALUES ('X', $1)", [slug]),
+            /check constraint/,
+            `slug ${JSON.stringify(slug)} was accepted`,
+        );
+    }
+
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second', 'second-co')");
+    await assert.rejects(pool.query("INSERT INTO companies (name, slug) VALUES ('Again', 'second-co')"), /unique/);
 });

@@ -25,18 +25,26 @@ erDiagram
     customers ||--o{ access_links : "customer_id"
     link_batches |o--o{ access_links : "link_batch_id"
     users |o--o{ access_links : "created_by"
+    companies ||--o{ app_settings : "company_id"
     users |o--o{ app_settings : "updated_by"
     subdivisions ||--o{ area_days : "subdivision_id"
+    companies ||--o{ contact_messages : "company_id"
     users |o--o{ contact_messages : "replied_by"
+    companies ||--o{ customers : "company_id"
     import_batches |o--o{ customers : "import_batch_id"
     users |o--o| customers : "user_id"
+    companies ||--o{ import_batches : "company_id"
     users |o--o{ import_batches : "created_by"
+    companies ||--o{ import_mappings : "company_id"
+    companies ||--o{ leads : "company_id"
     customers |o--o{ leads : "customer_id"
+    companies ||--o{ link_batches : "company_id"
     subdivisions |o--o{ link_batches : "subdivision_id"
     users |o--o{ link_batches : "created_by"
     access_links |o--o{ messenger_batch_recipients : "access_link_id"
     customers ||--o{ messenger_batch_recipients : "customer_id"
     messenger_batches ||--o{ messenger_batch_recipients : "batch_id"
+    companies ||--o{ messenger_batches : "company_id"
     users |o--o{ messenger_batches : "created_by"
     customers ||--o{ properties : "customer_id"
     import_batches |o--o{ properties : "import_batch_id"
@@ -45,7 +53,9 @@ erDiagram
     service_requests ||--o| reviews : "service_request_id"
     routes ||--o{ route_stops : "route_id"
     service_requests ||--o{ route_stops : "service_request_id"
+    companies ||--o{ routes : "company_id"
     users |o--o{ routes : "created_by"
+    companies ||--o{ service_requests : "company_id"
     customers |o--o{ service_requests : "customer_id"
     import_batches |o--o{ service_requests : "import_batch_id"
     leads |o--o{ service_requests : "lead_id"
@@ -55,6 +65,8 @@ erDiagram
     request_statuses ||--o{ status_history : "status_id"
     service_requests ||--o{ status_history : "service_request_id"
     users |o--o{ status_history : "changed_by"
+    companies ||--o{ subdivisions : "company_id"
+    companies ||--o{ users : "company_id"
     roles ||--o{ users : "role_id"
     access_links {
         int4 id PK
@@ -65,32 +77,45 @@ erDiagram
     app_settings {
         text key PK
         int4 updated_by FK "nullable"
+        int4 company_id FK
     }
     area_days {
         int4 subdivision_id PK, FK
         date day PK
     }
+    companies {
+        int4 id PK
+    }
     contact_messages {
         int4 id PK
         int4 replied_by FK "nullable"
+        int4 company_id FK
     }
     customers {
         int4 id PK
         int4 user_id FK "nullable"
         int4 import_batch_id FK "nullable"
+        int4 company_id FK
     }
     import_batches {
         int4 id PK
         int4 created_by FK "nullable"
+        int4 company_id FK
+    }
+    import_mappings {
+        int4 id PK
+        int4 company_id FK
     }
     leads {
         int4 id PK
         int4 customer_id FK "nullable"
+        int4 company_id FK
     }
     link_batches {
         int4 id PK
         int4 subdivision_id FK "nullable"
         int4 created_by FK "nullable"
+        int4 company_id FK
     }
     messenger_batch_recipients {
         int4 id PK
@@ -101,6 +126,7 @@ erDiagram
     messenger_batches {
         int4 id PK
         int4 created_by FK "nullable"
+        int4 company_id FK
     }
     properties {
         int4 id PK
@@ -127,6 +153,7 @@ erDiagram
     routes {
         int4 id PK
         int4 created_by FK "nullable"
+        int4 company_id FK
     }
     service_requests {
         int4 id PK
@@ -136,6 +163,7 @@ erDiagram
         int4 status_id FK
         int4 import_batch_id FK "nullable"
         int4 lead_id FK "nullable"
+        int4 company_id FK
     }
     service_types {
         int4 id PK
@@ -148,10 +176,12 @@ erDiagram
     }
     subdivisions {
         int4 id PK
+        int4 company_id FK
     }
     users {
         int4 id PK
         int4 role_id FK
+        int4 company_id FK
     }
 ```
 <!-- erd:end -->
