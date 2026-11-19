@@ -6,6 +6,20 @@ export function normalizeEmail(value) {
     return String(value ?? "").trim().toLowerCase();
 }
 
+// An email for a login, typed once (an owner changing someone else's) or twice (your own). Returns { email, errors }.
+export function validateNewEmail(body, { confirmed = false } = {}) {
+    const email = normalizeEmail(body.email);
+    const errors = [];
+
+    if (!EMAIL_PATTERN.test(email) || email.length > 254) {
+        errors.push("Enter a valid email address.");
+    } else if (confirmed && email !== normalizeEmail(body.confirm)) {
+        errors.push("The two email addresses do not match.");
+    }
+
+    return { email, errors };
+}
+
 // The form that changes your own password: the current one, then the new one twice, by the registration
 // rules. Returns { current, password, errors }.
 export function validatePasswordChange(body) {

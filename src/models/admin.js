@@ -1,4 +1,5 @@
 import { withTransaction } from "../db/transaction.js";
+import * as User from "./user.js";
 
 // Users are listed and changed one company at a time (ADR 0018): an owner sees and manages only their own company's
 // people, and "the last owner" means the last owner of that company.
@@ -19,6 +20,32 @@ export async function listRoles(pool) {
     return rows.map((row) => {
         return row.name;
     });
+}
+
+// An owner changes the login email of a user of their own company. Returns { ok: true } or { error } where error is one
+// of: not_found (no such user, or one of another company), self (use the account page), no_login (a customer who signs
+// in by link has no email) or taken. The password is not asked for, because it is someone else's login; the user keeps
+// their password, and an email is not enough to take an account over while nothing sends a reset.
+export async function changeEmail(pool, companyId, id, email, actingUserId) {
+    const { rows } = await pool.query(
+        "SELECT id, email, password_hash FROM users WHERE id = $1 AND company_id = $2",
+        [id, companyId],
+    );
+
+    if (!rows[0]) {
+        return { error: "not_found" };
+    }
+
+    if (id === actingUserId) {
+        return { error: "self" };
+    }
+
+    if (!rows[0].email || !rows[0].password_hash) {
+        return { error: "no_login" };
+    }
+
+    const result = await User.setEmail(pool, id, email);
+    return result === "taken" ? { error: "taken" } : { ok: result };
 }
 
 // Returns { ok: true } or { error } where error is one of: not_found, self, no_login, role, last_owner.

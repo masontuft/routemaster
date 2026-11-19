@@ -43,7 +43,7 @@
                 <details class="menu account">
                     <summary><%= locals.user.displayName %></summary>
                     <ul>
-                        <% if (locals.user.email) { %><li><a href="/account/password"<%- cur("/account/password") %>>Change Password</a></li><% } %>
+                        <% if (locals.user.email) { %><li><a href="/account/password"<%- cur("/account/password") %>>Change Password</a></li><li><a href="/account/email"<%- cur("/account/email") %>>Change Email</a></li><% } %>
                         <li>
                             <form method="post" action="/logout">
                                 <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">

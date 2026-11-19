@@ -3,7 +3,7 @@ import * as User from "../models/user.js";
 import * as ServiceType from "../models/serviceType.js";
 import { hashPassword } from "../utils/password.js";
 import { notFound } from "../utils/errors.js";
-import { parseId, validateRegistration } from "../utils/validation.js";
+import { parseId, validateNewEmail, validateRegistration } from "../utils/validation.js";
 import { parsePriceCents } from "../utils/money.js";
 import { companyOf } from "../utils/company.js";
 
@@ -24,6 +24,35 @@ async function renderUsers(req, res, { errors = [], status = 200 } = {}) {
 
 export async function listUsers(req, res) {
     await renderUsers(req, res);
+}
+
+const EMAIL_ERRORS = {
+    self: "Change your own email on the account page.",
+    no_login: "That customer signs in by link and has no email login.",
+    taken: "That email already has a login.",
+};
+
+export async function changeEmail(req, res) {
+    const id = parseId(req.params.id);
+    const { email, errors } = validateNewEmail(req.body);
+
+    if (id && errors.length > 0) {
+        return renderUsers(req, res, { errors, status: 400 });
+    }
+
+    const result = id
+        ? await Admin.changeEmail(req.app.locals.db, companyOf(req), id, email, req.session.user.id)
+        : { error: "not_found" };
+
+    if (result.error === "not_found") {
+        throw notFound();
+    }
+
+    if (result.error) {
+        return renderUsers(req, res, { errors: [EMAIL_ERRORS[result.error]], status: 400 });
+    }
+
+    res.redirect("/admin/users");
 }
 
 export async function changeRole(req, res) {

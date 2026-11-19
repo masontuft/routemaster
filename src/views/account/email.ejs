@@ -1,0 +1,16 @@
+<%- include("../partials/head") %>
+<h1>Change Email</h1>
+<% if (notice) { %><p role="status"><%= notice %></p><% } %>
+<%- include("../partials/errors") %>
+<p>Your login email is <strong><%= current %></strong>. Nothing can send a message to the new address, so check it carefully.</p>
+<form method="post" action="/account/email">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="current">Current Password</label>
+    <input id="current" name="current" type="password" required autocomplete="current-password">
+    <label for="email">New Email</label>
+    <input id="email" name="email" type="email" required maxlength="254" autocomplete="email">
+    <label for="confirm">Confirm New Email</label>
+    <input id="confirm" name="confirm" type="email" required maxlength="254" autocomplete="email">
+    <button type="submit">Change Email</button>
+</form>
+<%- include("../partials/foot") %>
