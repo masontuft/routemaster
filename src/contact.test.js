@@ -101,7 +101,7 @@ test("the contact form is rate limited", async () => {
 });
 
 test("staff read messages, see them escaped, and record a reply", async () => {
-    await ContactMessage.create(pool, { ...GOOD, name: "<script>alert(1)</script>" });
+    await ContactMessage.create(pool, 1, { ...GOOD, name: "<script>alert(1)</script>" });
     const dispatcher = request.agent(server);
     await loginAs(dispatcher, "dee@example.com", "dispatcher");
 
@@ -124,7 +124,7 @@ test("staff read messages, see them escaped, and record a reply", async () => {
 });
 
 test("message pages refuse visitors and customers", async () => {
-    await ContactMessage.create(pool, GOOD);
+    await ContactMessage.create(pool, 1, GOOD);
     assert.strictEqual((await request(server).get("/staff/messages")).status, 302);
 
     const customer = request.agent(server);

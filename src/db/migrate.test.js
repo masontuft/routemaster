@@ -71,6 +71,7 @@ test("applies the real migrations in order and records them", async () => {
         "029_company_service_types_and_lead_key.sql",
         "030_requests_keep_to_their_company.sql",
         "031_company_area_route_setting_keys.sql",
+        "032_company_import_mapping_key.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -169,6 +170,7 @@ test("028 puts every row that already exists in company 1 and makes the next com
             "029_company_service_types_and_lead_key.sql",
             "030_requests_keep_to_their_company.sql",
             "031_company_area_route_setting_keys.sql",
+            "032_company_import_mapping_key.sql",
         ]);
 
         const first = await pool.query("SELECT id, name, slug FROM companies");
@@ -233,6 +235,7 @@ test("029 puts the existing service types in company 1, and a name is unique wit
             "029_company_service_types_and_lead_key.sql",
             "030_requests_keep_to_their_company.sql",
             "031_company_area_route_setting_keys.sql",
+            "032_company_import_mapping_key.sql",
         ]);
 
         const types = await pool.query("SELECT name, company_id FROM service_types ORDER BY id");
@@ -399,4 +402,32 @@ test("031 adds the per-company area, route and setting keys and keeps the old on
         pool.query("INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('Oak Park', 'oak park', 2)"),
         /unique/,
     );
+});
+
+test("032 adds the per-company mapping key and keeps the old one for the running code", async () => {
+    await runMigrations(pool, realMigrations);
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+    const mapping = (companyId) => {
+        return pool.query(
+            `INSERT INTO import_mappings (sheet_id, sheet_name, header_row, columns, company_id)
+             VALUES ('sheet', 'Jobs', 1, '{}', $1)`,
+            [companyId],
+        );
+    };
+
+    await mapping(1);
+    // The old conflict target still works, because the running code names it.
+    const again = await pool.query(
+        `INSERT INTO import_mappings (sheet_id, sheet_name, header_row, columns) VALUES ('sheet', 'Jobs', 1, '{}')
+         ON CONFLICT (sheet_id, sheet_name) DO NOTHING RETURNING id`,
+    );
+    assert.strictEqual(again.rowCount, 0);
+    // So does the new one.
+    const same = await pool.query(
+        `INSERT INTO import_mappings (sheet_id, sheet_name, header_row, columns, company_id)
+         VALUES ('sheet', 'Jobs', 1, '{}', 1) ON CONFLICT (company_id, sheet_id, sheet_name) DO NOTHING RETURNING id`,
+    );
+    assert.strictEqual(same.rowCount, 0);
+    // The old global key still refuses another company until the contract migration (issue 75).
+    await assert.rejects(mapping(2), /unique/);
 });

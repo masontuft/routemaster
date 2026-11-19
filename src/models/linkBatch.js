@@ -7,18 +7,20 @@ export const MAX_DAYS = 120;
 
 // Customers with a property in the area, each once however many properties they have there, and whether they
 // already hold a link that still works (not revoked, not expired). areaId null means every customer with a property.
-async function customersInArea(db, areaId) {
+// Every function that reads customers takes the company (ADR 0018): a batch holds only one company's customers.
+async function customersInArea(db, companyId, areaId) {
     const { rows } = await db.query(
         `SELECT customers.id, customers.name, customers.phone,
                 EXISTS (SELECT 1 FROM access_links
                         WHERE access_links.customer_id = customers.id
                           AND access_links.revoked_at IS NULL AND access_links.expires_at > now()) AS has_active
          FROM customers
-         WHERE EXISTS (SELECT 1 FROM properties
+         WHERE customers.company_id = $2
+           AND EXISTS (SELECT 1 FROM properties
                        WHERE properties.customer_id = customers.id
                          AND ($1::int IS NULL OR properties.subdivision_id = $1::int))
          ORDER BY customers.name, customers.id`,
-        [areaId],
+        [areaId, companyId],
     );
     return rows;
 }
@@ -27,13 +29,15 @@ async function customersInArea(db, areaId) {
 // properties in several areas lands in exactly one group, so they are linked once. A first property with no area puts
 // them in the "no area" group (areaId null), listed last. With customerIds, only those customers are grouped; an id
 // with no property is dropped. Every group is made of customers who have a property, so none is empty.
-export async function groupByOwningArea(db, customerIds = null) {
+export async function groupByOwningArea(db, companyId, customerIds = null) {
     const { rows } = await db.query(
         `SELECT DISTINCT ON (properties.customer_id)
                 properties.customer_id, properties.subdivision_id AS area_id, subdivisions.name AS area_name
          FROM properties
+         JOIN customers ON customers.id = properties.customer_id AND customers.company_id = $1
          LEFT JOIN subdivisions ON subdivisions.id = properties.subdivision_id
          ORDER BY properties.customer_id, properties.id`,
+        [companyId],
     );
     const wanted = customerIds ? new Set(customerIds) : null;
     const groups = new Map();
@@ -93,8 +97,8 @@ function limitTo(customers, customerIds) {
 
 // The customers in an area who could be texted: their ids, and the same two counts a preview gives. Used to stage a
 // Messenger batch, which makes its links later, when Messenger fetches.
-export async function textableInArea(pool, areaId, { includeActive = false } = {}) {
-    const { toLink, noPhone, skippedActive } = sort(await customersInArea(pool, areaId), includeActive);
+export async function textableInArea(pool, companyId, areaId, { includeActive = false } = {}) {
+    const { toLink, noPhone, skippedActive } = sort(await customersInArea(pool, companyId, areaId), includeActive);
     return {
         customerIds: toLink.map((customer) => {
             return customer.id;
@@ -105,14 +109,14 @@ export async function textableInArea(pool, areaId, { includeActive = false } = {
 }
 
 // What a batch would do, without creating anything. null for an area that does not exist.
-export async function preview(pool, areaId, { includeActive = false } = {}) {
-    const { rows } = await pool.query("SELECT 1 FROM subdivisions WHERE id = $1", [areaId]);
+export async function preview(pool, companyId, areaId, { includeActive = false } = {}) {
+    const { rows } = await pool.query("SELECT 1 FROM subdivisions WHERE id = $1 AND company_id = $2", [areaId, companyId]);
 
     if (rows.length === 0) {
         return null;
     }
 
-    const { toLink, noPhone, skippedActive } = sort(await customersInArea(pool, areaId), includeActive);
+    const { toLink, noPhone, skippedActive } = sort(await customersInArea(pool, companyId, areaId), includeActive);
     return { toLink: toLink.length, noPhone: noPhone.length, skippedActive: skippedActive.length };
 }
 
@@ -121,7 +125,7 @@ export async function preview(pool, areaId, { includeActive = false } = {}) {
 // here and nowhere else; only their hashes are stored.
 // With recordEmpty false, a run that would make no links records no batch (batchId null), so a repeat run over many
 // areas does not leave a row of zeros for each.
-export async function create(pool, options) {
+export async function create(pool, companyId, options) {
     const { areaId, createdBy, days, includeActive = false, customerIds = null, recordEmpty = true } = options;
 
     if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
@@ -132,16 +136,19 @@ export async function create(pool, options) {
         // An area's row is locked so two runs for it cannot double up. With no area (every customer) there is no row
         // to lock, so a transaction advisory lock does the same job, and is released when the transaction ends.
         if (areaId === null) {
-            await client.query("SELECT pg_advisory_xact_lock(hashtext('link_batch_all_areas'))");
+            await client.query("SELECT pg_advisory_xact_lock(hashtext('link_batch_all_areas'), $1::int)", [companyId]);
         } else {
-            const area = await client.query("SELECT id FROM subdivisions WHERE id = $1 FOR UPDATE", [areaId]);
+            const area = await client.query(
+                "SELECT id FROM subdivisions WHERE id = $1 AND company_id = $2 FOR UPDATE",
+                [areaId, companyId],
+            );
 
             if (area.rows.length === 0) {
                 return { error: "not_found" };
             }
         }
 
-        const inArea = await customersInArea(client, areaId);
+        const inArea = await customersInArea(client, companyId, areaId);
         const { toLink, noPhone, skippedActive } = sort(limitTo(inArea, customerIds), includeActive);
 
         if (toLink.length > MAX_BATCH) {
@@ -157,9 +164,10 @@ export async function create(pool, options) {
         }
 
         const batch = await client.query(
-            `INSERT INTO link_batches (subdivision_id, created_by, days, links_created, skipped_no_phone, skipped_active)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-            [areaId, createdBy ?? null, days, toLink.length, noPhone.length, skippedActive.length],
+            `INSERT INTO link_batches
+                 (subdivision_id, created_by, days, links_created, skipped_no_phone, skipped_active, company_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+            [areaId, createdBy ?? null, days, toLink.length, noPhone.length, skippedActive.length, companyId],
         );
         const batchId = batch.rows[0].id;
         const rows = [];
@@ -181,15 +189,17 @@ export async function create(pool, options) {
 // their tokens are only ever shown on the page that follows. customerIds limits it to some customers. Each section is
 // create's result plus its area; the "no area" group runs through create with areaId null, which the ids narrow to
 // just that group.
-export async function createForAllAreas(pool, { createdBy, days, includeActive = false, customerIds = null }) {
-    const groups = await groupByOwningArea(pool, customerIds);
+export async function createForAllAreas(
+    pool, companyId, { createdBy, days, includeActive = false, customerIds = null },
+) {
+    const groups = await groupByOwningArea(pool, companyId, customerIds);
     const sections = [];
 
     for (const group of groups) {
         const { areaId, areaName } = group;
 
         try {
-            const result = await create(pool, {
+            const result = await create(pool, companyId, {
                 areaId, createdBy, days, includeActive, customerIds: group.customerIds, recordEmpty: false,
             });
             sections.push({ areaId, areaName, ...result });

@@ -139,7 +139,7 @@ export async function showMapping(req, res) {
         let choice = parseSheetChoice(body, sheets);
 
         if (choice.errors.length === 0 && hasChoices(body) === false) {
-            const saved = await ImportBatch.findMapping(req.app.locals.db, sheetId, choice.sheet.name);
+            const saved = await ImportBatch.findMapping(req.app.locals.db, companyOf(req), sheetId, choice.sheet.name);
             const merged = saved ? withSavedMapping(body, saved) : null;
             const savedChoice = merged ? parseSheetChoice(merged, sheets) : null;
             if (savedChoice?.errors.length === 0) {
@@ -249,7 +249,7 @@ export async function confirmImport(req, res) {
         const context = contextOf(sheetId, mapping);
 
         try {
-            const { batchId } = await applyImport(req.app.locals.db, {
+            const { batchId } = await applyImport(req.app.locals.db, companyOf(req), {
                 postedHash: String(req.body.planHash ?? ""),
                 computePlan: async (client) => {
                     const { rows } = await classifyCandidates(client, companyOf(req), candidates);
@@ -276,7 +276,7 @@ export async function confirmImport(req, res) {
 
 export async function showBatch(req, res) {
     const id = parseId(req.params.id);
-    const batch = id ? await ImportBatch.find(req.app.locals.db, id) : null;
+    const batch = id ? await ImportBatch.find(req.app.locals.db, companyOf(req), id) : null;
 
     if (batch === null) {
         throw notFound();

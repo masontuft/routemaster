@@ -224,7 +224,7 @@ const TEMPLATE = "Hi {name}, choose a day: {link}";
 
 async function linkBatchFor(agent, customerIds) {
     const user = await pool.query("SELECT id FROM users LIMIT 1");
-    const made = await LinkBatch.create(pool, { areaId, createdBy: user.rows[0].id, days: 14, customerIds });
+    const made = await LinkBatch.create(pool, 1, { areaId, createdBy: user.rows[0].id, days: 14, customerIds });
     return made.batchId;
 }
 

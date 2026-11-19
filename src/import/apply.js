@@ -8,7 +8,8 @@ import { personKey } from "../utils/personName.js";
 // The statements are set-based (a few per thousand rows), because a 20,000-row sheet written one row at a time
 // would be tens of thousands of round trips to the database.
 
-// Any fixed number will do: every import takes the same lock, so two imports can never run at once.
+// Any fixed number will do. Every import of one company takes the same lock, so two imports of a company can never run
+// at once; the company is the second half of the lock, so two companies' imports do not wait for each other.
 const IMPORT_LOCK_KEY = 90210033;
 const CHUNK_SIZE = 1000;
 const STALE_MESSAGE = "The sheet or the data changed since this preview. Review the preview again.";
@@ -48,7 +49,7 @@ function lookUp(map, ref, what) {
     return id;
 }
 
-async function writeAreas(client, plan) {
+async function writeAreas(client, companyId, plan) {
     const names = new Map();
     for (const entry of [...plan.properties, ...plan.areaUpdates]) {
         if (entry.area !== null && names.has(normalizeName(entry.area)) === false) {
@@ -61,21 +62,21 @@ async function writeAreas(client, plan) {
     }
 
     await client.query(
-        `INSERT INTO subdivisions (name, name_normalized)
-         SELECT * FROM unnest($1::text[], $2::text[])
-         ON CONFLICT (name_normalized) DO NOTHING`,
-        [[...names.values()], [...names.keys()]],
+        `INSERT INTO subdivisions (name, name_normalized, company_id)
+         SELECT names.name, names.name_normalized, $3 FROM unnest($1::text[], $2::text[]) AS names(name, name_normalized)
+         ON CONFLICT (company_id, name_normalized) DO NOTHING`,
+        [[...names.values()], [...names.keys()], companyId],
     );
     const { rows } = await client.query(
-        "SELECT id, name_normalized FROM subdivisions WHERE name_normalized = ANY($1::text[])",
-        [[...names.keys()]],
+        "SELECT id, name_normalized FROM subdivisions WHERE name_normalized = ANY($1::text[]) AND company_id = $2",
+        [[...names.keys()], companyId],
     );
     return new Map(rows.map((row) => {
         return [row.name_normalized, row.id];
     }));
 }
 
-async function writeCustomers(client, plan, batchId) {
+async function writeCustomers(client, companyId, plan, batchId) {
     const created = new Map();
 
     for (const group of chunksOf(plan.customers)) {
@@ -85,8 +86,8 @@ async function writeCustomers(client, plan, batchId) {
         });
 
         await client.query(
-            `INSERT INTO customers (id, name, name_normalized, phone, phone_normalized, import_batch_id)
-             SELECT t.id, t.name, t.name_normalized, t.phone, t.phone_normalized, $6
+            `INSERT INTO customers (id, name, name_normalized, phone, phone_normalized, import_batch_id, company_id)
+             SELECT t.id, t.name, t.name_normalized, t.phone, t.phone_normalized, $6, $7
              FROM unnest($1::int[], $2::text[], $3::text[], $4::text[], $5::text[])
                   AS t(id, name, name_normalized, phone, phone_normalized)`,
             [
@@ -102,6 +103,7 @@ async function writeCustomers(client, plan, batchId) {
                 }),
                 phones,
                 batchId,
+                companyId,
             ],
         );
 
@@ -199,10 +201,19 @@ async function jobsAlreadyOnFile(client, jobs, propertyIds, options) {
 }
 
 async function writeJobs(client, plan, ctx) {
-    const { propertyIds, customerIds, options, batchId, userId } = ctx;
+    const { companyId, propertyIds, customerIds, options, batchId, userId } = ctx;
     const status = await client.query("SELECT id FROM request_statuses WHERE name = $1", [options.statusName]);
     if (status.rows.length === 0) {
         throw new Error("Unknown status.");
+    }
+
+    // The service comes from the form, so it must be one of this company's.
+    const service = await client.query(
+        "SELECT id FROM service_types WHERE id = $1 AND company_id = $2",
+        [options.serviceTypeId, companyId],
+    );
+    if (service.rows.length === 0) {
+        throw new Error("The service type is not in this company.");
     }
 
     const onFile = await jobsAlreadyOnFile(client, plan.jobs, propertyIds, options);
@@ -228,9 +239,9 @@ async function writeJobs(client, plan, ctx) {
         await client.query(
             `INSERT INTO service_requests
                 (id, customer_id, property_id, service_type_id, status_id, preferred_date, scheduled_date,
-                 notes, amount_cents, created_at, updated_at, import_batch_id)
+                 notes, amount_cents, created_at, updated_at, import_batch_id, company_id)
              SELECT t.id, t.customer_id, t.property_id, $6, $7, t.day, CASE WHEN $8 THEN t.day END,
-                    t.notes, t.amount_cents, ${NOON_UTC}, ${NOON_UTC}, $9
+                    t.notes, t.amount_cents, ${NOON_UTC}, ${NOON_UTC}, $9, $11
              FROM unnest($1::int[], $2::int[], $3::int[], $4::date[], $5::text[], $10::int[])
                   AS t(id, customer_id, property_id, day, notes, amount_cents)`,
             [
@@ -254,6 +265,7 @@ async function writeJobs(client, plan, ctx) {
                 group.map((job) => {
                     return job.amountCents;
                 }),
+                companyId,
             ],
         );
 
@@ -279,16 +291,16 @@ async function writeJobs(client, plan, ctx) {
 // computePlan(client) re-reads the sheet's rows and classifies them against the database through the
 // transaction's own connection, so the plan that is hashed is the plan that is written. postedHash is the hash
 // the owner saw in the preview. mapping is { sheetId, sheetName, headerRow, columns }, remembered for next time.
-export async function applyImport(pool, { postedHash, computePlan, context, options, mapping, userId }) {
+export async function applyImport(pool, companyId, { postedHash, computePlan, context, options, mapping, userId }) {
     return withTransaction(pool, async (client) => {
-        await client.query("SELECT pg_advisory_xact_lock($1)", [IMPORT_LOCK_KEY]);
+        await client.query("SELECT pg_advisory_xact_lock($1::int, $2::int)", [IMPORT_LOCK_KEY, companyId]);
 
         const plan = await computePlan(client);
         if (plan.hash !== postedHash) {
             throw new SpreadsheetImportError("stale_plan", STALE_MESSAGE);
         }
 
-        const batchId = await ImportBatch.create(client, {
+        const batchId = await ImportBatch.create(client, companyId, {
             createdBy: userId ?? null,
             sheetId: context.sheetId,
             sheetName: context.sheetName,
@@ -297,11 +309,11 @@ export async function applyImport(pool, { postedHash, computePlan, context, opti
             counts: { customersCreated: 0, propertiesCreated: 0, jobsCreated: 0, jobsExisting: 0, rowsSkipped: 0 },
         });
 
-        const areaIds = await writeAreas(client, plan);
-        const customerIds = await writeCustomers(client, plan, batchId);
+        const areaIds = await writeAreas(client, companyId, plan);
+        const customerIds = await writeCustomers(client, companyId, plan, batchId);
         const propertyIds = await writeProperties(client, plan, customerIds, areaIds, batchId);
         await writeAreaUpdates(client, plan, areaIds);
-        const jobs = await writeJobs(client, plan, { propertyIds, customerIds, options, batchId, userId });
+        const jobs = await writeJobs(client, plan, { companyId, propertyIds, customerIds, options, batchId, userId });
 
         const counts = {
             customersCreated: plan.customers.length,
@@ -311,7 +323,7 @@ export async function applyImport(pool, { postedHash, computePlan, context, opti
             rowsSkipped: plan.skipped.length,
         };
         await ImportBatch.setCounts(client, batchId, counts);
-        await ImportBatch.saveMapping(client, {
+        await ImportBatch.saveMapping(client, companyId, {
             ...mapping,
             options: {
                 serviceTypeId: options.serviceTypeId,
