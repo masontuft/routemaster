@@ -1,15 +1,25 @@
 import * as AccessLink from "../models/accessLink.js";
 import * as Customer from "../models/customer.js";
 import { regenerateSession } from "../utils/session.js";
+import { basePathFor } from "../utils/company.js";
 
-function invalid(res) {
+// The page points at the company the link belonged to, when the token names one, so a customer of another company
+// is not sent to the first company's schedule page.
+async function invalid(req, res) {
+    const company = await AccessLink.companyOf(req.app.locals.db, req.params.token);
+
+    if (company) {
+        res.locals.company = company;
+        res.locals.base = basePathFor(company);
+    }
+
     return res.status(404).render("link/invalid", { title: "Link Not Valid" });
 }
 
 // A GET never logs anyone in: email scanners open links, so only the button's POST redeems.
 export async function showContinue(req, res) {
     const link = await AccessLink.findValid(req.app.locals.db, req.params.token);
-    return link ? res.render("link/continue", { title: "Continue", token: req.params.token }) : invalid(res);
+    return link ? res.render("link/continue", { title: "Continue", token: req.params.token }) : invalid(req, res);
 }
 
 export async function redeem(req, res) {
@@ -18,7 +28,7 @@ export async function redeem(req, res) {
     const user = link && await Customer.ensureUser(db, link.customerId);
 
     if (!user) {
-        return invalid(res);
+        return invalid(req, res);
     }
 
     await regenerateSession(req);

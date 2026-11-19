@@ -42,12 +42,12 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
 - An instructor-hosted database as an optional target for server agents.
 - Technician logins. Planned, not a commitment. See [Technician Logins](#technician-logins).
-- Branded business workspaces (multi-tenant). Started: each company's data is kept apart and Mason can make a company with `pnpm company:create`. The public pages with an address for each company are the next step. Branding, a sign-up for businesses, plans and an operator role are planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
+- Branded business workspaces (multi-tenant). Started: each company's data is kept apart and Mason can make a company with `pnpm company:create`. The public pages with an address for each company are built (`/w/<slug>`). Branding, a sign-up for businesses, plans and an operator role are planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
 - Opt-out and consent for texted links. Not built, and not needed today: this web app is a partner to Sprinkler Messenger, and owners text from their own business phones, so a shared company number is not planned. If that changes, do this first, since consent and opt-out rules vary by country and state. Not legal advice.
 
 ## Branded Business Workspaces
 
-**Status:** Started. The data of separate companies is built and kept apart (the companies work of [ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and Mason can make a company with its owner and services by running `pnpm company:create`. Not built yet: a public sign-up page for each company, branding, a way for a business to sign itself up, plans and pricing, and an operator role. This page does not change the single-company decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md), which ADR 0018 amends.
+**Status:** Started. The data of separate companies is built and kept apart (the companies work of [ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), Mason can make a company with its owner and services by running `pnpm company:create`, and each company has its own public pages at `/w/<slug>` that show its name, services and reviews. Not built yet: branding (a logo, colors and copy of its own), a way for a business to sign itself up, plans and pricing, and an operator role. This page does not change the single-company decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md), which ADR 0018 amends.
 
 A business signs up with Routemaster and is allocated its own workspace. That workspace includes a mirrored copy of the customer-facing service sign-up, branded for that business. A way for each business to customize that branding is part of the same plan.
 
@@ -65,7 +65,7 @@ The flow being mirrored is the public service sign-up a customer uses today: the
 **Open questions.**
 
 - Decided (Mason, 2026-11-18): how tenants are isolated. Rows in shared tables, each tagged with a company (`companies` table, `company_id` column), in the one database. See [ADR 0018](../adr/0018-companies-and-company-scoped-data.md). Only the first step is built: migration 028 adds the table and the columns, and nothing reads them yet. A schema per business and a database per business were rejected. ADR 0001 rejected a tenant column on day one because it would touch every table and query, and the later steps are that work.
-- TODO (Mason): The URL scheme for a branded sign-up. A subdomain and a path are both open.
+- Decided (Mason, 2026-11-19): the URL scheme is a path, `/w/<slug>`, because it works in the one Render service without wildcard DNS. Built: a company home page, schedule, services, reviews, contact, register and login at that address. A subdomain or a custom hostname is not built.
 - TODO (Mason): Pricing or plans. Nothing is decided, including whether a business pays, and no price should be invented.
 - TODO (Mason): What a business can customize. Logo, colors, and copy are examples, not a decided list.
 - TODO (Mason): How a workspace interacts with the existing owner admin and the owner, dispatcher, and customer roles. Whether each business has its own owner, and whether Routemaster needs an operator role above those owners, is open.

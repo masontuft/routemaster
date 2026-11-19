@@ -10,7 +10,7 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 ## Recommended
 
 - Add a page to change your own password. Nobody can change a password today, so the owner that `pnpm company:create` makes keeps the password they were given. Do this before giving a second company's owner a password for real use. It is on the [roadmap](../product/roadmap.md) under Next, and a forgotten password has no way back either until something can send email.
-- Make the second company with `pnpm company:create`, using `--dry-run` first and `OWNER_PASSWORD` set for that one command ([environment variables](../setup/environment-variables.md)). Its customers cannot reach it until the public pages for each company are built.
+- Make the second company with `pnpm company:create`, using `--dry-run` first and `OWNER_PASSWORD` set for that one command ([environment variables](../setup/environment-variables.md)). Its customers reach it at `/w/<slug>`.
 - Apply migrations 022 and 023 to Supabase with `pnpm migrate` before deploying rebooking and tentative bookings. The owner option is off until the owner turns it on at `/admin/settings`. Try rebooking with last season's data: import the past tabs as Completed with their season year, then set a city on each area so map lookups can find the addresses.
 - Apply migrations 020 and 021 to Supabase with `pnpm migrate` before deploying the route builder. Optionally set `GOOGLE_MAPS_API_KEY`, `SERVICE_STATE` and `ROUTE_START_ADDRESS` on Render. The route builder has only been run against fake map responses, so try it once with real addresses and watch for addresses that come back not found.
 

@@ -4,9 +4,9 @@
     <h1>Something Went Wrong</h1>
     <p>Please try again later.</p>
     <p class="actions">
-        <a href="/">Back to Home</a>
-        <a href="/services">Services</a>
-        <a href="/contact">Contact</a>
+        <a href="<%= locals.base || "/" %>">Back to Home</a>
+        <a href="<%= locals.base %>/services">Services</a>
+        <a href="<%= locals.base %>/contact">Contact</a>
     </p>
 </section>
 <%- include("partials/foot") %>

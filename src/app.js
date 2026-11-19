@@ -23,6 +23,8 @@ import { formatAddress } from "./utils/address.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import csrf from "./middleware/csrf.js";
 import ensureCompany from "./middleware/ensureCompany.js";
+import publicContext from "./middleware/publicContext.js";
+import companyRoutes from "./routes/company.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { isProduction } from "./utils/env.js";
@@ -84,6 +86,7 @@ export default function createApp({
         res.locals.currentPath = req.path;
         next();
     });
+    app.use(publicContext);
     app.use(routes);
     const limit = rateLimit({ windowMs: 15 * 60 * 1000, max: rateLimitMax });
     app.use(authRoutes(limit));
@@ -99,6 +102,7 @@ export default function createApp({
     app.use(linkRoutes(limit));
     app.use(scheduleRoutes(limit));
     app.use(contactRoutes(limit));
+    app.use("/w/:slug", companyRoutes(limit));
     app.use(notFound);
     app.use(errorHandler);
 

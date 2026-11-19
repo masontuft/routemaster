@@ -1,6 +1,6 @@
 import * as ContactMessage from "../models/contactMessage.js";
 import { validateContact } from "../utils/validation.js";
-import { DEFAULT_COMPANY_ID } from "../config/company.js";
+import { publicCompanyId } from "../utils/company.js";
 
 const EMPTY = { name: "", email: "", phone: "", message: "" };
 
@@ -15,7 +15,7 @@ export async function submit(req, res) {
         return res.status(400).render("contact/form", { title: "Contact Us", pageStyle: "marketing", errors, values });
     }
 
-    // /contact has no company in its address yet, so a message goes to the first company (see config/company.js).
-    await ContactMessage.create(req.app.locals.db, DEFAULT_COMPANY_ID, values);
+    // The bare /contact sends to the first company, and /w/<slug>/contact to that company (publicCompanyId).
+    await ContactMessage.create(req.app.locals.db, publicCompanyId(req), values);
     res.render("contact/thanks", { title: "Message Sent", pageStyle: "marketing" });
 }

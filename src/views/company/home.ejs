@@ -1,0 +1,30 @@
+<%- include("../partials/head") %>
+<section class="hero">
+    <h1><%= company.name %></h1>
+    <p class="lead">Schedule your service online, or send us a message.</p>
+    <p class="actions">
+        <a class="button" href="<%= base %>/schedule">Schedule Your Service</a>
+        <a class="button secondary" href="<%= base %>/services">See Our Services</a>
+    </p>
+</section>
+<% if (services.length > 0) { %>
+    <section>
+        <h2>Our Services</h2>
+        <ul class="bento services">
+            <% services.forEach((service) => { %>
+                <li>
+                    <h3><%= service.name %></h3>
+                    <% if (service.price_cents > 0) { %>
+                        <p class="price"><%= formatCents(service.price_cents) %></p>
+                    <% } %>
+                </li>
+            <% }) %>
+        </ul>
+    </section>
+<% } %>
+<p>
+    <a href="<%= base %>/reviews">Read Reviews</a> |
+    <a href="<%= base %>/contact">Contact Us</a> |
+    <a href="<%= base %>/login">Log In</a>
+</p>
+<%- include("../partials/foot") %>
