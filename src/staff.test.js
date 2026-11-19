@@ -51,7 +51,7 @@ async function post(agent, pagePath, action, fields) {
 }
 
 async function loginAs(agent, email, roleName) {
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     return post(agent, "/login", "/login", { email, password: "longenough" });
 }
 
@@ -66,7 +66,7 @@ function daysAhead(days) {
 }
 
 async function matchedRequest(name = "Ann Lee", street = "12 Oak Street", phone = "208-555-0101") {
-    const customerId = await Customer.create(pool, { name, phone });
+    const customerId = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, customerId, { street, city: "Rexburg" });
     const id = await ServiceRequest.create(pool, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: daysAhead(10),
@@ -422,7 +422,7 @@ test("a staff-made link shows once, stores only a hash, works, and can be revoke
     assert.strictEqual((await visitor.get(`/l/${link[2]}`)).status, 200);
 
     const linkId = reload.text.match(/links\/(\d+)\/revoke/)[1];
-    const other = await Customer.create(pool, { name: "Bo Kim", phone: "208-555-0202" });
+    const other = await Customer.create(pool, 1, { name: "Bo Kim", phone: "208-555-0202" });
     const wrongOwner = await post(agent, page, `/staff/customers/${other}/links/${linkId}/revoke`, {});
     assert.strictEqual(wrongOwner.status, 404);
 

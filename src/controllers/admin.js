@@ -5,6 +5,7 @@ import { hashPassword } from "../utils/password.js";
 import { notFound } from "../utils/errors.js";
 import { parseId, validateRegistration } from "../utils/validation.js";
 import { parsePriceCents } from "../utils/money.js";
+import { companyOf } from "../utils/company.js";
 
 const STAFF_ROLES = ["owner", "dispatcher"];
 
@@ -17,7 +18,7 @@ const ROLE_ERRORS = {
 
 async function renderUsers(req, res, { errors = [], status = 200 } = {}) {
     const db = req.app.locals.db;
-    const [users, roles] = await Promise.all([Admin.listUsers(db), Admin.listRoles(db)]);
+    const [users, roles] = await Promise.all([Admin.listUsers(db, companyOf(req)), Admin.listRoles(db)]);
     res.status(status).render("admin/users", { title: "Users", users, roles, errors });
 }
 
@@ -28,7 +29,7 @@ export async function listUsers(req, res) {
 export async function changeRole(req, res) {
     const id = parseId(req.params.id);
     const result = id
-        ? await Admin.changeRole(req.app.locals.db, id, String(req.body.role ?? ""), req.session.user.id)
+        ? await Admin.changeRole(req.app.locals.db, companyOf(req), id, String(req.body.role ?? ""), req.session.user.id)
         : { error: "not_found" };
 
     if (result.error === "not_found") {
@@ -55,7 +56,7 @@ export async function createUser(req, res) {
     }
 
     const created = errors.length === 0 && await User.create(req.app.locals.db, {
-        email, passwordHash: await hashPassword(password), roleName: role,
+        email, passwordHash: await hashPassword(password), roleName: role, companyId: companyOf(req),
     });
 
     if (errors.length === 0 && !created) {

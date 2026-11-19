@@ -66,7 +66,7 @@ async function send(agent, pagePath, action, fields) {
 async function staffAgent(roleName = "dispatcher") {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
@@ -81,7 +81,7 @@ async function customerAgent(customerId) {
 
 // A customer in the area, served last year with the given service type.
 async function servedLastYear(name, { serviceTypeId = 1, area = areaId, street = "1 Elm St" } = {}) {
-    const id = await Customer.create(pool, { name, phone: "208-555-0101" });
+    const id = await Customer.create(pool, 1, { name, phone: "208-555-0101" });
     const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, area]);
     const requestId = await ServiceRequest.create(pool, {
@@ -187,7 +187,7 @@ test("a customer is skipped when already booked this year, outside a working are
 
 test("a forged form cannot pencil in a customer who was never served or who declined this year", async () => {
     await AppSetting.set(pool, "allow_tentative_booking", "on", null);
-    const never = await Customer.create(pool, { name: "Never Served", phone: "208-555-0102" });
+    const never = await Customer.create(pool, 1, { name: "Never Served", phone: "208-555-0102" });
     const neverProperty = await Property.create(pool, never, { street: "3 Elm St", city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [neverProperty, areaId]);
     const declined = await servedLastYear("Declined", { street: "4 Elm St" });

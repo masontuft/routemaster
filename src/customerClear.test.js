@@ -37,7 +37,7 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    customerId = await Customer.create(pool, { name: "Ann Lee", phone: "(208) 555-0101", email: "ann@example.com" });
+    customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101", email: "ann@example.com" });
     propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg", zip: "83440" });
     const requestId = await ServiceRequest.create(pool, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: "2030-01-01",
@@ -70,7 +70,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
@@ -78,7 +78,7 @@ async function agentFor(roleName) {
 
 
 async function addHandMadeCustomer() {
-    const id = await Customer.create(pool, { name: "Bo Kim" });
+    const id = await Customer.create(pool, 1, { name: "Bo Kim" });
     await Property.create(pool, id, { street: "9 Elm Street", city: "Rexburg", zip: "83440" });
     return id;
 }

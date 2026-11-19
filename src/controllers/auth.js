@@ -1,4 +1,5 @@
 import * as User from "../models/user.js";
+import { DEFAULT_COMPANY_ID } from "../config/company.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 import { validateRegistration, normalizeEmail } from "../utils/validation.js";
 import { regenerateSession, destroySession } from "../utils/session.js";
@@ -15,11 +16,16 @@ export async function register(req, res) {
 
     if (errors.length === 0) {
         const passwordHash = await hashPassword(password);
-        const user = await User.create(req.app.locals.db, { email, passwordHash, roleName: "customer" });
+        // There is no company in the address of /register yet, so a self-registered customer joins the first company.
+        const user = await User.create(req.app.locals.db, {
+            email, passwordHash, roleName: "customer", companyId: DEFAULT_COMPANY_ID,
+        });
 
         if (user) {
             await regenerateSession(req);
-            req.session.user = { id: user.id, email: user.email, role: user.role, displayName: user.email };
+            req.session.user = {
+                id: user.id, email: user.email, role: user.role, displayName: user.email, companyId: user.companyId,
+            };
             return res.redirect("/");
         }
 
@@ -48,7 +54,9 @@ export async function login(req, res) {
     }
 
     await regenerateSession(req);
-    req.session.user = { id: user.id, email: user.email, role: user.role, displayName: user.email };
+    req.session.user = {
+        id: user.id, email: user.email, role: user.role, displayName: user.email, companyId: user.companyId,
+    };
     res.redirect("/");
 }
 

@@ -49,7 +49,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    const user = await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    const user = await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return { agent, id: user.id };
 }

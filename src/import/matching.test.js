@@ -37,13 +37,13 @@ function candidate(rowNumber, fields = {}) {
 }
 
 async function customerWithProperty(name, phone, street) {
-    const customerId = await Customer.create(pool, { name, phone });
+    const customerId = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, customerId, { street, city: "Testville" });
     return { customerId, propertyId };
 }
 
 async function kindsOf(...candidates) {
-    const { rows } = await classifyCandidates(pool, candidates);
+    const { rows } = await classifyCandidates(pool, 1, candidates);
     return rows.map((row) => {
         return row.match.kind;
     });
@@ -58,7 +58,7 @@ test("an empty list needs no queries and gives zero counts", async () => {
         },
     };
 
-    const { rows, summary } = await classifyCandidates(counting, []);
+    const { rows, summary } = await classifyCandidates(counting, 1, []);
 
     assert.deepStrictEqual(rows, []);
     assert.strictEqual(queries, 0);
@@ -70,7 +70,7 @@ test("an empty list needs no queries and gives zero counts", async () => {
 test("same customer on the same street, spelled differently, is existing", async () => {
     const { customerId, propertyId } = await customerWithProperty("Ada Example", "(801) 555-0100", "1 Test St");
 
-    const { rows } = await classifyCandidates(pool, [candidate(2, { street: "1 test STREET." })]);
+    const { rows } = await classifyCandidates(pool, 1, [candidate(2, { street: "1 test STREET." })]);
 
     assert.deepStrictEqual(rows[0].match, { kind: "existing", customerId, propertyId });
 });
@@ -88,7 +88,7 @@ test("a missing phone on either side does not stop a name and street match", asy
 test("a street that belongs to someone else is flagged, not matched", async () => {
     const { customerId, propertyId } = await customerWithProperty("Cy Other", "801-555-0199", "1 Test St");
 
-    const { rows } = await classifyCandidates(pool, [
+    const { rows } = await classifyCandidates(pool, 1, [
         candidate(2),
         candidate(3, { name: "Cy Other", phone: "801-555-0100" }),
     ]);
@@ -101,7 +101,7 @@ test("with two customers on one street, the one that matches the row wins", asyn
     await customerWithProperty("Cy Other", "801-555-0199", "1 Test St");
     const ada = await customerWithProperty("Ada Example", "801-555-0100", "1 Test St");
 
-    const { rows } = await classifyCandidates(pool, [candidate(2)]);
+    const { rows } = await classifyCandidates(pool, 1, [candidate(2)]);
 
     assert.deepStrictEqual(rows[0].match, { kind: "existing", ...ada });
 });
@@ -109,7 +109,7 @@ test("with two customers on one street, the one that matches the row wins", asyn
 test("a known customer at a street not on file is a new property for that customer", async () => {
     await customerWithProperty("Ada Example", "801-555-0100", "9 Elsewhere Ave");
 
-    const { rows } = await classifyCandidates(pool, [candidate(2)]);
+    const { rows } = await classifyCandidates(pool, 1, [candidate(2)]);
 
     assert.strictEqual(rows[0].match.kind, "new_property");
     assert.ok(rows[0].match.customerId > 0);
@@ -127,7 +127,7 @@ test("nothing on file means a new customer and property", async () => {
 });
 
 test("blocked rows are never looked up", async () => {
-    const { rows, summary } = await classifyCandidates(pool, [
+    const { rows, summary } = await classifyCandidates(pool, 1, [
         candidate(2, { name: null, blocked: true, issues: ["Missing customer name."] }),
     ]);
 
@@ -137,7 +137,7 @@ test("blocked rows are never looked up", async () => {
 });
 
 test("rows on one street are one property, and a different name there is a warning", async () => {
-    const { rows, summary } = await classifyCandidates(pool, [
+    const { rows, summary } = await classifyCandidates(pool, 1, [
         candidate(2),
         candidate(3, { street: "1 test st" }),
         candidate(4, { name: "Bob Example", street: "2 Test St" }),
@@ -155,7 +155,7 @@ test("rows on one street are one property, and a different name there is a warni
 
 test("the input candidates are not changed", async () => {
     const input = [candidate(2, { name: "Bob Example" }), candidate(3, { name: "Cy Other" })];
-    await classifyCandidates(pool, input);
+    await classifyCandidates(pool, 1, input);
     assert.deepStrictEqual(input[0].issues, []);
     assert.strictEqual(input[0].match, undefined);
 });
@@ -173,7 +173,7 @@ test("a long sheet takes three queries, not one per row", async () => {
         return candidate(index + 2, { name: `Person ${index}`, street: `${index + 10} Test St`, phone: `801555${String(index).padStart(4, "0")}` });
     });
 
-    const { summary } = await classifyCandidates(counting, [...many, candidate(400)]);
+    const { summary } = await classifyCandidates(counting, 1, [...many, candidate(400)]);
 
     assert.strictEqual(summary.existing, 1);
     assert.strictEqual(summary.new, 300);
@@ -183,7 +183,7 @@ test("a long sheet takes three queries, not one per row", async () => {
 test("a joint name matches the same couple spelled with an ampersand or with and", async () => {
     const { customerId, propertyId } = await customerWithProperty("Sam & Ruth Example", "801-555-0155", "9 Test Street");
 
-    const { rows } = await classifyCandidates(pool, [
+    const { rows } = await classifyCandidates(pool, 1, [
         candidate(2, { name: "Sam and Ruth Example", phone: "801-555-0155", street: "9 Test St" }),
         candidate(3, { name: "SAM & RUTH EXAMPLE", phone: "801-555-0155", street: "9 test street" }),
     ]);

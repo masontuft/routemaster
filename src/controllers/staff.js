@@ -11,6 +11,7 @@ import {
     parseId, validatePreferredDate, validateProperty, validateCustomerEdit, validatePropertyEdit, todayString,
 } from "../utils/validation.js";
 import { STATUSES, allowedNext } from "../utils/transitions.js";
+import { companyOf } from "../utils/company.js";
 
 const TRANSITION_ERRORS = {
     not_found: null,
@@ -111,7 +112,7 @@ export async function setReferrer(req, res) {
 async function renderMatch(req, res, request, { errors = [], status = 200 } = {}) {
     const db = req.app.locals.db;
     const q = String(req.query.q ?? request.lead_name ?? "").trim().slice(0, 100);
-    const customers = await Customer.search(db, q);
+    const customers = await Customer.search(db, companyOf(req), q);
     const properties = await Property.listForCustomers(db, customers.map((customer) => {
         return customer.id;
     }));
@@ -177,14 +178,14 @@ export async function matchNew(req, res) {
 export async function listCustomers(req, res) {
     const q = String(req.query.q ?? "").trim().slice(0, 100);
     const needsCity = req.query.needs === "city";
-    const customers = await Customer.search(req.app.locals.db, q, { needsCity });
+    const customers = await Customer.search(req.app.locals.db, companyOf(req), q, { needsCity });
     res.render("staff/customers", { title: "Customers", customers, q, needsCity });
 }
 
 async function renderCustomer(req, res, { newLink = null, errors = [], propertyValues = {}, status = 200 } = {}) {
     const db = req.app.locals.db;
     const id = parseId(req.params.id);
-    const customer = id && await Customer.findById(db, id);
+    const customer = id && await Customer.findById(db, companyOf(req), id);
 
     if (!customer) {
         throw notFound();
@@ -208,7 +209,7 @@ export async function showCustomer(req, res) {
 
 async function loadCustomer(req) {
     const id = parseId(req.params.id);
-    const customer = id && await Customer.findById(req.app.locals.db, id);
+    const customer = id && await Customer.findById(req.app.locals.db, companyOf(req), id);
 
     if (!customer) {
         throw notFound();
@@ -243,7 +244,7 @@ export async function updateCustomer(req, res) {
         return customerEditPage(req, res, { customer, values: { ...customer, ...values }, errors, status: 400 });
     }
 
-    await Customer.update(req.app.locals.db, customer.id, values);
+    await Customer.update(req.app.locals.db, companyOf(req), customer.id, values);
     res.redirect(303, `/staff/customers/${customer.id}`);
 }
 
@@ -261,7 +262,7 @@ export async function addProperty(req, res) {
 
 async function loadProperty(req) {
     const id = parseId(req.params.id);
-    const property = id && await Property.findById(req.app.locals.db, id);
+    const property = id && await Property.findById(req.app.locals.db, companyOf(req), id);
 
     if (!property) {
         throw notFound();
@@ -300,7 +301,7 @@ export async function updateProperty(req, res) {
         return propertyEditPage(req, res, { property, values: { ...property, ...values }, errors, status: 400 });
     }
 
-    await Property.update(req.app.locals.db, property.id, values);
+    await Property.update(req.app.locals.db, companyOf(req), property.id, values);
     res.redirect(303, `/staff/customers/${property.customer_id}`);
 }
 
@@ -308,7 +309,7 @@ export async function createLink(req, res) {
     const db = req.app.locals.db;
     const id = parseId(req.params.id);
 
-    if (!id || !await Customer.findById(db, id)) {
+    if (!id || !await Customer.findById(db, companyOf(req), id)) {
         throw notFound();
     }
 
@@ -320,7 +321,9 @@ export async function revokeLink(req, res) {
     const customerId = parseId(req.params.id);
     const linkId = parseId(req.params.linkId);
 
-    if (!customerId || !linkId || !await AccessLink.revokeForCustomer(req.app.locals.db, linkId, customerId)) {
+    // The customer must be this company's first. The revoke itself is scoped to that customer's own links.
+    if (!customerId || !linkId || !await Customer.findById(req.app.locals.db, companyOf(req), customerId)
+        || !await AccessLink.revokeForCustomer(req.app.locals.db, linkId, customerId)) {
         throw notFound();
     }
 
@@ -337,7 +340,7 @@ function requireOwner(req) {
 export async function showCustomerDelete(req, res) {
     requireOwner(req);
     const customer = await loadCustomer(req);
-    const counts = await Customer.countRelated(req.app.locals.db, customer.id);
+    const counts = await Customer.countRelated(req.app.locals.db, companyOf(req), customer.id);
     res.set("Cache-Control", "no-store");
     res.render("staff/customer-delete", { title: "Delete Customer", customer, counts });
 }
@@ -345,7 +348,7 @@ export async function showCustomerDelete(req, res) {
 export async function deleteCustomer(req, res) {
     requireOwner(req);
     const customer = await loadCustomer(req);
-    await Customer.remove(req.app.locals.db, customer.id);
+    await Customer.remove(req.app.locals.db, companyOf(req), customer.id);
     res.redirect(303, "/staff/customers");
 }
 

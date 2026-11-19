@@ -13,6 +13,7 @@ import * as ServiceType from "../models/serviceType.js";
 import * as ImportBatch from "../models/importBatch.js";
 import { notFound } from "../utils/errors.js";
 import { parseId } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 // Upstream failures are the server's or Google's fault; everything else is the owner's input.
 const UPSTREAM_CODES = ["network", "timeout", "download_failed", "aborted"];
@@ -180,7 +181,7 @@ function skippedBy(plan) {
 
 async function previewPage(req, res, { sheetId, mapping, options, errors = [], status = 200 }) {
     const { candidates, skippedEmpty } = buildCandidates(mapping.sheet, mapping);
-    const { rows, summary } = await classifyCandidates(req.app.locals.db, candidates);
+    const { rows, summary } = await classifyCandidates(req.app.locals.db, companyOf(req), candidates);
     const plan = buildPlan(rows, options.value, contextOf(sheetId, mapping));
     const groups = PREVIEW_ORDER.map((kind) => {
         const ofKind = rows.filter((row) => {
@@ -251,7 +252,7 @@ export async function confirmImport(req, res) {
             const { batchId } = await applyImport(req.app.locals.db, {
                 postedHash: String(req.body.planHash ?? ""),
                 computePlan: async (client) => {
-                    const { rows } = await classifyCandidates(client, candidates);
+                    const { rows } = await classifyCandidates(client, companyOf(req), candidates);
                     return buildPlan(rows, options.value, context);
                 },
                 context,

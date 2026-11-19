@@ -93,7 +93,8 @@ export async function historyFor(pool, id) {
 // Locks the request row so two staff members acting at once cannot both pass the transition check.
 async function lockRequest(client, id) {
     const { rows } = await client.query(
-        `SELECT service_requests.customer_id, service_requests.lead_id, request_statuses.name AS status
+        `SELECT service_requests.customer_id, service_requests.lead_id, service_requests.company_id,
+                request_statuses.name AS status
          FROM service_requests
          JOIN request_statuses ON request_statuses.id = service_requests.status_id
          WHERE service_requests.id = $1
@@ -255,7 +256,8 @@ export async function matchAsNew(pool, id, { city, zip }, changedBy) {
         }
 
         const lead = await Lead.findById(client, current.lead_id);
-        const customerId = await Customer.create(client, { name: lead.name, phone: lead.phone });
+        // The new customer belongs to the company of the request being matched. Staff cannot choose another one.
+        const customerId = await Customer.create(client, current.company_id, { name: lead.name, phone: lead.phone });
         const propertyId = await Property.create(client, customerId, { street: lead.address, city, zip });
         const alsoMatched = await attachWithLead(client, id, customerId, propertyId, changedBy, "Matched to a new customer");
         return { ok: true, alsoMatched };

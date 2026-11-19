@@ -14,7 +14,7 @@ before(() => {
 });
 beforeEach(async () => {
     await db.reset();
-    customerId = await Customer.create(pool, { name: "Ann Lee", phone: "208-555-0101" });
+    customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "208-555-0101" });
 });
 after(() => {
     return db.close();
@@ -115,13 +115,13 @@ test("changing the address clears the point, and saving the same address keeps i
     const id = await property("1 Elm St", "Rexburg", "83440");
     await locateProperties(pool, [id], { geocode: found });
 
-    await Property.update(pool, id, { street: "1 Elm St", city: "Rexburg", zip: "83440", notes: "gate code" });
+    await Property.update(pool, 1, id, { street: "1 Elm St", city: "Rexburg", zip: "83440", notes: "gate code" });
     assert.strictEqual((await stateOf(id)).geocode_status, "ok");
 
-    await Property.update(pool, id, { notes: "only a note" });
+    await Property.update(pool, 1, id, { notes: "only a note" });
     assert.strictEqual((await stateOf(id)).geocode_status, "ok");
 
-    await Property.update(pool, id, { street: "9 Oak Ave", city: "Rexburg", zip: "83440" });
+    await Property.update(pool, 1, id, { street: "9 Oak Ave", city: "Rexburg", zip: "83440" });
     assert.deepStrictEqual(await stateOf(id), { latitude: null, longitude: null, geocode_status: "pending" });
 });
 

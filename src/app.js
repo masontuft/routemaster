@@ -22,6 +22,7 @@ import { formatCents } from "./utils/money.js";
 import { formatAddress } from "./utils/address.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import csrf from "./middleware/csrf.js";
+import ensureCompany from "./middleware/ensureCompany.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { isProduction } from "./utils/env.js";
@@ -76,6 +77,8 @@ export default function createApp({
     // is raised. The 100 kb body limit still bounds the size.
     app.use(express.urlencoded({ extended: false, parameterLimit: 5000 }));
     app.use(csrf);
+    // Before anything reads the session: a session saved before companies existed gets its company from the users row.
+    app.use(ensureCompany);
     app.use((req, res, next) => {
         res.locals.user = req.session.user;
         res.locals.currentPath = req.path;

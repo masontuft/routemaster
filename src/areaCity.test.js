@@ -35,7 +35,7 @@ beforeEach(async () => {
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
     areaId = await Area.create(pool, "Meridian 1");
-    customerId = await Customer.create(pool, { name: "Ann Lee", phone: "208-555-0101" });
+    customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "208-555-0101" });
 });
 after(async () => {
     server?.close();
@@ -56,7 +56,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
@@ -148,10 +148,10 @@ test("moving a property to another area clears its point, and saving the same ar
     const bare = await property("1 Elm St");
     await locateProperties(pool, [bare], { geocode: found });
 
-    await Property.update(pool, bare, { street: "1 Elm St", subdivisionId: areaId });
+    await Property.update(pool, 1, bare, { street: "1 Elm St", subdivisionId: areaId });
     assert.strictEqual((await stateOf(bare)).geocode_status, "ok");
 
-    await Property.update(pool, bare, { subdivisionId: other });
+    await Property.update(pool, 1, bare, { subdivisionId: other });
     assert.strictEqual((await stateOf(bare)).geocode_status, "pending");
 });
 

@@ -32,7 +32,7 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    customerId = await Customer.create(pool, { name: "Ann Lee", phone: "(208) 555-0101", email: "ann@example.com" });
+    customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101", email: "ann@example.com" });
     propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg", zip: "83440" });
 });
 after(async () => {
@@ -54,7 +54,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
@@ -199,9 +199,9 @@ test("staff add a property to a customer, and the city is required for a hand-ma
 });
 
 test("the customer list can show only customers with a property missing a city", async () => {
-    const other = await Customer.create(pool, { name: "Bo Cityless", phone: "208-555-0300" });
+    const other = await Customer.create(pool, 1, { name: "Bo Cityless", phone: "208-555-0300" });
     await Property.create(pool, other, { street: "3 Birch Way", city: null });
-    await Customer.create(pool, { name: "Cy Noproperty", phone: "208-555-0400" });
+    await Customer.create(pool, 1, { name: "Cy Noproperty", phone: "208-555-0400" });
     const dispatcher = await agentFor("dispatcher");
 
     const all = await dispatcher.get("/staff/customers");

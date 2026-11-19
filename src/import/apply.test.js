@@ -24,6 +24,7 @@ before(() => {
 beforeEach(async () => {
     await db.reset();
     const user = await User.create(pool, {
+        companyId: 1,
         email: "owner@example.com", passwordHash: await hashPassword("longenough"), roleName: "owner",
     });
     userId = user.id;
@@ -52,7 +53,7 @@ function candidate(rowNumber, fields = {}) {
 
 function computeWith(candidates, options = OPTIONS) {
     return async (client) => {
-        const { rows } = await classifyCandidates(client, candidates);
+        const { rows } = await classifyCandidates(client, 1, candidates);
         return buildPlan(rows, options, CONTEXT);
     };
 }
@@ -196,9 +197,9 @@ test("the chosen status decides whether a job is booked", async () => {
 
 test("areas are shared across spellings, and an area already on a property is never overwritten", async () => {
     const elm = (await pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('Elm Park', 'elm park') RETURNING id")).rows[0].id;
-    const ada = await Customer.create(pool, { name: "Ada Example", phone: "801-555-0100" });
+    const ada = await Customer.create(pool, 1, { name: "Ada Example", phone: "801-555-0100" });
     const adaHome = await Property.create(pool, ada, { street: "1 Test St", city: "Testville" });
-    const bob = await Customer.create(pool, { name: "Bob Known", phone: "801-555-0111" });
+    const bob = await Customer.create(pool, 1, { name: "Bob Known", phone: "801-555-0111" });
     const bobHome = await Property.create(pool, bob, { street: "2 Test St", city: "Testville" });
     await pool.query("UPDATE properties SET subdivision_id = $1 WHERE id = $2", [elm, adaHome]);
 
@@ -218,7 +219,7 @@ test("areas are shared across spellings, and an area already on a property is ne
 });
 
 test("a known customer at a new street gets a property but not a second customer record", async () => {
-    const ada = await Customer.create(pool, { name: "Ada Example", phone: "801-555-0100" });
+    const ada = await Customer.create(pool, 1, { name: "Ada Example", phone: "801-555-0100" });
 
     await runImport([candidate(2, { street: "9 Elsewhere Ave" })]);
 

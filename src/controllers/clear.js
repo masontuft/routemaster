@@ -2,6 +2,7 @@ import * as Customer from "../models/customer.js";
 import * as ImportBatch from "../models/importBatch.js";
 import { notFound } from "../utils/errors.js";
 import { parseId } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 const COUNT_KEYS = ["customers", "properties", "requests", "leads", "reviews", "links"];
 const ALL_PHRASE = "delete all customers";
@@ -43,12 +44,12 @@ async function loadBatch(req) {
 
 export async function showClearBatch(req, res) {
     const batch = await loadBatch(req);
-    confirmPage(res, { batch, counts: await Customer.countClear(req.app.locals.db, batch.id) });
+    confirmPage(res, { batch, counts: await Customer.countClear(req.app.locals.db, companyOf(req), batch.id) });
 }
 
 export async function clearBatch(req, res) {
     const batch = await loadBatch(req);
-    const result = await Customer.clear(req.app.locals.db, batch.id, expectedCounts(req.body));
+    const result = await Customer.clear(req.app.locals.db, companyOf(req), batch.id, expectedCounts(req.body));
 
     if (!result.deleted) {
         return confirmPage(res, {
@@ -61,7 +62,7 @@ export async function clearBatch(req, res) {
 }
 
 export async function showClearAll(req, res) {
-    confirmPage(res, { counts: await Customer.countClear(req.app.locals.db, null) });
+    confirmPage(res, { counts: await Customer.countClear(req.app.locals.db, companyOf(req), null) });
 }
 
 export async function clearAll(req, res) {
@@ -70,12 +71,12 @@ export async function clearAll(req, res) {
 
     if (typed !== ALL_PHRASE) {
         return confirmPage(res, {
-            counts: await Customer.countClear(db, null), status: 400,
+            counts: await Customer.countClear(db, companyOf(req), null), status: 400,
             errors: [`Type "${ALL_PHRASE}" exactly to confirm.`],
         });
     }
 
-    const result = await Customer.clear(db, null, expectedCounts(req.body));
+    const result = await Customer.clear(db, companyOf(req), null, expectedCounts(req.body));
 
     if (!result.deleted) {
         return confirmPage(res, {

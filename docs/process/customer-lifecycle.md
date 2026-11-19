@@ -20,6 +20,8 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 | Dispatcher | Areas and days, links, matching, the day board, routes |
 | Customer | Opens a link or logs in, requests service, picks a day, cancels, reviews |
 
+Every user belongs to one company ([ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and the session carries it. Only one company exists today, Tuft Sprinkler Blowouts, and a second cannot be created safely yet. The users page lists and changes only the owner's own company's users, and "the last owner" means the last owner of that company. A staff user an owner creates joins the owner's company. A customer who opens a link joins the company of the customer the link belongs to. The public pages `/register` and `/schedule` have no company in their address yet, so they use the first company.
+
 ## Owner options
 
 The owner sets company-wide options at `/admin/settings` (saved by posting there). There is one so far: **Allow booking customers who have not confirmed**, off by default. Off means the day board and the route builder deal only with jobs the customer asked for. On means staff may pencil in a customer who has not picked a day, as a tentative booking (step 6). The option is stored in `app_settings` and read on every request, so a change takes effect at once. Turning it off stops new pencil-ins but leaves existing tentative bookings alone.
@@ -114,6 +116,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 ## Known gaps in the whole process
 
 - Sending links is manual and unrecorded.
+- Customers and properties are kept apart by company, and nothing else is yet: requests, leads, areas, routes and the import write are not. Do not create a second company until they are (ADR 0018, issue 75).
 - A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is built, behind the owner option, in step 6.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.
@@ -124,6 +127,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-19 | Who may do a step: staff, customers and the customer search, edit, delete, link, bulk-delete and users pages are limited to the logged-in user's company (pass 2a of ADR 0018). A user belongs to one company, a link login joins the customer's company, and `/register` and `/schedule` use the first company. No page was added, removed or renamed, and the "Last verified" date is unchanged, because the steps were not re-read against the code. |
 | 2026-11-18 | Step 4, Messenger: the Messenger app now opens the deep link, texts each customer their own message and reports results (Mason shipped it and tested it in production). The Gaps line no longer says it cannot. The "Last verified" date is unchanged, because only this step was re-read: the routes and pages named in it match the code. |
 | 2026-11-17 | Deleting a customer, one or in bulk, also deletes the leads made into that customer and their unmatched requests (migration 027). The delete pages list the lead count. |
 | 2026-11-17 | Steps 3 and 6: a visitor with no match becomes a lead (`leads`, migrations 025 and 026), and the typed name, phone and street live there instead of on each request. Matching one request matches the same lead's other Needs Review requests too. The date above is unchanged, because only these two steps were re-read. |

@@ -34,7 +34,7 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    customerId = await Customer.create(pool, { name: "Ann Lee", phone: "(208) 555-0101" });
+    customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101" });
     propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg", zip: "83440" });
 });
 after(async () => {
@@ -56,7 +56,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }

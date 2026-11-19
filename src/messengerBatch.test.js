@@ -17,7 +17,7 @@ before(() => {
 });
 beforeEach(async () => {
     await db.reset();
-    const user = await User.create(pool, { email: "dispatch@example.com", passwordHash: "x", roleName: "dispatcher" });
+    const user = await User.create(pool, { companyId: 1, email: "dispatch@example.com", passwordHash: "x", roleName: "dispatcher" });
     userId = user.id;
 });
 after(() => {
@@ -31,8 +31,8 @@ async function stageFor(customerIds, overrides = {}) {
 }
 
 async function twoCustomers() {
-    const ann = await Customer.create(pool, { name: "Ann Lee", phone: "(208) 555-0101" });
-    const bob = await Customer.create(pool, { name: "Bob Ray", phone: "208-555-0102" });
+    const ann = await Customer.create(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101" });
+    const bob = await Customer.create(pool, 1, { name: "Bob Ray", phone: "208-555-0102" });
     return [ann, bob];
 }
 
@@ -54,7 +54,7 @@ test("stage stores hashes only and makes no magic link yet", async () => {
 
 test("stage leaves out customers with no usable phone and ids that are not customers", async () => {
     const [ann] = await twoCustomers();
-    const noPhone = await Customer.create(pool, { name: "No Phone", phone: "12" });
+    const noPhone = await Customer.create(pool, 1, { name: "No Phone", phone: "12" });
     const result = await stageFor([ann, noPhone, 999999]);
 
     assert.strictEqual(result.staged, 1);
@@ -62,7 +62,7 @@ test("stage leaves out customers with no usable phone and ids that are not custo
 });
 
 test("stage refuses a batch with nobody to text", async () => {
-    const noPhone = await Customer.create(pool, { name: "No Phone", phone: "12" });
+    const noPhone = await Customer.create(pool, 1, { name: "No Phone", phone: "12" });
     assert.strictEqual((await stageFor([noPhone])).error, "empty");
     assert.strictEqual((await stageFor([])).error, "empty");
 });
@@ -84,7 +84,7 @@ test("fetch returns E.164 phones and a message with that customer's own link", a
 });
 
 test("a name that looks like a placeholder is inserted as plain text", async () => {
-    const odd = await Customer.create(pool, { name: "A$&{link}B", phone: "2085550103" });
+    const odd = await Customer.create(pool, 1, { name: "A$&{link}B", phone: "2085550103" });
     const { token } = await stageFor([odd]);
     const result = await MessengerBatch.fetchBatch(pool, token, ORIGIN);
 

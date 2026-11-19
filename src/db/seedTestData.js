@@ -5,6 +5,7 @@ import * as ServiceRequest from "../models/serviceRequest.js";
 import * as Staff from "../models/staff.js";
 import * as DayBoard from "../models/dayBoard.js";
 import * as RoutePlan from "../models/routePlan.js";
+import { DEFAULT_COMPANY_ID } from "../config/company.js";
 
 // Fictional people and streets, with fixed map points so seeding never calls a lookup service.
 const START = { address: "100 Depot Way, Riverbend, ID", lat: 43.4917, lng: -112.0339 };
@@ -60,7 +61,7 @@ export async function seedTestData(pool, { today = new Date(), dispatcherId = nu
 
     const requests = [];
     for (const [index, sample] of CUSTOMERS.entries()) {
-        const customerId = await Customer.create(pool, {
+        const customerId = await Customer.create(pool, DEFAULT_COMPANY_ID, {
             name: sample.name, phone: `208-555-01${String(index).padStart(2, "0")}`,
             email: `seed.customer${index + 1}@example.com`,
         });

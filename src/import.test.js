@@ -66,7 +66,7 @@ async function tokenFrom(agent, pagePath) {
 
 async function loginAs(agent, role) {
     const email = `${role}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName: role });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName: role });
     const _csrf = await tokenFrom(agent, "/login");
     await agent.post("/login").type("form").send({ _csrf, email, password: "longenough" });
 }
@@ -285,9 +285,9 @@ test("a column used twice and a missing required field are explained on the mapp
 });
 
 test("the preview sorts rows into outcomes and writes nothing", async () => {
-    const ada = await Customer.create(pool, { name: "Ada Example", phone: "(801) 555-0100" });
+    const ada = await Customer.create(pool, 1, { name: "Ada Example", phone: "(801) 555-0100" });
     await Property.create(pool, ada, { street: "1 Test St", city: "Testville" });
-    const eve = await Customer.create(pool, { name: "Eve Known", phone: "801-555-0122" });
+    const eve = await Customer.create(pool, 1, { name: "Eve Known", phone: "801-555-0122" });
     await Property.create(pool, eve, { street: "9 Elsewhere Ave", city: "Testville" });
     fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
     const agent = await ownerAgent();
@@ -349,7 +349,7 @@ function hashFrom(page) {
 }
 
 async function seedAda() {
-    const ada = await Customer.create(pool, { name: "Ada Example", phone: "(801) 555-0100" });
+    const ada = await Customer.create(pool, 1, { name: "Ada Example", phone: "(801) 555-0100" });
     await Property.create(pool, ada, { street: "1 Test St", city: "Testville" });
 }
 
@@ -445,7 +445,7 @@ test("confirming from a stale preview writes nothing and shows a fresh preview",
     assert.notStrictEqual(hashFrom(changedSheet), hash);
 
     fetchSheet = async () => {return { bytes: await workbookBytes(JOB_ROWS) };};
-    await Customer.create(pool, { name: "Bob New", phone: "801-555-0111" });
+    await Customer.create(pool, 1, { name: "Bob New", phone: "801-555-0111" });
     const changedData = await stepPost(agent, "/admin/import/confirm", { ...MAPPING, planHash: hash });
     assert.strictEqual(changedData.status, 409);
 
