@@ -45,12 +45,15 @@ export async function changeEmail(req, res) {
     }
 
     const result = await withTransaction(req.app.locals.db, async (client) => {
+        // The old address is read inside the transaction, from the locked row, so the record is right even if another
+        // session changed it a moment ago.
+        const locked = await client.query("SELECT email FROM users WHERE id = $1 FOR UPDATE", [user.id]);
         const changed = await User.setEmail(client, user.id, email);
 
         if (changed === true) {
             await AuditLog.record(client, {
                 companyId: user.companyId, actorId: user.id, action: "email_changed", targetId: user.id,
-                details: { from: user.email, to: email },
+                details: { from: locked.rows[0].email, to: email },
             });
         }
 
