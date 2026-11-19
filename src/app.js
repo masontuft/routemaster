@@ -25,6 +25,7 @@ import csrf from "./middleware/csrf.js";
 import ensureCompany from "./middleware/ensureCompany.js";
 import publicContext from "./middleware/publicContext.js";
 import companyRoutes from "./routes/company.js";
+import accountRoutes from "./routes/account.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { isProduction } from "./utils/env.js";
@@ -90,6 +91,7 @@ export default function createApp({
     app.use(routes);
     const limit = rateLimit({ windowMs: 15 * 60 * 1000, max: rateLimitMax });
     app.use(authRoutes(limit));
+    app.use(accountRoutes(limit));
     app.use(requestRoutes);
     app.use(staffRoutes);
     app.use(adminRoutes);
