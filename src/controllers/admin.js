@@ -18,7 +18,7 @@ const ROLE_ERRORS = {
 
 async function renderUsers(req, res, { errors = [], status = 200 } = {}) {
     const db = req.app.locals.db;
-    const [users, roles] = await Promise.all([Admin.listUsers(db), Admin.listRoles(db)]);
+    const [users, roles] = await Promise.all([Admin.listUsers(db, companyOf(req)), Admin.listRoles(db)]);
     res.status(status).render("admin/users", { title: "Users", users, roles, errors });
 }
 
@@ -29,7 +29,7 @@ export async function listUsers(req, res) {
 export async function changeRole(req, res) {
     const id = parseId(req.params.id);
     const result = id
-        ? await Admin.changeRole(req.app.locals.db, id, String(req.body.role ?? ""), req.session.user.id)
+        ? await Admin.changeRole(req.app.locals.db, companyOf(req), id, String(req.body.role ?? ""), req.session.user.id)
         : { error: "not_found" };
 
     if (result.error === "not_found") {

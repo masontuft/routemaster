@@ -8,11 +8,12 @@ import * as Customer from "./models/customer.js";
 import * as Property from "./models/property.js";
 import * as AccessLink from "./models/accessLink.js";
 import * as Staff from "./models/staff.js";
+import * as Admin from "./models/admin.js";
 import { hashPassword } from "./utils/password.js";
 
 // Two companies in one database (ADR 0018). Company 1 is Ann Lee's, company 2 is Bo Kim's. Each test checks that one
 // company's staff cannot find, change or delete the other's customers and properties, by id, by search and in bulk.
-// Only customers and properties are scoped so far (pass 2a), and these tests cover exactly that.
+// Only customers, properties and the users page are scoped so far (pass 2a), and these tests cover exactly that.
 
 const db = testDb("isolation");
 const pool = db.pool;
@@ -281,4 +282,70 @@ test("a registered customer joins the first company, because /register has no co
     const { rows } = await pool.query("SELECT company_id FROM users WHERE email = 'new.person@example.com'");
 
     assert.strictEqual(rows[0]?.company_id, 1);
+});
+
+async function roleOf(userId) {
+    const { rows } = await pool.query(
+        "SELECT roles.name FROM users JOIN roles ON roles.id = users.role_id WHERE users.id = $1",
+        [userId],
+    );
+    return rows[0]?.name;
+}
+
+test("the users page lists only the logged-in company's users, including its link-only customers", async () => {
+    const owner1 = await agentFor(1, "owner");
+    const owner2 = await agentFor(2, "owner");
+    const linkUser = await Customer.ensureUser(pool, ann);
+
+    const first = await owner1.get("/admin/users");
+    const second = await owner2.get("/admin/users");
+
+    assert.match(first.text, /owner1@example\.com/);
+    assert.doesNotMatch(first.text, /owner2@example\.com/);
+    assert.match(second.text, /owner2@example\.com/);
+    assert.doesNotMatch(second.text, /owner1@example\.com/);
+    assert.strictEqual((await Admin.listUsers(pool, 2)).some((user) => {
+        return user.id === linkUser.id;
+    }), false);
+    assert.strictEqual((await Admin.listUsers(pool, 1)).some((user) => {
+        return user.id === linkUser.id;
+    }), true);
+});
+
+test("an owner cannot change the role of another company's user: 404, and nothing changes", async () => {
+    const owner2 = await agentFor(2, "owner");
+    const dispatcher1 = await User.create(pool, {
+        companyId: 1, email: "disp1@example.com", passwordHash: "x", roleName: "dispatcher",
+    });
+
+    const res = await send(owner2, "/admin/users", `/admin/users/${dispatcher1.id}/role`, { role: "owner" });
+
+    assert.strictEqual(res.status, 404);
+    assert.strictEqual(await roleOf(dispatcher1.id), "dispatcher");
+    assert.deepStrictEqual(await Admin.changeRole(pool, 2, dispatcher1.id, "owner", 0), { error: "not_found" });
+});
+
+test("an owner can still change the role of a user in their own company", async () => {
+    const owner2 = await agentFor(2, "owner");
+    const dispatcher2 = await User.create(pool, {
+        companyId: 2, email: "disp2@example.com", passwordHash: "x", roleName: "dispatcher",
+    });
+
+    const res = await send(owner2, "/admin/users", `/admin/users/${dispatcher2.id}/role`, { role: "owner" });
+
+    assert.strictEqual(res.status, 302);
+    assert.strictEqual(await roleOf(dispatcher2.id), "owner");
+});
+
+test("the last owner rule counts one company's owners, not everyone's", async () => {
+    // Company 1 has two owners. Company 2 has one. The one in company 2 is still the last owner of company 2.
+    await User.create(pool, { companyId: 1, email: "a1@example.com", passwordHash: "x", roleName: "owner" });
+    await User.create(pool, { companyId: 1, email: "a2@example.com", passwordHash: "x", roleName: "owner" });
+    const only2 = await User.create(pool, { companyId: 2, email: "b1@example.com", passwordHash: "x", roleName: "owner" });
+
+    assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", 0), { error: "last_owner" });
+    assert.strictEqual(await roleOf(only2.id), "owner");
+
+    await User.create(pool, { companyId: 2, email: "b2@example.com", passwordHash: "x", roleName: "owner" });
+    assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", 0), { ok: true });
 });
