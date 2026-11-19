@@ -12,7 +12,7 @@ import { companyOf } from "../utils/company.js";
 async function formPage(req, res, { values, errors = [], status = 200 }) {
     const db = req.app.locals.db;
     const areas = await Area.list(db, companyOf(req), todayString());
-    const preview = values.areaId ? await LinkBatch.preview(db, values.areaId, values) : null;
+    const preview = values.areaId ? await LinkBatch.preview(db, companyOf(req), values.areaId, values) : null;
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/messenger-batch-new", {
         title: "Stage Links for Messenger", areas, values, errors, preview, max: MessengerBatch.MAX_BATCH,
@@ -66,8 +66,10 @@ export async function create(req, res) {
         throw notFound();
     }
 
-    const { customerIds, noPhone, skippedActive } = await LinkBatch.textableInArea(db, values.areaId, values);
-    const staged = await MessengerBatch.stage(db, {
+    const { customerIds, noPhone, skippedActive } = await LinkBatch.textableInArea(
+        db, companyOf(req), values.areaId, values,
+    );
+    const staged = await MessengerBatch.stage(db, companyOf(req), {
         createdBy: req.session.user.id, customerIds, messageTemplate: values.template, days: values.days,
     });
 
@@ -94,7 +96,7 @@ export async function createFromLinkBatch(req, res) {
         throw notFound();
     }
 
-    const staged = await MessengerBatch.stageFromLinkBatch(req.app.locals.db, linkBatchId, {
+    const staged = await MessengerBatch.stageFromLinkBatch(req.app.locals.db, companyOf(req), linkBatchId, {
         createdBy: req.session.user.id, messageTemplate: template,
     });
 
@@ -117,14 +119,14 @@ export async function createFromLinkBatch(req, res) {
 }
 
 export async function index(req, res) {
-    const batches = await MessengerBatch.list(req.app.locals.db);
+    const batches = await MessengerBatch.list(req.app.locals.db, companyOf(req));
     res.set("Cache-Control", "no-store");
     res.render("staff/messenger-batches", { title: "Messenger Batches", batches });
 }
 
 export async function show(req, res) {
     const id = parseId(req.params.id);
-    const batch = id ? await MessengerBatch.find(req.app.locals.db, id) : null;
+    const batch = id ? await MessengerBatch.find(req.app.locals.db, companyOf(req), id) : null;
 
     if (!batch) {
         throw notFound();

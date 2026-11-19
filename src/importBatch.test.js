@@ -34,8 +34,8 @@ test("a batch keeps its counts and who ran it", async () => {
         email: "owner@example.com", passwordHash: await hashPassword("longenough"), roleName: "owner",
     });
 
-    const id = await ImportBatch.create(pool, details({ createdBy: user.id }));
-    const batch = await ImportBatch.find(pool, id);
+    const id = await ImportBatch.create(pool, 1, details({ createdBy: user.id }));
+    const batch = await ImportBatch.find(pool, 1, id);
 
     assert.strictEqual(batch.sheet_name, "Fall");
     assert.strictEqual(batch.season_year, 2025);
@@ -45,7 +45,7 @@ test("a batch keeps its counts and who ran it", async () => {
         [3, 4, 5],
     );
     assert.deepStrictEqual([batch.jobs_existing, batch.rows_skipped], [1, 2]);
-    assert.strictEqual(await ImportBatch.find(pool, id + 1), null);
+    assert.strictEqual(await ImportBatch.find(pool, 1, id + 1), null);
 });
 
 test("a batch survives its user being deleted", async () => {
@@ -53,39 +53,39 @@ test("a batch survives its user being deleted", async () => {
         companyId: 1,
         email: "owner@example.com", passwordHash: await hashPassword("longenough"), roleName: "owner",
     });
-    const id = await ImportBatch.create(pool, details({ createdBy: user.id }));
+    const id = await ImportBatch.create(pool, 1, details({ createdBy: user.id }));
 
     await pool.query("DELETE FROM users WHERE id = $1", [user.id]);
 
-    assert.strictEqual((await ImportBatch.find(pool, id)).created_by_email, null);
+    assert.strictEqual((await ImportBatch.find(pool, 1, id)).created_by_email, null);
 });
 
 test("negative counts and a hash of the wrong length are refused", async () => {
-    await assert.rejects(ImportBatch.create(pool, details({ counts: { ...COUNTS, jobsCreated: -1 } })), /check/i);
-    await assert.rejects(ImportBatch.create(pool, details({ planHash: "short" })), /check/i);
-    await assert.rejects(ImportBatch.create(pool, details({ planHash: "G".repeat(64) })), /check/i);
+    await assert.rejects(ImportBatch.create(pool, 1, details({ counts: { ...COUNTS, jobsCreated: -1 } })), /check/i);
+    await assert.rejects(ImportBatch.create(pool, 1, details({ planHash: "short" })), /check/i);
+    await assert.rejects(ImportBatch.create(pool, 1, details({ planHash: "G".repeat(64) })), /check/i);
 });
 
 test("saving a mapping twice for one tab updates it, and another tab stays separate", async () => {
-    await ImportBatch.saveMapping(pool, {
+    await ImportBatch.saveMapping(pool, 1, {
         sheetId: "sheet-1", sheetName: "Fall", headerRow: 1, columns: { name: 0, street: 2 }, options: { status: "Completed" },
     });
-    await ImportBatch.saveMapping(pool, {
+    await ImportBatch.saveMapping(pool, 1, {
         sheetId: "sheet-1", sheetName: "Fall", headerRow: 2, columns: { name: 1, street: 3 }, options: { status: "Scheduled" },
     });
-    await ImportBatch.saveMapping(pool, {
+    await ImportBatch.saveMapping(pool, 1, {
         sheetId: "sheet-1", sheetName: "Spring", headerRow: 1, columns: { name: 0, street: 1 },
     });
 
-    const fall = await ImportBatch.findMapping(pool, "sheet-1", "Fall");
+    const fall = await ImportBatch.findMapping(pool, 1, "sheet-1", "Fall");
     assert.deepStrictEqual(fall, { header_row: 2, columns: { name: 1, street: 3 }, options: { status: "Scheduled" } });
-    assert.deepStrictEqual((await ImportBatch.findMapping(pool, "sheet-1", "Spring")).options, {});
-    assert.strictEqual(await ImportBatch.findMapping(pool, "sheet-1", "Missing"), null);
+    assert.deepStrictEqual((await ImportBatch.findMapping(pool, 1, "sheet-1", "Spring")).options, {});
+    assert.strictEqual(await ImportBatch.findMapping(pool, 1, "sheet-1", "Missing"), null);
     assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM import_mappings")).rows[0].n, 2);
 });
 
 test("rows created by a batch point at it, and the pointer is cleared if the batch goes", async () => {
-    const batchId = await ImportBatch.create(pool, details());
+    const batchId = await ImportBatch.create(pool, 1, details());
     const customerId = await Customer.create(pool, 1, { name: "Ada Example", phone: "801-555-0100" });
     const propertyId = await Property.create(pool, customerId, { street: "1 Test St", city: "Testville" });
     await pool.query("UPDATE customers SET import_batch_id = $1 WHERE id = $2", [batchId, customerId]);

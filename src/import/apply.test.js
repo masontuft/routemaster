@@ -61,7 +61,7 @@ function computeWith(candidates, options = OPTIONS) {
 async function runImport(candidates, { options = OPTIONS, hash, target = pool } = {}) {
     const computePlan = computeWith(candidates, options);
     const postedHash = hash ?? (await computePlan(pool)).hash;
-    return applyImport(target, { postedHash, computePlan, context: CONTEXT, options, mapping: MAPPING, userId });
+    return applyImport(target, 1, { postedHash, computePlan, context: CONTEXT, options, mapping: MAPPING, userId });
 }
 
 async function count(table) {
@@ -129,9 +129,9 @@ test("an import writes customers, properties and dated jobs, all pointing at the
     )).rows;
     assert.deepStrictEqual(history[0], { note: `Imported from spreadsheet (batch ${batchId})`, changed_by: userId, day: "2025-10-14" });
 
-    const batch = await ImportBatch.find(pool, batchId);
+    const batch = await ImportBatch.find(pool, 1, batchId);
     assert.deepStrictEqual([batch.customers_created, batch.jobs_created, batch.created_by_email], [2, 2, "owner@example.com"]);
-    assert.deepStrictEqual((await ImportBatch.findMapping(pool, "sheet-1", "Fall")).columns, { name: 0, street: 2 });
+    assert.deepStrictEqual((await ImportBatch.findMapping(pool, 1, "sheet-1", "Fall")).columns, { name: 0, street: 2 });
 });
 
 test("a property with no city is stored with a null city, and the batch counts it", async () => {
@@ -139,7 +139,7 @@ test("a property with no city is stored with a null city, and the batch counts i
 
     const { rows } = await pool.query("SELECT street, city FROM properties ORDER BY street");
     assert.deepStrictEqual(rows, [{ street: "1 Test Street", city: null }, { street: "2 Test Street", city: null }]);
-    const batch = await ImportBatch.find(pool, (await pool.query("SELECT id FROM import_batches")).rows[0].id);
+    const batch = await ImportBatch.find(pool, 1, (await pool.query("SELECT id FROM import_batches")).rows[0].id);
     assert.strictEqual(batch.properties_without_city, 2);
 });
 
@@ -173,7 +173,12 @@ test("a preview from before someone else's import is refused and writes nothing"
 test("a failure part-way through rolls back everything, including customers already inserted", async () => {
     const before = await totals();
 
-    await assert.rejects(runImport(SEASON, { options: { ...OPTIONS, serviceTypeId: 9999 } }), /foreign key/i);
+    // The jobs are written last, after the customers and properties, and a service type that is not the company's stops
+    // them (it used to be the foreign key that did), so the rollback is what leaves nothing behind.
+    await assert.rejects(
+        runImport(SEASON, { options: { ...OPTIONS, serviceTypeId: 9999 } }),
+        /service type is not in this company/i,
+    );
 
     assert.deepStrictEqual(await totals(), before);
 });
@@ -277,7 +282,7 @@ test("two imports started together write once: the second finds the data changed
     const computePlan = computeWith(SEASON);
     const postedHash = (await computePlan(pool)).hash;
     const start = () => {
-        return applyImport(pool, {
+        return applyImport(pool, 1, {
             postedHash, computePlan, context: CONTEXT, options: OPTIONS, mapping: MAPPING, userId,
         });
     };

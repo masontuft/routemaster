@@ -47,7 +47,7 @@ export async function dashboard(req, res) {
         Staff.countsByStatus(db, companyOf(req)),
         Staff.listRequests(db, companyOf(req), { status: "Needs Review", limit: 5 }),
         req.session.user.role === "owner" ? Staff.stats(db, companyOf(req)) : null,
-        ContactMessage.countNew(db),
+        ContactMessage.countNew(db, companyOf(req)),
     ]);
     res.render("staff/index", { title: "Staff Dashboard", counts, review, stats, newMessages });
 }

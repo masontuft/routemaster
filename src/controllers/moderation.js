@@ -31,12 +31,12 @@ export const deleteReview = reviewAction((db, companyId, id) => {
 });
 
 export async function listMessages(req, res) {
-    res.render("staff/messages", { title: "Messages", messages: await ContactMessage.list(req.app.locals.db) });
+    res.render("staff/messages", { title: "Messages", messages: await ContactMessage.list(req.app.locals.db, companyOf(req)) });
 }
 
 async function loadMessage(req) {
     const id = parseId(req.params.id);
-    const message = id && await ContactMessage.find(req.app.locals.db, id);
+    const message = id && await ContactMessage.find(req.app.locals.db, companyOf(req), id);
 
     if (!message) {
         throw notFound();
@@ -60,6 +60,6 @@ export async function replyMessage(req, res) {
         });
     }
 
-    await ContactMessage.reply(req.app.locals.db, message.id, note, req.session.user.id);
+    await ContactMessage.reply(req.app.locals.db, companyOf(req), message.id, note, req.session.user.id);
     res.redirect(`/staff/messages/${message.id}`);
 }

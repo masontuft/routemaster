@@ -25,7 +25,7 @@ function confirmPage(res, { batch = null, counts, errors = [], status = 200 }) {
 
 export async function showClear(req, res) {
     const deleted = parseId(req.query.deleted);
-    const batches = await ImportBatch.listWithRemaining(req.app.locals.db);
+    const batches = await ImportBatch.listWithRemaining(req.app.locals.db, companyOf(req));
     res.set("Cache-Control", "no-store");
     res.render("admin/clear", { title: "Clear Customers", batches, deleted });
 }
@@ -33,7 +33,7 @@ export async function showClear(req, res) {
 async function loadBatch(req) {
     const id = parseId(req.params.id);
     const db = req.app.locals.db;
-    const batch = id && await ImportBatch.find(db, id);
+    const batch = id && await ImportBatch.find(db, companyOf(req), id);
 
     if (!batch) {
         throw notFound();

@@ -25,7 +25,7 @@ after(() => {
 });
 
 async function stageFor(customerIds, overrides = {}) {
-    return MessengerBatch.stage(pool, {
+    return MessengerBatch.stage(pool, 1, {
         createdBy: userId, customerIds, messageTemplate: TEMPLATE, days: 30, ...overrides,
     });
 }

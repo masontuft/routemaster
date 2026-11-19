@@ -16,12 +16,13 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 
 | Role | Does |
 | --- | --- |
+| 2026-11-19 | Who may do a step: the spreadsheet import and its saved mappings, the import batch pages and the clear pages that list batches, link batches and the rebooking links, staging and reading Messenger batches, and the contact messages inbox are limited to the logged-in user's company (pass 2d of ADR 0018). The import writes its customers, properties, areas and jobs into the owner's company and refuses a service type of another. A Messenger batch holds only its company's customers. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
 | 2026-11-19 | Who may do a step: the areas page and an area's days and city, the route builder, the scheduling settings, the rebooking page, the day board and penciling in, and the area chosen on a property's edit page are limited to the logged-in user's company (pass 2c of ADR 0018). A property cannot be put in another company's area. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
 | Owner | Everything a dispatcher does, plus import, clearing customers, users and the service catalog |
 | Dispatcher | Areas and days, links, matching, the day board, routes |
 | Customer | Opens a link or logs in, requests service, picks a day, cancels, reviews |
 
-Every user belongs to one company ([ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and the session carries it. Only one company exists today, Tuft Sprinkler Blowouts, and a second cannot be created safely yet. Each company has its own service catalog, requests, leads, reviews, areas and their days, routes, settings and rebooking lists, and staff see and change only their own company's. The users page lists and changes only the owner's own company's users, and "the last owner" means the last owner of that company. A staff user an owner creates joins the owner's company. A customer who opens a link joins the company of the customer the link belongs to. The public pages `/register` and `/schedule` have no company in their address yet, so they use the first company, and so do the public `/reviews` and `/services` pages.
+Every user belongs to one company ([ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and the session carries it. Only one company exists today, Tuft Sprinkler Blowouts, and a second cannot be created safely yet. Each company has its own service catalog, requests, leads, reviews, areas and their days, routes, settings, rebooking lists, imports, link batches, Messenger batches and contact messages, and staff see and change only their own company's. The users page lists and changes only the owner's own company's users, and "the last owner" means the last owner of that company. A staff user an owner creates joins the owner's company. A customer who opens a link joins the company of the customer the link belongs to. The public pages `/register` and `/schedule` have no company in their address yet, so they use the first company, and so do the public `/reviews`, `/services` and `/contact` pages.
 
 ## Owner options
 
@@ -117,7 +118,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 ## Known gaps in the whole process
 
 - Sending links is manual and unrecorded.
-- Customers, properties, users, requests, leads, reviews, the service catalog, areas, routes, settings, rebooking and the day board are kept apart by company, and nothing else is yet: the import write, link batches and Messenger batches are not. Do not create a second company until they are (ADR 0018, issue 75).
+- Every table that holds one company's data is now kept apart by company. A second company still cannot be created: the old global keys (lead, area name, route day, setting, import mapping) and the `DEFAULT 1` on the company columns are dropped by the contract migration first (ADR 0018, issue 75), and the pages and script to create a company are not built.
 - A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is built, behind the owner option, in step 6.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.

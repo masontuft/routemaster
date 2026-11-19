@@ -29,13 +29,15 @@ function messageFor(template, name, link) {
 // Stages a batch for the ticked customers. No magic link is made yet: links are minted when Messenger fetches, so a
 // batch nobody opens leaves no live link behind. The raw batch token is returned here and nowhere else.
 // Customers without a usable phone, and ids that are not customers, are left out and counted.
-export async function stage(pool, { createdBy, customerIds, messageTemplate, days }) {
+// A batch belongs to a company (ADR 0018). A customer id that is not one of that company's customers is left out and
+// counted, the same as an id that is not a customer at all.
+export async function stage(pool, companyId, { createdBy, customerIds, messageTemplate, days }) {
     const ids = [...new Set(customerIds)];
 
     return withTransaction(pool, async (client) => {
         const { rows } = await client.query(
-            "SELECT id, phone FROM customers WHERE id = ANY($1::int[]) ORDER BY id",
-            [ids],
+            "SELECT id, phone FROM customers WHERE id = ANY($1::int[]) AND company_id = $2 ORDER BY id",
+            [ids, companyId],
         );
         const eligible = rows.filter((customer) => {
             return hasUsablePhone(customer.phone);
@@ -52,10 +54,11 @@ export async function stage(pool, { createdBy, customerIds, messageTemplate, day
         const token = generateToken();
         const batch = await client.query(
             `INSERT INTO messenger_batches
-                 (created_by, token_hash, message_template, link_days, fetch_expires_at, results_expires_at)
-             VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5), now() + make_interval(hours => $6))
+                 (created_by, token_hash, message_template, link_days, fetch_expires_at, results_expires_at,
+                  company_id)
+             VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5), now() + make_interval(hours => $6), $7)
              RETURNING id`,
-            [createdBy ?? null, hashToken(token), messageTemplate, days, FETCH_MINUTES, RESULTS_HOURS],
+            [createdBy ?? null, hashToken(token), messageTemplate, days, FETCH_MINUTES, RESULTS_HOURS, companyId],
         );
         const batchId = batch.rows[0].id;
 
@@ -77,13 +80,13 @@ export async function stage(pool, { createdBy, customerIds, messageTemplate, day
 // not a link batch. Only customers whose link from that batch is still live are staged, by the same test a customer's
 // link must pass (not revoked, not expired), so an old batch id cannot text people whose links are gone. A link batch
 // holds at most MAX_BATCH customers, so "too_many" cannot come back from here.
-export async function stageFromLinkBatch(pool, linkBatchId, { createdBy, messageTemplate }) {
+export async function stageFromLinkBatch(pool, companyId, linkBatchId, { createdBy, messageTemplate }) {
     const { rows } = await pool.query(
         `SELECT link_batches.days, link_batches.subdivision_id, subdivisions.name AS area_name
          FROM link_batches
          LEFT JOIN subdivisions ON subdivisions.id = link_batches.subdivision_id
-         WHERE link_batches.id = $1`,
-        [linkBatchId],
+         WHERE link_batches.id = $1 AND link_batches.company_id = $2`,
+        [linkBatchId, companyId],
     );
 
     if (rows.length === 0) {
@@ -95,7 +98,7 @@ export async function stageFromLinkBatch(pool, linkBatchId, { createdBy, message
          WHERE link_batch_id = $1 AND revoked_at IS NULL AND expires_at > now()`,
         [linkBatchId],
     );
-    const staged = await stage(pool, {
+    const staged = await stage(pool, companyId, {
         createdBy,
         customerIds: links.map((link) => {
             return link.customer_id;
@@ -116,7 +119,7 @@ export async function stageFromLinkBatch(pool, linkBatchId, { createdBy, message
 export async function fetchBatch(pool, token, origin) {
     return withTransaction(pool, async (client) => {
         const found = await client.query(
-            `SELECT id, message_template, link_days, created_by, fetch_expires_at
+            `SELECT id, message_template, link_days, created_by, fetch_expires_at, company_id
              FROM messenger_batches
              WHERE token_hash = $1 AND fetch_expires_at > now()
              FOR UPDATE`,
@@ -131,10 +134,10 @@ export async function fetchBatch(pool, token, origin) {
         const { rows: pending } = await client.query(
             `SELECT recipients.id, recipients.access_link_id, customers.id AS customer_id, customers.name, customers.phone
              FROM messenger_batch_recipients AS recipients
-             JOIN customers ON customers.id = recipients.customer_id
+             JOIN customers ON customers.id = recipients.customer_id AND customers.company_id = $2
              WHERE recipients.batch_id = $1 AND recipients.status <> 'sent'
              ORDER BY customers.name, customers.id`,
-            [batch.id],
+            [batch.id, batch.company_id],
         );
         const recipients = [];
 
@@ -205,7 +208,7 @@ export async function recordResults(pool, token, results) {
 }
 
 // Newest first, with a count per status, for the staff list. Never the token, which is not stored.
-export async function list(pool, { id = null, limit = 50 } = {}) {
+export async function list(pool, companyId, { id = null, limit = 50 } = {}) {
     const { rows } = await pool.query(
         `SELECT batches.id, batches.created_at, batches.fetched_at, batches.fetch_expires_at, batches.results_expires_at,
                 users.email AS created_by_email,
@@ -216,18 +219,18 @@ export async function list(pool, { id = null, limit = 50 } = {}) {
          FROM messenger_batches AS batches
          LEFT JOIN users ON users.id = batches.created_by
          LEFT JOIN messenger_batch_recipients AS recipients ON recipients.batch_id = batches.id
-         WHERE ($2::int IS NULL OR batches.id = $2::int)
+         WHERE batches.company_id = $3 AND ($2::int IS NULL OR batches.id = $2::int)
          GROUP BY batches.id, users.email
          ORDER BY batches.id DESC
          LIMIT $1`,
-        [limit, id],
+        [limit, id, companyId],
     );
     return rows;
 }
 
 // One batch and who was texted, for the staff detail page. null for an unknown id.
-export async function find(pool, id) {
-    const [batch] = await list(pool, { id });
+export async function find(pool, companyId, id) {
+    const [batch] = await list(pool, companyId, { id });
 
     if (!batch) {
         return null;

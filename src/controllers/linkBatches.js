@@ -10,7 +10,7 @@ import { companyOf } from "../utils/company.js";
 async function formPage(req, res, { values, errors = [], status = 200 }) {
     const db = req.app.locals.db;
     const areas = await Area.list(db, companyOf(req), todayString());
-    const preview = values.areaId ? await LinkBatch.preview(db, values.areaId, values) : null;
+    const preview = values.areaId ? await LinkBatch.preview(db, companyOf(req), values.areaId, values) : null;
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/link-batch-new", {
         title: "Send Scheduling Links", areas, values, errors, preview, max: LinkBatch.MAX_BATCH,
@@ -39,7 +39,7 @@ export async function create(req, res) {
         return formPage(req, res, { values: { ...values, days: req.body.days }, errors, status: 400 });
     }
 
-    const result = await LinkBatch.create(req.app.locals.db, {
+    const result = await LinkBatch.create(req.app.locals.db, companyOf(req), {
         areaId: values.areaId, createdBy: req.session.user.id, days: values.days, includeActive: values.includeActive,
     });
 

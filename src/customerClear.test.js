@@ -45,7 +45,7 @@ beforeEach(async () => {
     await pool.query("UPDATE service_requests SET status_id = (SELECT id FROM request_statuses WHERE name = 'Completed')");
     await Review.save(pool, { requestId, customerId, rating: 5, body: "Great" });
     await AccessLink.create(pool, { customerId });
-    batchId = await ImportBatch.create(pool, {
+    batchId = await ImportBatch.create(pool, 1, {
         sheetId: "abc", sheetName: "Jobs", seasonYear: 2026, planHash: "a".repeat(64),
         counts: { customersCreated: 1, propertiesCreated: 1, jobsCreated: 0, jobsExisting: 0, rowsSkipped: 0 },
     });

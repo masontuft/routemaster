@@ -18,12 +18,20 @@ import * as Area from "./models/area.js";
 import * as RoutePlan from "./models/routePlan.js";
 import * as AppSetting from "./models/appSetting.js";
 import * as Rebooking from "./models/rebooking.js";
+import * as ImportBatch from "./models/importBatch.js";
+import * as LinkBatch from "./models/linkBatch.js";
+import * as MessengerBatch from "./models/messengerBatch.js";
+import * as ContactMessage from "./models/contactMessage.js";
+import { classifyCandidates } from "./import/matching.js";
+import { buildPlan } from "./import/plan.js";
+import { applyImport } from "./import/apply.js";
 import { hashPassword } from "./utils/password.js";
 
 // Two companies in one database (ADR 0018). Company 1 is Ann Lee's, company 2 is Bo Kim's. Each test checks that one
 // company's staff cannot find, change or delete the other's customers and properties, by id, by search and in bulk.
 // Customers, properties, the users page (pass 2a), requests, leads, reviews and the service catalog (pass 2b), and
-// areas, routes, settings, rebooking and the day board (pass 2c) are scoped so far, and these tests cover those.
+// areas, routes, settings, rebooking and the day board (pass 2c), and imports, link batches, Messenger batches and
+// contact messages (pass 2d) are scoped, and these tests cover those.
 
 const db = testDb("isolation");
 const pool = db.pool;
@@ -793,4 +801,184 @@ test("penciling in takes only a customer of its own company, and puts the bookin
     assert.deepStrictEqual(allowed, { pencilledIn: 1, skipped: 0 });
     const made = await pool.query("SELECT company_id, service_type_id FROM service_requests WHERE tentative");
     assert.deepStrictEqual(made.rows, [{ company_id: 1, service_type_id: 1 }]);
+});
+
+const IMPORT_CONTEXT = { sheetId: "sheet-1", sheetName: "Fall", seasonYear: 2025 };
+
+function importRow(rowNumber, fields = {}) {
+    return {
+        rowNumber, name: "Cy Roe", phone: "208-555-0303", street: "3 Pine Street", city: "Rigby", zip: null,
+        date: "2025-10-14", amountCents: null, area: "Pine Ridge", notes: null, issues: [], blocked: false, ...fields,
+    };
+}
+
+function runImport(companyId, candidates, options) {
+    const computePlan = async (client) => {
+        const { rows } = await classifyCandidates(client, companyId, candidates);
+        return buildPlan(rows, options, IMPORT_CONTEXT);
+    };
+    return computePlan(pool).then((plan) => {
+        return applyImport(pool, companyId, {
+            postedHash: plan.hash, computePlan, context: IMPORT_CONTEXT, options,
+            mapping: { sheetId: "sheet-1", sheetName: "Fall", headerRow: 1, columns: { name: 0, street: 2 } },
+            userId: null,
+        });
+    });
+}
+
+async function countOf(table) {
+    return (await pool.query(`SELECT count(*)::int AS n FROM ${table}`)).rows[0].n;
+}
+
+test("an import for one company writes everything in that company and leaves the other's data alone", async () => {
+    const before = { customers: await countOf("customers"), requests: await countOf("service_requests") };
+
+    // Company 2 imports a customer with the same name and street as company 1's Ann Lee. It must not match her.
+    const { batchId } = await runImport(2, [
+        importRow(2),
+        importRow(3, { name: "Ann Lee", phone: "208-555-0101", street: "12 Oak Street", date: "2025-10-20" }),
+    ], { serviceTypeId: type2, statusName: "Completed", defaultCity: "" });
+
+    const customers = await pool.query("SELECT name, company_id FROM customers WHERE import_batch_id = $1 ORDER BY name", [batchId]);
+    const requests = await pool.query("SELECT company_id, service_type_id FROM service_requests WHERE import_batch_id = $1", [batchId]);
+    const area = await pool.query("SELECT company_id FROM subdivisions WHERE name = 'Pine Ridge'");
+    const batch = await pool.query("SELECT company_id FROM import_batches WHERE id = $1", [batchId]);
+
+    assert.deepStrictEqual(customers.rows, [{ name: "Ann Lee", company_id: 2 }, { name: "Cy Roe", company_id: 2 }]);
+    assert.deepStrictEqual(requests.rows, [
+        { company_id: 2, service_type_id: type2 }, { company_id: 2, service_type_id: type2 },
+    ]);
+    assert.deepStrictEqual([area.rows, batch.rows], [[{ company_id: 2 }], [{ company_id: 2 }]]);
+    assert.strictEqual(await countOf("customers"), before.customers + 2);
+    assert.strictEqual(await nameOf(ann), "Ann Lee");
+    assert.strictEqual((await pool.query("SELECT company_id FROM customers WHERE id = $1", [ann])).rows[0].company_id, 1);
+    assert.strictEqual(await countOf("service_requests"), before.requests + 2);
+    assert.ok(await ImportBatch.findMapping(pool, 2, "sheet-1", "Fall"));
+    assert.strictEqual(await ImportBatch.findMapping(pool, 1, "sheet-1", "Fall"), null);
+});
+
+test("an import cannot use another company's service type, and writes nothing when it tries", async () => {
+    const before = { customers: await countOf("customers"), batches: await countOf("import_batches") };
+
+    await assert.rejects(
+        runImport(2, [importRow(2)], { serviceTypeId: 1, statusName: "Completed", defaultCity: "" }),
+        /service type is not in this company/,
+    );
+
+    assert.strictEqual(await countOf("customers"), before.customers);
+    assert.strictEqual(await countOf("import_batches"), before.batches);
+});
+
+test("import batches are a company's own: the clear pages list and open only its own, and a bulk clear stays inside", async () => {
+    const batch1 = await ImportBatch.create(pool, 1, {
+        sheetId: "s1", sheetName: "Winter Sheet", seasonYear: 2026, planHash: "a".repeat(64),
+        counts: { customersCreated: 1, propertiesCreated: 1, jobsCreated: 0, jobsExisting: 0, rowsSkipped: 0 },
+    });
+    const owner2 = await agentFor(2, "owner");
+
+    assert.strictEqual(await ImportBatch.find(pool, 2, batch1), null);
+    assert.strictEqual(await ImportBatch.exists(pool, 2, batch1), false);
+    assert.strictEqual(await ImportBatch.exists(pool, 1, batch1), true);
+    assert.deepStrictEqual(await ImportBatch.listWithRemaining(pool, 2), []);
+    assert.strictEqual((await owner2.get(`/admin/clear/batches/${batch1}`)).status, 404);
+    assert.strictEqual((await owner2.get(`/admin/import/batches/${batch1}`)).status, 404);
+    assert.doesNotMatch((await owner2.get("/admin/clear")).text, /Winter Sheet/);
+});
+
+test("a link batch holds only its own company's customers, and an area or customer of another is ignored", async () => {
+    const { area1, area2 } = await twoAreas();
+
+    assert.strictEqual(await LinkBatch.preview(pool, 2, area1), null);
+    assert.deepStrictEqual(await LinkBatch.create(pool, 2, { areaId: area1, createdBy: null, days: 30 }), { error: "not_found" });
+    assert.deepStrictEqual((await LinkBatch.groupByOwningArea(pool, 2)).map((group) => {
+        return group.customerIds;
+    }), [[bo]]);
+
+    // A forged id of company 1's customer, posted for company 2's area, is ignored.
+    const made = await LinkBatch.create(pool, 2, { areaId: area2, createdBy: null, days: 30, customerIds: [ann, bo] });
+    assert.deepStrictEqual(made.rows.map((row) => {
+        return row.customerId;
+    }), [bo]);
+    assert.strictEqual((await pool.query("SELECT company_id FROM link_batches WHERE id = $1", [made.batchId])).rows[0].company_id, 2);
+
+    const all = await LinkBatch.createForAllAreas(pool, 2, { createdBy: null, days: 30, includeActive: true });
+    assert.deepStrictEqual(all.map((section) => {
+        return section.areaName;
+    }), ["Maple Hills"]);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM access_links WHERE customer_id = $1", [ann])).rows[0].n, 0);
+    // Bo already holds a live link from the batches above, so he is listed only when active links are included.
+    assert.deepStrictEqual((await LinkBatch.textableInArea(pool, 2, area2, { includeActive: true })).customerIds, [bo]);
+    assert.deepStrictEqual((await LinkBatch.textableInArea(pool, 1, area2, { includeActive: true })).customerIds, []);
+});
+
+test("a Messenger batch takes only its own company's customers, and is found, listed and staged from only there", async () => {
+    const { area1 } = await twoAreas();
+    const owner2 = await agentFor(2, "owner");
+
+    const staged = await MessengerBatch.stage(pool, 2, {
+        createdBy: null, customerIds: [ann, bo], messageTemplate: "Hi {name} {link}", days: 30,
+    });
+    const nobody = await MessengerBatch.stage(pool, 2, {
+        createdBy: null, customerIds: [ann], messageTemplate: "Hi {name} {link}", days: 30,
+    });
+
+    assert.deepStrictEqual([staged.staged, staged.noPhone], [1, 1]);
+    assert.strictEqual(nobody.error, "empty");
+    assert.strictEqual((await pool.query("SELECT company_id FROM messenger_batches WHERE id = $1", [staged.batchId])).rows[0].company_id, 2);
+    assert.strictEqual((await MessengerBatch.list(pool, 1)).length, 0);
+    assert.strictEqual((await MessengerBatch.list(pool, 2)).length, 1);
+    assert.strictEqual(await MessengerBatch.find(pool, 1, staged.batchId), null);
+    assert.strictEqual((await owner2.get(`/staff/messenger-batches/${staged.batchId}`)).status, 200);
+    const owner1 = await agentFor(1, "owner");
+    assert.strictEqual((await owner1.get(`/staff/messenger-batches/${staged.batchId}`)).status, 404);
+
+    // A link batch of company 1 cannot be turned into a company 2 Messenger batch.
+    const linked = await LinkBatch.create(pool, 1, { areaId: area1, createdBy: null, days: 30 });
+    assert.deepStrictEqual(
+        await MessengerBatch.stageFromLinkBatch(pool, 2, linked.batchId, { createdBy: null, messageTemplate: "Hi {name} {link}" }),
+        { error: "not_found" },
+    );
+});
+
+test("fetching a Messenger batch by its token returns its own company's recipients only", async () => {
+    const staged = await MessengerBatch.stage(pool, 2, {
+        createdBy: null, customerIds: [bo], messageTemplate: "Hi {name} {link}", days: 30,
+    });
+    // A recipient of the other company is put in the batch directly, as a bug or a bad write might. It is never served.
+    await pool.query("INSERT INTO messenger_batch_recipients (batch_id, customer_id) VALUES ($1, $2)", [staged.batchId, ann]);
+
+    const fetched = await MessengerBatch.fetchBatch(pool, staged.token, "https://example.test");
+
+    assert.deepStrictEqual(fetched.recipients.map((recipient) => {
+        return recipient.customerName;
+    }), ["Bo Kim"]);
+});
+
+test("contact messages are a company's own: staff see, open and answer only their own", async () => {
+    await ContactMessage.create(pool, 1, { name: "Pat", email: "pat@example.com", phone: "", message: "Hello company one" });
+    await ContactMessage.create(pool, 2, { name: "Quinn", email: "quinn@example.com", phone: "", message: "Hello company two" });
+    const id1 = (await pool.query("SELECT id FROM contact_messages WHERE company_id = 1")).rows[0].id;
+    const owner2 = await agentFor(2, "owner");
+
+    const list = await owner2.get("/staff/messages");
+    const open = await owner2.get(`/staff/messages/${id1}`);
+    const reply = await send(owner2, "/staff/messages", `/staff/messages/${id1}/reply`, { note: "Hacked" });
+
+    assert.match(list.text, /Quinn/);
+    assert.doesNotMatch(list.text, /Pat/);
+    assert.strictEqual(open.status, 404);
+    assert.strictEqual(reply.status, 404);
+    assert.strictEqual((await pool.query("SELECT status FROM contact_messages WHERE id = $1", [id1])).rows[0].status, "New");
+    assert.strictEqual(await ContactMessage.countNew(pool, 2), 1);
+    assert.strictEqual(await ContactMessage.find(pool, 2, id1), null);
+    assert.strictEqual(await ContactMessage.reply(pool, 2, id1, "x", null), false);
+});
+
+test("the public contact form sends a message to the first company", async () => {
+    const visitor = request.agent(server);
+
+    await send(visitor, "/contact", "/contact", { name: "Rae", email: "rae@example.com", phone: "", message: "Hello there" });
+    const { rows } = await pool.query("SELECT company_id FROM contact_messages WHERE name = 'Rae'");
+
+    assert.deepStrictEqual(rows, [{ company_id: 1 }]);
 });

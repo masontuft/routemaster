@@ -57,14 +57,14 @@ export async function makeLinks(req, res) {
 
     // Every area at once is one batch per owning area, so no single batch has to fit under the cap.
     if (values.allAreas) {
-        const sections = await LinkBatch.createForAllAreas(req.app.locals.db, {
+        const sections = await LinkBatch.createForAllAreas(req.app.locals.db, companyOf(req), {
             createdBy: req.session.user.id, days: values.days, includeActive: values.includeActive,
             customerIds: values.customerIds,
         });
         return renderResults(req, res, { template: values.template, days: values.days, sections });
     }
 
-    const result = await LinkBatch.create(req.app.locals.db, {
+    const result = await LinkBatch.create(req.app.locals.db, companyOf(req), {
         areaId: values.areaId, createdBy: req.session.user.id, days: values.days,
         includeActive: values.includeActive, customerIds: values.customerIds,
     });

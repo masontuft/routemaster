@@ -47,7 +47,7 @@ try {
     }
 
     const owner = await pool.query("SELECT id FROM users ORDER BY id LIMIT 1");
-    const result = await MessengerBatch.stage(pool, {
+    const result = await MessengerBatch.stage(pool, DEFAULT_COMPANY_ID, {
         createdBy: owner.rows[0]?.id ?? null, customerIds, messageTemplate: TEMPLATE, days: 30,
     });
 

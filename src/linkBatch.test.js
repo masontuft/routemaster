@@ -45,7 +45,7 @@ async function count(table) {
 }
 
 const run = (overrides = {}) => {
-    return LinkBatch.create(pool, { areaId: oakwood, createdBy: userId, days: 30, ...overrides });
+    return LinkBatch.create(pool, 1, { areaId: oakwood, createdBy: userId, days: 30, ...overrides });
 };
 
 test("only customers with a property in the area get a link, each once", async () => {
@@ -126,7 +126,7 @@ test("an unknown area and a bad lifetime create nothing", async () => {
     await customerIn(oakwood, "Ann Lee", "208-555-0101");
     await customerIn(oakwood, "Bo Kim", "208-555-0102");
 
-    assert.deepStrictEqual(await LinkBatch.create(pool, { areaId: 9999, createdBy: userId, days: 30 }), { error: "not_found" });
+    assert.deepStrictEqual(await LinkBatch.create(pool, 1, { areaId: 9999, createdBy: userId, days: 30 }), { error: "not_found" });
     for (const days of [0, 121, 1.5, "30", NaN]) {
         await assert.rejects(run({ days }), RangeError);
     }
@@ -150,12 +150,12 @@ test("preview counts match what a run would do and create nothing", async () => 
     await customerIn(oakwood, "No Phone", null);
     await AccessLink.create(pool, { customerId: 2 });
 
-    assert.deepStrictEqual(await LinkBatch.preview(pool, oakwood), { toLink: 1, noPhone: 1, skippedActive: 1 });
+    assert.deepStrictEqual(await LinkBatch.preview(pool, 1, oakwood), { toLink: 1, noPhone: 1, skippedActive: 1 });
     assert.deepStrictEqual(
-        await LinkBatch.preview(pool, oakwood, { includeActive: true }),
+        await LinkBatch.preview(pool, 1, oakwood, { includeActive: true }),
         { toLink: 2, noPhone: 1, skippedActive: 0 },
     );
-    assert.strictEqual(await LinkBatch.preview(pool, 9999), null);
+    assert.strictEqual(await LinkBatch.preview(pool, 1, 9999), null);
     assert.strictEqual(await count("access_links"), 1);
 });
 
@@ -184,7 +184,7 @@ test("a customer with properties in two areas belongs to the area of their first
     const propertyId = await Property.create(pool, ann, { street: "9 Pine Rd", city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, pine]);
 
-    const groups = await LinkBatch.groupByOwningArea(pool);
+    const groups = await LinkBatch.groupByOwningArea(pool, 1);
 
     assert.deepStrictEqual(groups, [{ areaId: oakwood, areaName: "Oakwood", customerIds: [ann] }]);
 });
@@ -194,7 +194,7 @@ test("customers whose first property has no area form a last group, and a custom
     const cy = await customerIn(null, "Cy Day", "208-555-0103");
     await Customer.create(pool, 1, { name: "No Home", phone: "208-555-0104" });
 
-    const groups = await LinkBatch.groupByOwningArea(pool);
+    const groups = await LinkBatch.groupByOwningArea(pool, 1);
 
     assert.deepStrictEqual(groups, [
         { areaId: pine, areaName: "Pine Hills", customerIds: [bo] },
@@ -206,7 +206,7 @@ test("grouping can be limited to some customers, so an id outside the list is ne
     const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
     await customerIn(pine, "Bo Kim", "208-555-0102");
 
-    const groups = await LinkBatch.groupByOwningArea(pool, [ann, 99999]);
+    const groups = await LinkBatch.groupByOwningArea(pool, 1, [ann, 99999]);
 
     assert.deepStrictEqual(groups, [{ areaId: oakwood, areaName: "Oakwood", customerIds: [ann] }]);
 });
@@ -218,7 +218,7 @@ test("all areas makes one batch per owning area, each recording its area, and li
     const bo = await customerIn(pine, "Bo Kim", "208-555-0102");
     const cy = await customerIn(null, "Cy Day", "208-555-0103");
 
-    const sections = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30, includeActive: true });
+    const sections = await LinkBatch.createForAllAreas(pool, 1, { createdBy: userId, days: 30, includeActive: true });
 
     assert.deepStrictEqual(sections.map((section) => {
         return [section.areaName, section.rows.map((row) => {
@@ -236,7 +236,7 @@ test("all areas with ticked customers links only those, and an id that is nobody
     const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
     await customerIn(pine, "Bo Kim", "208-555-0102");
 
-    const sections = await LinkBatch.createForAllAreas(pool, {
+    const sections = await LinkBatch.createForAllAreas(pool, 1, {
         createdBy: userId, days: 30, customerIds: [ann, 99999],
     });
 
@@ -260,7 +260,7 @@ test("an area over the cap is reported and the other areas still get their links
         [pine],
     );
 
-    const sections = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+    const sections = await LinkBatch.createForAllAreas(pool, 1, { createdBy: userId, days: 30 });
 
     assert.deepStrictEqual(sections.map((section) => {
         return [section.areaName, section.error ?? "made", section.count];
@@ -279,7 +279,7 @@ test("a database error in one area is reported, rolls back only that area, and t
         END $$ LANGUAGE plpgsql`);
     await pool.query("CREATE TRIGGER refuse_bo BEFORE INSERT ON access_links FOR EACH ROW EXECUTE FUNCTION refuse_bo()");
 
-    const sections = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+    const sections = await LinkBatch.createForAllAreas(pool, 1, { createdBy: userId, days: 30 });
 
     assert.deepStrictEqual(sections.map((section) => {
         return [section.areaName, section.error ?? "made"];
@@ -290,9 +290,9 @@ test("a database error in one area is reported, rolls back only that area, and t
 
 test("all areas records no batch for an area where nobody needs a link, but still counts who was skipped", async () => {
     await customerIn(oakwood, "Ann Lee", "208-555-0101");
-    await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+    await LinkBatch.createForAllAreas(pool, 1, { createdBy: userId, days: 30 });
 
-    const again = await LinkBatch.createForAllAreas(pool, { createdBy: userId, days: 30 });
+    const again = await LinkBatch.createForAllAreas(pool, 1, { createdBy: userId, days: 30 });
 
     assert.deepStrictEqual(again.map((section) => {
         return [section.areaName, section.rows.length, section.skippedActive, section.batchId];

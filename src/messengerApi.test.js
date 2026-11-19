@@ -25,7 +25,7 @@ beforeEach(async () => {
     userId = user.id;
     const ann = await Customer.create(pool, 1, { name: "Ann Lee", phone: "2085550101" });
     const bob = await Customer.create(pool, 1, { name: "Bob Ray", phone: "2085550102" });
-    const staged = await MessengerBatch.stage(pool, {
+    const staged = await MessengerBatch.stage(pool, 1, {
         createdBy: userId, customerIds: [ann, bob], messageTemplate: "Hi {name}: {link}", days: 30,
     });
     token = staged.token;
