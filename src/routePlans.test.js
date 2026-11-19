@@ -83,7 +83,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
@@ -92,7 +92,7 @@ const DAY = inDays(3);
 
 // A customer on "<number> Elm St", booked for DAY. Returns the request id.
 async function booked(number, name = `Customer ${number}`) {
-    const customerId = await Customer.create(pool, { name, phone: "208-555-0101" });
+    const customerId = await Customer.create(pool, 1, { name, phone: "208-555-0101" });
     const propertyId = await Property.create(pool, customerId, { street: `${number} Elm St`, city: "Rexburg" });
     const id = await ServiceRequest.create(pool, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: DAY, notes: `note ${number}`,

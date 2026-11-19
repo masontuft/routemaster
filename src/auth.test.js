@@ -89,7 +89,7 @@ test("a post without a CSRF token is rejected with 403", async () => {
 
 test("logging in works, and wrong credentials give the same generic message", async () => {
     const passwordHash = await hashPassword("longenough");
-    await User.create(pool, { email: "bob@example.com", passwordHash, roleName: "dispatcher" });
+    await User.create(pool, { companyId: 1, email: "bob@example.com", passwordHash, roleName: "dispatcher" });
 
     const agent = request.agent(app);
     const _csrf = await tokenFrom(agent, "/login");

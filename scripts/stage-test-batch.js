@@ -7,6 +7,7 @@ import { runMigrations } from "../src/db/migrate.js";
 import * as Customer from "../src/models/customer.js";
 import * as MessengerBatch from "../src/models/messengerBatch.js";
 import { expoGoLink } from "../src/utils/devAddress.js";
+import { DEFAULT_COMPANY_ID } from "../src/config/company.js";
 
 // Stages a Messenger batch in the TEST database and prints the deep links to open it, for trying the Messenger app
 // against `pnpm dev:test`. Without --phone it stages the first three seeded customers, whose numbers are fake. With
@@ -34,9 +35,9 @@ try {
 
     if (values.phone) {
         const existing = await pool.query("SELECT id FROM customers WHERE name = 'Test Me' ORDER BY id LIMIT 1");
-        const id = existing.rows[0]?.id ?? await Customer.create(pool, { name: "Test Me", phone: values.phone });
+        const id = existing.rows[0]?.id ?? await Customer.create(pool, DEFAULT_COMPANY_ID, { name: "Test Me", phone: values.phone });
         // The model's update normalizes the number the way the app does, so "+1 (208) 555-0101" still matches later.
-        await Customer.update(pool, id, { phone: values.phone });
+        await Customer.update(pool, DEFAULT_COMPANY_ID, id, { phone: values.phone });
         customerIds = [id];
     } else {
         const { rows } = await pool.query("SELECT id FROM customers ORDER BY id LIMIT 3");

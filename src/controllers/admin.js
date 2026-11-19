@@ -5,6 +5,7 @@ import { hashPassword } from "../utils/password.js";
 import { notFound } from "../utils/errors.js";
 import { parseId, validateRegistration } from "../utils/validation.js";
 import { parsePriceCents } from "../utils/money.js";
+import { companyOf } from "../utils/company.js";
 
 const STAFF_ROLES = ["owner", "dispatcher"];
 
@@ -55,7 +56,7 @@ export async function createUser(req, res) {
     }
 
     const created = errors.length === 0 && await User.create(req.app.locals.db, {
-        email, passwordHash: await hashPassword(password), roleName: role,
+        email, passwordHash: await hashPassword(password), roleName: role, companyId: companyOf(req),
     });
 
     if (errors.length === 0 && !created) {

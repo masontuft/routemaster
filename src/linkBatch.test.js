@@ -21,7 +21,7 @@ beforeEach(async () => {
     await db.reset();
     oakwood = await Area.create(pool, "Oakwood");
     pine = await Area.create(pool, "Pine Hills");
-    const user = await User.create(pool, { email: "dispatch@example.com", passwordHash: "x", roleName: "dispatcher" });
+    const user = await User.create(pool, { companyId: 1, email: "dispatch@example.com", passwordHash: "x", roleName: "dispatcher" });
     userId = user.id;
 });
 after(() => {
@@ -29,7 +29,7 @@ after(() => {
 });
 
 async function customerIn(areaId, name, phone, streets = ["1 Elm St"]) {
-    const id = await Customer.create(pool, { name, phone });
+    const id = await Customer.create(pool, 1, { name, phone });
 
     for (const street of streets) {
         const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
@@ -192,7 +192,7 @@ test("a customer with properties in two areas belongs to the area of their first
 test("customers whose first property has no area form a last group, and a customer with no property is left out", async () => {
     const bo = await customerIn(pine, "Bo Kim", "208-555-0102");
     const cy = await customerIn(null, "Cy Day", "208-555-0103");
-    await Customer.create(pool, { name: "No Home", phone: "208-555-0104" });
+    await Customer.create(pool, 1, { name: "No Home", phone: "208-555-0104" });
 
     const groups = await LinkBatch.groupByOwningArea(pool);
 

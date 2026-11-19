@@ -54,7 +54,7 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
@@ -70,7 +70,7 @@ beforeEach(async () => {
 });
 
 async function customerIn(area, name, phone, street = "1 Elm St") {
-    const id = await Customer.create(pool, { name, phone });
+    const id = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, area]);
     return id;

@@ -6,6 +6,7 @@ import { runMigrations } from "../src/db/migrate.js";
 import { seedTestData } from "../src/db/seedTestData.js";
 import * as User from "../src/models/user.js";
 import { hashPassword } from "../src/utils/password.js";
+import { DEFAULT_COMPANY_ID } from "../src/config/company.js";
 
 const password = process.env.SEED_PASSWORD;
 
@@ -38,7 +39,7 @@ try {
     let dispatcherId = null;
 
     for (const account of accounts) {
-        const created = await User.create(pool, { ...account, passwordHash });
+        const created = await User.create(pool, { ...account, passwordHash, companyId: DEFAULT_COMPANY_ID });
         const user = created ?? await User.findByEmail(pool, account.email);
         console.log(`${account.email}: ${created ? "created" : "already exists"}`);
 

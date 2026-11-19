@@ -24,7 +24,7 @@ export async function redeem(req, res) {
     await regenerateSession(req);
     req.session.user = {
         id: user.id, email: null, role: "customer", displayName: user.displayName,
-        customerId: link.customerId, via: "link",
+        customerId: link.customerId, companyId: user.companyId, via: "link",
     };
     res.redirect("/requests");
 }

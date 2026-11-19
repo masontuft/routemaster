@@ -51,7 +51,7 @@ async function post(agent, pagePath, action, fields) {
 }
 
 async function loginAs(agent, email, roleName) {
-    const user = await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    const user = await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await post(agent, "/login", "/login", { email, password: "longenough" });
     return user.id;
 }
@@ -92,7 +92,7 @@ test("admin pages send a visitor to log in and refuse a dispatcher and a custome
 
 test("an owner changes another user's role, but not their own", async () => {
     const { agent, id } = await ownerAgent();
-    const other = await User.create(pool, { email: "dee@example.com", passwordHash: "x", roleName: "dispatcher" });
+    const other = await User.create(pool, { companyId: 1, email: "dee@example.com", passwordHash: "x", roleName: "dispatcher" });
 
     const promoted = await post(agent, "/admin/users", `/admin/users/${other.id}/role`, { role: "owner" });
     assert.strictEqual(promoted.status, 302);
@@ -106,8 +106,8 @@ test("an owner changes another user's role, but not their own", async () => {
 
 test("an unknown role, an unknown user and a link-only customer are rejected", async () => {
     const { agent } = await ownerAgent();
-    const other = await User.create(pool, { email: "dee@example.com", passwordHash: "x", roleName: "dispatcher" });
-    const customerId = await Customer.create(pool, { name: "Ann Lee", phone: "208-555-0101" });
+    const other = await User.create(pool, { companyId: 1, email: "dee@example.com", passwordHash: "x", roleName: "dispatcher" });
+    const customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "208-555-0101" });
     const linkUser = await Customer.ensureUser(pool, customerId);
 
     const bogus = await post(agent, "/admin/users", `/admin/users/${other.id}/role`, { role: "emperor" });
@@ -124,12 +124,12 @@ test("an unknown role, an unknown user and a link-only customer are rejected", a
 });
 
 test("the last owner cannot be demoted", async () => {
-    const only = await User.create(pool, { email: "solo@example.com", passwordHash: "x", roleName: "owner" });
+    const only = await User.create(pool, { companyId: 1, email: "solo@example.com", passwordHash: "x", roleName: "owner" });
 
     assert.deepStrictEqual(await Admin.changeRole(pool, only.id, "dispatcher", 0), { error: "last_owner" });
     assert.strictEqual(await roleOf(only.id), "owner");
 
-    await User.create(pool, { email: "two@example.com", passwordHash: "x", roleName: "owner" });
+    await User.create(pool, { companyId: 1, email: "two@example.com", passwordHash: "x", roleName: "owner" });
     assert.deepStrictEqual(await Admin.changeRole(pool, only.id, "dispatcher", 0), { ok: true });
 });
 
@@ -214,7 +214,7 @@ test("service input is validated, and a duplicate name is refused", async () => 
 
 test("the dashboard shows owner numbers to an owner and hides them from a dispatcher", async () => {
     await pool.query("UPDATE service_types SET price_cents = 4500 WHERE id = 1");
-    const customerId = await Customer.create(pool, { name: "Ann Lee", phone: "208-555-0101" });
+    const customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "208-555-0101" });
     const propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg" });
     const date = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 

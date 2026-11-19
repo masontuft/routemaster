@@ -51,12 +51,12 @@ async function post(agent, pagePath, action, fields) {
 }
 
 async function loginAs(agent, email, roleName = "customer") {
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     return post(agent, "/login", "/login", { email, password: "longenough" });
 }
 
 async function customerWithProperty(name = "Ann Lee", phone = "208-555-0101", street = "12 Oak Street") {
-    const customerId = await Customer.create(pool, { name, phone });
+    const customerId = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, customerId, { street, city: "Rexburg" });
     return { customerId, propertyId };
 }

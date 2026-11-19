@@ -25,7 +25,7 @@ after(() => {
 });
 
 async function customerIn(area, name, street = "1 Elm St") {
-    const id = await Customer.create(pool, { name, phone: "208-555-0101" });
+    const id = await Customer.create(pool, 1, { name, phone: "208-555-0101" });
     const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
 
     if (area) {

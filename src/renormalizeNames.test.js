@@ -19,9 +19,9 @@ after(() => {
 
 // Customers saved under the old rules: "&" and the apostrophe had become spaces.
 async function seedOldKeys() {
-    const couple = await Customer.create(pool, { name: "Sam & Ruth Example", phone: "801-555-0101" });
-    const renter = await Customer.create(pool, { name: "Nina Sample (rental)", phone: "801-555-0102" });
-    const plain = await Customer.create(pool, { name: "Ann Lee", phone: "801-555-0103" });
+    const couple = await Customer.create(pool, 1, { name: "Sam & Ruth Example", phone: "801-555-0101" });
+    const renter = await Customer.create(pool, 1, { name: "Nina Sample (rental)", phone: "801-555-0102" });
+    const plain = await Customer.create(pool, 1, { name: "Ann Lee", phone: "801-555-0103" });
     await pool.query("UPDATE customers SET name_normalized = 'sam ruth example' WHERE id = $1", [couple]);
     await pool.query("UPDATE customers SET name_normalized = 'nina sample rental' WHERE id = $1", [renter]);
     return { couple, renter, plain };
@@ -55,7 +55,7 @@ test("an apply writes the new keys, touches nothing else, and a second run has n
     assert.strictEqual(await keyOf(ids.couple), "sam and ruth example");
     assert.strictEqual(await keyOf(ids.renter), "nina sample");
     assert.strictEqual(await keyOf(ids.plain), "ann lee");
-    assert.strictEqual((await Customer.findById(pool, ids.renter)).name, "Nina Sample (rental)");
+    assert.strictEqual((await Customer.findById(pool, 1, ids.renter)).name, "Nina Sample (rental)");
 
     const again = await renormalizeCustomerNames(pool, { apply: true });
     assert.strictEqual(again.changed, 0);

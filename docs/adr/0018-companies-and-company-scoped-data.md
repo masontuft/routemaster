@@ -44,9 +44,9 @@ The roadmap listed three ways to keep data apart as open: a tenant column on sha
 
 ## Consequences
 
-- Nothing changes for the current business or its customers. No query, page or test reads `company_id` yet, so the app behaves as before.
+- Nothing changes for the current business or its customers. Pass 2a is built: the session carries the company, and customers and properties are scoped, with their staff pages, the bulk delete, the import lookups, link redeem and the public form. The app still behaves as one company, because company 1 is the only one.
 - Until the contract migration, the database does not stop a second company's rows from colliding with the first's: two companies could not both have an area called "Oak Park" or a route for the same day. That is why a second company cannot be created yet.
-- Until the models are scoped, anything in the app that reads or writes a table above is not company-aware. The next steps are to scope the models, build the public `/w/<slug>/schedule` pages, add a script that creates a company with its first owner, and test two companies against each other.
+- Still not company-aware, and named so they are not forgotten: requests, the staff queue, status changes and matching (`models/staff.js`, `serviceRequest.js`; `matchToProperty` reads the property from a form id unscoped), leads, reviews and access links (pass 2b); areas, routes, settings, the day board and rebooking, and the area check on the property edit page (pass 2c); the admin users page, which lists and changes the roles of users of every company, import apply (it writes customers and properties, so a second company's import would land in company 1), import batches, link batches, Messenger batches and contact messages (pass 2d). Until the contract migration drops `DEFAULT 1`, anything left unscoped writes into company 1.
 - `src/db/migrate.test.js` checks that existing rows land in company 1, that the next company is 2, that an insert without a company goes to company 1, and that the slug and foreign key rules hold.
 - Not tested against the live database. The migration should be dry-run against a copy of production before the deploy, since it adds a column and an index to every large table.
 - The FigJam copy of the ERD is out of date. Nothing updates it.
@@ -54,6 +54,7 @@ The roadmap listed three ways to keep data apart as open: a tenant column on sha
 ## References
 
 - `migrations/028_create_companies.sql`, `src/db/migrate.test.js`.
+- Pass 2a: `src/config/company.js`, `src/utils/company.js`, `src/middleware/ensureCompany.js`, `src/models/customer.js`, `src/models/property.js`. Tests: `src/companyIsolation.test.js`, `src/middleware/ensureCompany.test.js`.
 - [Roadmap: Branded Business Workspaces](../product/roadmap.md#branded-business-workspaces).
 - [ADR 0001](0001-app-type-and-repo-shape.md), [ADR 0007](0007-persistence-postgres-on-supabase.md), [ADR 0008](0008-schema-as-numbered-sql-migrations.md), [ADR 0010](0010-deployment-and-trust-boundary.md), [ADR 0017](0017-leads-for-unmatched-visitors.md).
 - [Database ERD](../architecture/database-erd.md).

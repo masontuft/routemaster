@@ -3,6 +3,7 @@ import * as Lead from "../models/lead.js";
 import * as ServiceRequest from "../models/serviceRequest.js";
 import * as ServiceType from "../models/serviceType.js";
 import { parseId, validateIdentity, validatePreferredDate, todayString } from "../utils/validation.js";
+import { DEFAULT_COMPANY_ID } from "../config/company.js";
 
 export function showIdentify(req, res) {
     res.render("schedule/identify", { title: "Schedule Service", errors: [], values: {} });
@@ -60,7 +61,8 @@ export async function submitDate(req, res) {
     }
 
     // No match: the visitor becomes a lead, and asking again reuses that lead instead of copying their details.
-    const match = await Customer.findByContact(db, contact);
+    // /schedule has no company in its address yet, so it takes requests for the first company (see config/company.js).
+    const match = await Customer.findByContact(db, DEFAULT_COMPANY_ID, contact);
     const leadId = match ? null : await Lead.findOrCreate(db, contact);
     await ServiceRequest.create(db, {
         customerId: match?.customer_id,

@@ -30,6 +30,7 @@ function details(extra = {}) {
 
 test("a batch keeps its counts and who ran it", async () => {
     const user = await User.create(pool, {
+        companyId: 1,
         email: "owner@example.com", passwordHash: await hashPassword("longenough"), roleName: "owner",
     });
 
@@ -49,6 +50,7 @@ test("a batch keeps its counts and who ran it", async () => {
 
 test("a batch survives its user being deleted", async () => {
     const user = await User.create(pool, {
+        companyId: 1,
         email: "owner@example.com", passwordHash: await hashPassword("longenough"), roleName: "owner",
     });
     const id = await ImportBatch.create(pool, details({ createdBy: user.id }));
@@ -84,7 +86,7 @@ test("saving a mapping twice for one tab updates it, and another tab stays separ
 
 test("rows created by a batch point at it, and the pointer is cleared if the batch goes", async () => {
     const batchId = await ImportBatch.create(pool, details());
-    const customerId = await Customer.create(pool, { name: "Ada Example", phone: "801-555-0100" });
+    const customerId = await Customer.create(pool, 1, { name: "Ada Example", phone: "801-555-0100" });
     const propertyId = await Property.create(pool, customerId, { street: "1 Test St", city: "Testville" });
     await pool.query("UPDATE customers SET import_batch_id = $1 WHERE id = $2", [batchId, customerId]);
     await pool.query("UPDATE properties SET import_batch_id = $1 WHERE id = $2", [batchId, propertyId]);
@@ -106,7 +108,7 @@ test("an area is unique by normalized name and cannot be deleted while a propert
         /unique/i,
     );
 
-    const customerId = await Customer.create(pool, { name: "Ada Example" });
+    const customerId = await Customer.create(pool, 1, { name: "Ada Example" });
     const propertyId = await Property.create(pool, customerId, { street: "1 Test St", city: "Testville" });
     await pool.query("UPDATE properties SET subdivision_id = $1 WHERE id = $2", [area.rows[0].id, propertyId]);
 
@@ -114,7 +116,7 @@ test("an area is unique by normalized name and cannot be deleted while a propert
 });
 
 test("a job amount cannot be negative but may be empty", async () => {
-    const customerId = await Customer.create(pool, { name: "Ada Example" });
+    const customerId = await Customer.create(pool, 1, { name: "Ada Example" });
     const propertyId = await Property.create(pool, customerId, { street: "1 Test St", city: "Testville" });
     const insert = (amount) => {
         return pool.query(

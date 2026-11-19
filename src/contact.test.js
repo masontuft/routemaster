@@ -47,7 +47,7 @@ async function post(agent, pagePath, action, fields) {
 }
 
 async function loginAs(agent, email, roleName) {
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     return post(agent, "/login", "/login", { email, password: "longenough" });
 }
 

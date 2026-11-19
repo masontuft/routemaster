@@ -28,11 +28,11 @@ function sameCustomer(keys, customer) {
 
 // The match rule is the same one Customer.findByContact uses for the public form, applied to many rows
 // at once: three queries however long the sheet is, not one per row.
-async function lookUp(db, keyed) {
+async function lookUp(db, companyId, keyed) {
     const streets = [...new Set(keyed.map((entry) => {
         return entry.keys.street;
     }))];
-    const properties = streets.length > 0 ? await Property.listByNormalizedAddresses(db, streets) : [];
+    const properties = streets.length > 0 ? await Property.listByNormalizedAddresses(db, companyId, streets) : [];
 
     const byStreet = new Map();
     for (const property of properties) {
@@ -45,7 +45,7 @@ async function lookUp(db, keyed) {
         return property.customer_id;
     }))];
     const owners = new Map();
-    for (const customer of ids.length > 0 ? await Customer.listNormalizedByIds(db, ids) : []) {
+    for (const customer of ids.length > 0 ? await Customer.listNormalizedByIds(db, companyId, ids) : []) {
         owners.set(customer.id, customer);
     }
 
@@ -56,7 +56,7 @@ async function lookUp(db, keyed) {
         return { name: entry.keys.name, phone: entry.keys.phone };
     });
     const people = new Map();
-    for (const customer of pairs.length > 0 ? await Customer.listByNamePhonePairs(db, pairs) : []) {
+    for (const customer of pairs.length > 0 ? await Customer.listByNamePhonePairs(db, companyId, pairs) : []) {
         const key = `${customer.name_normalized}|${customer.phone_normalized}`;
         if (people.has(key) === false) {
             people.set(key, customer);
@@ -120,13 +120,13 @@ function annotateGroups(rows) {
     return groups.size;
 }
 
-export async function classifyCandidates(db, candidates) {
+export async function classifyCandidates(db, companyId, candidates) {
     const keyed = candidates.filter((candidate) => {
         return candidate.blocked === false;
     }).map((candidate) => {
         return { candidate, keys: keysFor(candidate) };
     });
-    const found = await lookUp(db, keyed);
+    const found = await lookUp(db, companyId, keyed);
     const keysByRow = new Map(keyed.map((entry) => {
         return [entry.candidate.rowNumber, entry.keys];
     }));

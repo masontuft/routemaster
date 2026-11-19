@@ -9,18 +9,21 @@ export async function create(pool, customerId, { street, city, zip, notes }) {
     return rows[0].id;
 }
 
-export async function findById(pool, id) {
+// A property has no company of its own: it belongs to a customer, and the customer to a company (ADR 0018). The
+// three functions that find properties from a URL, a form or a street name filter through the customer.
+export async function findById(pool, companyId, id) {
     const { rows } = await pool.query(
-        "SELECT id, customer_id, street, city, zip, notes, subdivision_id FROM properties WHERE id = $1",
-        [id],
+        `SELECT id, customer_id, street, city, zip, notes, subdivision_id FROM properties
+         WHERE id = $1 AND customer_id IN (SELECT id FROM customers WHERE company_id = $2)`,
+        [id, companyId],
     );
     return rows[0] ?? null;
 }
 
 // Changes only the fields given: { street, city, zip, notes, subdivisionId }. A new street also gets a new
 // normalized address, which the import and the scheduling form match on. A blank city, ZIP, note or area becomes NULL.
-export async function update(pool, id, fields) {
-    const values = [id];
+export async function update(pool, companyId, id, fields) {
+    const values = [id, companyId];
     const sets = [];
     const set = (column, value) => {
         values.push(value);
@@ -77,7 +80,11 @@ export async function update(pool, id, fields) {
         return false;
     }
 
-    const result = await pool.query(`UPDATE properties SET ${sets.join(", ")} WHERE id = $1`, values);
+    const result = await pool.query(
+        `UPDATE properties SET ${sets.join(", ")}
+         WHERE id = $1 AND customer_id IN (SELECT id FROM customers WHERE company_id = $2)`,
+        values,
+    );
     return result.rowCount === 1;
 }
 
@@ -106,11 +113,13 @@ export async function listForCustomers(pool, customerIds) {
 }
 
 // Read-only lookup for the import preview: every property on any of these normalized streets, in one query.
-export async function listByNormalizedAddresses(pool, addresses) {
+export async function listByNormalizedAddresses(pool, companyId, addresses) {
     const { rows } = await pool.query(
         `SELECT id, customer_id, address_normalized FROM properties
-         WHERE address_normalized = ANY($1::text[]) ORDER BY id`,
-        [addresses],
+         WHERE address_normalized = ANY($1::text[])
+           AND customer_id IN (SELECT id FROM customers WHERE company_id = $2)
+         ORDER BY id`,
+        [addresses, companyId],
     );
     return rows;
 }

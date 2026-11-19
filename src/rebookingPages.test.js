@@ -55,14 +55,14 @@ async function send(agent, pagePath, action, fields) {
 async function agentFor(roleName) {
     const agent = request.agent(server);
     const email = `${roleName}@example.com`;
-    await User.create(pool, { email, passwordHash: await hashPassword("longenough"), roleName });
+    await User.create(pool, { companyId: 1, email, passwordHash: await hashPassword("longenough"), roleName });
     await send(agent, "/login", "/login", { email, password: "longenough" });
     return agent;
 }
 
 // A customer in an area who was served last year, with a phone that can be texted unless phone is given.
 async function servedLastYear(name, { area = areaId, phone = "208-555-0101", street = "1 Elm St" } = {}) {
-    const id = await Customer.create(pool, { name, phone });
+    const id = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, area]);
     const requestId = await ServiceRequest.create(pool, {
@@ -209,9 +209,9 @@ test("all areas lists every customer with a property, in any area or none, once 
     const other = await Area.create(pool, "Pine Hills");
     await servedLastYear("Inside");
     await servedLastYear("Elsewhere", { area: other, street: "9 Pine Rd" });
-    const noArea = await Customer.create(pool, { name: "No Area", phone: "208-555-0102" });
+    const noArea = await Customer.create(pool, 1, { name: "No Area", phone: "208-555-0102" });
     await Property.create(pool, noArea, { street: "5 Oak St", city: "Rexburg" });
-    await Customer.create(pool, { name: "No Property", phone: "208-555-0103" });
+    await Customer.create(pool, 1, { name: "No Property", phone: "208-555-0103" });
     const dispatcher = await agentFor("dispatcher");
 
     const res = await dispatcher.get("/staff/rebooking?areaId=all&year=2026");

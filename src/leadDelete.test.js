@@ -51,7 +51,7 @@ async function buildScene() {
     const annId = (await pool.query("SELECT customer_id FROM service_requests WHERE id = $1", [first])).rows[0].customer_id;
     await pool.query("UPDATE customers SET import_batch_id = $2 WHERE id = $1", [annId, batchId]);
 
-    const boId = await Customer.create(pool, { name: "Bo Kim", phone: "208-555-0202" });
+    const boId = await Customer.create(pool, 1, { name: "Bo Kim", phone: "208-555-0202" });
     const boProperty = await Property.create(pool, boId, { street: "9 Elm Street", city: "Rexburg" });
     const again = await unmatched(ann);
     await Staff.matchToProperty(pool, again, boProperty, null);
@@ -61,7 +61,7 @@ async function buildScene() {
 }
 
 test("the counts include the customer's leads and the unmatched requests that point at them", async () => {
-    const counts = await Customer.countRelated(pool, scene.annId);
+    const counts = await Customer.countRelated(pool, 1, scene.annId);
 
     // Ann's one matched request, plus the cancelled one nobody matched. Bo's request is not Ann's.
     assert.strictEqual(counts.leads, 1);
@@ -69,7 +69,7 @@ test("the counts include the customer's leads and the unmatched requests that po
 });
 
 test("deleting a customer deletes their lead and unmatched requests, and leaves other customers' requests", async () => {
-    assert.strictEqual(await Customer.remove(pool, scene.annId), true);
+    assert.strictEqual(await Customer.remove(pool, 1, scene.annId), true);
 
     const leads = await pool.query("SELECT name FROM leads");
     assert.deepStrictEqual(leads.rows, [{ name: "Cy Doe" }]);
@@ -83,32 +83,32 @@ test("deleting a customer deletes their lead and unmatched requests, and leaves 
 });
 
 test("clearing every customer takes the converted leads and keeps the stranger's", async () => {
-    const counts = await Customer.countClear(pool, null);
+    const counts = await Customer.countClear(pool, 1, null);
     assert.deepStrictEqual([counts.customers, counts.leads, counts.requests], [2, 1, 3]);
 
-    const result = await Customer.clear(pool, null, counts);
+    const result = await Customer.clear(pool, 1, null, counts);
     assert.strictEqual(result.deleted, true);
     assert.deepStrictEqual((await pool.query("SELECT name FROM leads")).rows, [{ name: "Cy Doe" }]);
     assert.deepStrictEqual((await pool.query("SELECT id FROM service_requests")).rows, [{ id: scene.stranger }]);
 });
 
 test("clearing one import batch takes only that batch's customers and their leads", async () => {
-    const counts = await Customer.countClear(pool, batchId);
+    const counts = await Customer.countClear(pool, 1, batchId);
     assert.deepStrictEqual([counts.customers, counts.leads, counts.requests], [1, 1, 2]);
 
-    assert.strictEqual((await Customer.clear(pool, batchId, counts)).deleted, true);
+    assert.strictEqual((await Customer.clear(pool, 1, batchId, counts)).deleted, true);
     assert.strictEqual(await count("customers"), 1);
     assert.strictEqual(await count("leads"), 1);
     assert.strictEqual(await count("service_requests"), 2);
 });
 
 test("a clear is refused when a lead appeared after the owner looked", async () => {
-    const seen = await Customer.countClear(pool, null);
-    await Customer.update(pool, scene.boId, { name: "Bo Kim" });
+    const seen = await Customer.countClear(pool, 1, null);
+    await Customer.update(pool, 1, scene.boId, { name: "Bo Kim" });
     const boLead = await Lead.findOrCreate(pool, { name: "Bo Kim", phone: "208-555-0202", address: "9 Elm Street" });
     await Lead.markConverted(pool, boLead, scene.boId);
 
-    const result = await Customer.clear(pool, null, seen);
+    const result = await Customer.clear(pool, 1, null, seen);
     assert.strictEqual(result.deleted, false);
     assert.strictEqual(await count("customers"), 2);
 });

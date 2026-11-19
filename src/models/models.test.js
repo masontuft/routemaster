@@ -17,7 +17,7 @@ before(() => {
 });
 beforeEach(async () => {
     await db.reset();
-    customerId = await Customer.create(pool, { name: "Ann Lee", phone: "(208) 555-0101" });
+    customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101" });
     propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg" });
 });
 after(() => {
@@ -58,7 +58,7 @@ test("a request with neither a customer nor a lead is refused by the database", 
 
 test("one customer cannot read, change or cancel another customer's request", async () => {
     const id = await newRequest();
-    const otherId = await Customer.create(pool, { name: "Bo Kay" });
+    const otherId = await Customer.create(pool, 1, { name: "Bo Kay" });
     assert.strictEqual(await ServiceRequest.findForCustomer(pool, id, otherId), null);
     assert.strictEqual(await ServiceRequest.updateDetails(pool, id, otherId, { preferredDate: "2027-02-01" }), false);
     assert.strictEqual(await ServiceRequest.cancel(pool, id, otherId, null), false);
@@ -77,11 +77,11 @@ test("cancelling adds history, and a cancelled request can no longer be changed 
 });
 
 test("matching needs name, phone and street together", async () => {
-    const hit = await Customer.findByContact(pool, { name: "ann  LEE", phone: "208-555-0101", address: "12 oak st." });
+    const hit = await Customer.findByContact(pool, 1, { name: "ann  LEE", phone: "208-555-0101", address: "12 oak st." });
     assert.deepStrictEqual(hit, { customer_id: customerId, property_id: propertyId });
-    assert.strictEqual(await Customer.findByContact(pool, { name: "Ann Lee", phone: "208-555-9999", address: "12 Oak St" }), null);
-    assert.strictEqual(await Customer.findByContact(pool, { name: "Ann Lee", phone: "208-555-0101", address: "99 Oak St" }), null);
-    assert.strictEqual(await Customer.findByContact(pool, { name: "Ann Lee", phone: "", address: "12 Oak St" }), null);
+    assert.strictEqual(await Customer.findByContact(pool, 1, { name: "Ann Lee", phone: "208-555-9999", address: "12 Oak St" }), null);
+    assert.strictEqual(await Customer.findByContact(pool, 1, { name: "Ann Lee", phone: "208-555-0101", address: "99 Oak St" }), null);
+    assert.strictEqual(await Customer.findByContact(pool, 1, { name: "Ann Lee", phone: "", address: "12 Oak St" }), null);
 });
 
 test("a link works until it expires or is revoked, and the raw token is not stored", async () => {
@@ -142,64 +142,64 @@ test("a request cannot mix matched and unmatched shapes", async () => {
 });
 
 test("updating a customer recomputes what matching reads, and leaves other fields alone", async () => {
-    assert.strictEqual(await Customer.update(pool, customerId, { name: "Ann  Lee-Smith", phone: "(208) 555-0199" }), true);
+    assert.strictEqual(await Customer.update(pool, 1, customerId, { name: "Ann  Lee-Smith", phone: "(208) 555-0199" }), true);
 
-    const found = await Customer.findByContact(pool, {
+    const found = await Customer.findByContact(pool, 1, {
         name: "ann lee smith", phone: "208-555-0199", address: "12 oak st",
     });
     assert.strictEqual(found.customer_id, customerId);
-    const old = await Customer.findByContact(pool, { name: "Ann Lee", phone: "(208) 555-0101", address: "12 Oak Street" });
+    const old = await Customer.findByContact(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101", address: "12 Oak Street" });
     assert.strictEqual(old, null);
-    assert.strictEqual((await Customer.findById(pool, customerId)).email, null);
+    assert.strictEqual((await Customer.findById(pool, 1, customerId)).email, null);
 });
 
 test("a blank phone or email is stored as NULL, and a missing customer or empty change updates nothing", async () => {
-    await Customer.update(pool, customerId, { email: "ann@example.com" });
-    await Customer.update(pool, customerId, { phone: "", email: "" });
-    const customer = await Customer.findById(pool, customerId);
+    await Customer.update(pool, 1, customerId, { email: "ann@example.com" });
+    await Customer.update(pool, 1, customerId, { phone: "", email: "" });
+    const customer = await Customer.findById(pool, 1, customerId);
     assert.deepStrictEqual([customer.phone, customer.email], [null, null]);
     const { rows } = await pool.query("SELECT phone_normalized FROM customers WHERE id = $1", [customerId]);
     assert.strictEqual(rows[0].phone_normalized, null);
 
-    assert.strictEqual(await Customer.update(pool, 999999, { name: "Nobody" }), false);
-    assert.strictEqual(await Customer.update(pool, customerId, {}), false);
+    assert.strictEqual(await Customer.update(pool, 1, 999999, { name: "Nobody" }), false);
+    assert.strictEqual(await Customer.update(pool, 1, customerId, {}), false);
 });
 
 test("updating a property's street renormalizes it, and a blank city or ZIP becomes NULL", async () => {
-    await Property.update(pool, propertyId, { city: "", zip: "83440" });
-    let property = await Property.findById(pool, propertyId);
+    await Property.update(pool, 1, propertyId, { city: "", zip: "83440" });
+    let property = await Property.findById(pool, 1, propertyId);
     assert.deepStrictEqual([property.city, property.zip, property.street], [null, "83440", "12 Oak Street"]);
 
-    await Property.update(pool, propertyId, { street: "99 Elm Avenue", city: "Rexburg" });
-    property = await Property.findById(pool, propertyId);
+    await Property.update(pool, 1, propertyId, { street: "99 Elm Avenue", city: "Rexburg" });
+    property = await Property.findById(pool, 1, propertyId);
     assert.deepStrictEqual([property.street, property.city], ["99 Elm Avenue", "Rexburg"]);
-    const found = await Customer.findByContact(pool, { name: "Ann Lee", phone: "208-555-0101", address: "99 elm ave" });
+    const found = await Customer.findByContact(pool, 1, { name: "Ann Lee", phone: "208-555-0101", address: "99 elm ave" });
     assert.strictEqual(found.property_id, propertyId);
-    assert.strictEqual(await Property.update(pool, propertyId, {}), false);
+    assert.strictEqual(await Property.update(pool, 1, propertyId, {}), false);
 });
 
 test("a joint name matches however it is spelled, and a rental note does not change who the customer is", async () => {
-    const coupleId = await Customer.create(pool, { name: "Sam & Ruth Example", phone: "(208) 555-0111" });
+    const coupleId = await Customer.create(pool, 1, { name: "Sam & Ruth Example", phone: "(208) 555-0111" });
     await Property.create(pool, coupleId, { street: "5 Elm Street", city: "Rexburg" });
-    const renterId = await Customer.create(pool, { name: "Nina Sample (rental)", phone: "(208) 555-0122" });
+    const renterId = await Customer.create(pool, 1, { name: "Nina Sample (rental)", phone: "(208) 555-0122" });
     await Property.create(pool, renterId, { street: "7 Elm Street", city: "Rexburg" });
 
-    const couple = await Customer.findByContact(pool, {
+    const couple = await Customer.findByContact(pool, 1, {
         name: "sam AND ruth example", phone: "208-555-0111", address: "5 elm st",
     });
     assert.strictEqual(couple.customer_id, coupleId);
-    const renter = await Customer.findByContact(pool, {
+    const renter = await Customer.findByContact(pool, 1, {
         name: "Nina Sample", phone: "208-555-0122", address: "7 elm st",
     });
     assert.strictEqual(renter.customer_id, renterId);
-    assert.strictEqual((await Customer.findById(pool, renterId)).name, "Nina Sample (rental)");
+    assert.strictEqual((await Customer.findById(pool, 1, renterId)).name, "Nina Sample (rental)");
 
-    const results = await Customer.search(pool, "Sam & Ruth");
+    const results = await Customer.search(pool, 1, "Sam & Ruth");
     assert.deepStrictEqual(results.map((row) => { return row.id; }), [coupleId]);
 });
 
 test("updating a name recomputes the key with the person-name rules", async () => {
-    await Customer.update(pool, customerId, { name: "Ann O'Lee-Smith" });
+    await Customer.update(pool, 1, customerId, { name: "Ann O'Lee-Smith" });
     const { rows } = await pool.query("SELECT name_normalized FROM customers WHERE id = $1", [customerId]);
     assert.strictEqual(rows[0].name_normalized, "ann olee smith");
 });

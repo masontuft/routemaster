@@ -48,8 +48,8 @@ test("an unknown lead id finds nothing", async () => {
 
 test("a lead is converted once, and cannot be pointed at a second customer", async () => {
     const lead = await Lead.findOrCreate(pool, typed);
-    const first = await Customer.create(pool, { name: typed.name, phone: typed.phone });
-    const second = await Customer.create(pool, { name: "Someone Else" });
+    const first = await Customer.create(pool, 1, { name: typed.name, phone: typed.phone });
+    const second = await Customer.create(pool, 1, { name: "Someone Else" });
 
     assert.strictEqual(await Lead.markConverted(pool, lead, first), true);
     assert.strictEqual(await Lead.markConverted(pool, lead, second), false);
@@ -59,7 +59,7 @@ test("a lead is converted once, and cannot be pointed at a second customer", asy
 test("deleting the customer a lead became deletes the lead, and a stranger's lead stays", async () => {
     const lead = await Lead.findOrCreate(pool, typed);
     const stranger = await Lead.findOrCreate(pool, { ...typed, name: "Cy Doe" });
-    const customer = await Customer.create(pool, { name: typed.name });
+    const customer = await Customer.create(pool, 1, { name: typed.name });
     await Lead.markConverted(pool, lead, customer);
     await pool.query("DELETE FROM customers WHERE id = $1", [customer]);
 

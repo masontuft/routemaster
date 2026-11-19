@@ -1,6 +1,7 @@
 import { createPool } from "../src/db/pool.js";
 import * as User from "../src/models/user.js";
 import { hashPassword } from "../src/utils/password.js";
+import { DEFAULT_COMPANY_ID } from "../src/config/company.js";
 
 const url = process.env.DATABASE_URL;
 const password = process.env.SEED_PASSWORD;
@@ -22,7 +23,7 @@ try {
     const passwordHash = await hashPassword(password);
 
     for (const account of accounts) {
-        const created = await User.create(pool, { ...account, passwordHash });
+        const created = await User.create(pool, { ...account, passwordHash, companyId: DEFAULT_COMPANY_ID });
         console.log(`${account.email}: ${created ? "created" : "already exists"}`);
     }
 } finally {
