@@ -11,6 +11,21 @@ export async function findById(pool, id) {
     return rows[0] ?? null;
 }
 
+// Changes a login's email. The email is already validated and lower-cased. Returns true, false for a user that does not
+// exist, or "taken" when another login, in any company, has it: an email is one login in one company.
+export async function setEmail(pool, id, email) {
+    try {
+        const result = await pool.query("UPDATE users SET email = $2 WHERE id = $1", [id, email]);
+        return result.rowCount === 1;
+    } catch (error) {
+        if (error.code === UNIQUE_VIOLATION && error.constraint === "users_email_key") {
+            return "taken";
+        }
+
+        throw error;
+    }
+}
+
 // Replaces a user's password hash. Returns false for a user that does not exist.
 export async function setPasswordHash(pool, id, passwordHash) {
     const result = await pool.query("UPDATE users SET password_hash = $2 WHERE id = $1", [id, passwordHash]);

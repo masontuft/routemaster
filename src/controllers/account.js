@@ -1,6 +1,6 @@
 import * as User from "../models/user.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
-import { validatePasswordChange } from "../utils/validation.js";
+import { validatePasswordChange, validateNewEmail } from "../utils/validation.js";
 import { regenerateSession } from "../utils/session.js";
 import { notFound } from "../utils/errors.js";
 import { withTransaction } from "../db/transaction.js";
@@ -20,6 +20,39 @@ async function loadUser(req) {
 export async function showPassword(req, res) {
     await loadUser(req);
     res.render("account/password", { title: "Change Password", errors: [], notice: null });
+}
+
+export async function showEmail(req, res) {
+    const user = await loadUser(req);
+    res.render("account/email", { title: "Change Email", errors: [], notice: null, current: user.email });
+}
+
+export async function changeEmail(req, res) {
+    const user = await loadUser(req);
+    const { email, errors } = validateNewEmail(req.body, { confirmed: true });
+    const page = (status, notice, shown) => {
+        return res.status(status).render("account/email", { title: "Change Email", errors, notice, current: shown });
+    };
+
+    // The password is asked for so a stolen logged-in session cannot point the login at another address.
+    if (!await verifyPassword(String(req.body.current ?? ""), user.password_hash)) {
+        errors.unshift("The current password is not right.");
+    }
+
+    if (errors.length > 0) {
+        return page(400, null, user.email);
+    }
+
+    const result = await User.setEmail(req.app.locals.db, user.id, email);
+
+    if (result === "taken") {
+        errors.push("That email already has a login.");
+        return page(400, null, user.email);
+    }
+
+    req.session.user.email = email;
+    req.session.user.displayName = email;
+    return page(200, "Your email was changed.", email);
 }
 
 export async function changePassword(req, res) {

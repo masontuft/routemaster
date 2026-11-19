@@ -12,6 +12,7 @@ router.get("/admin/users", admin.listUsers);
 router.get("/admin/users/new", admin.showNewUser);
 router.post("/admin/users", admin.createUser);
 router.post("/admin/users/:id/role", admin.changeRole);
+router.post("/admin/users/:id/email", admin.changeEmail);
 router.get("/admin/service-types", admin.listServiceTypes);
 router.get("/admin/service-types/new", admin.showNewServiceType);
 router.post("/admin/service-types", admin.createServiceType);
