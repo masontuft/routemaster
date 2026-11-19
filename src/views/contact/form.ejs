@@ -2,7 +2,7 @@
 <h1>Contact Us</h1>
 <p class="lead">Send us a message. Our staff read every one.</p>
 <%- include("../partials/errors") %>
-<form method="post" action="/contact">
+<form method="post" action="<%= locals.base %>/contact">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <label for="name">Name</label>
     <input id="name" name="name" value="<%= values.name %>" required maxlength="100" autocomplete="name">

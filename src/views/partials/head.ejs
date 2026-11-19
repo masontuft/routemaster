@@ -9,10 +9,11 @@
 <body class="<%= locals.pageStyle || "app" %>">
     <a class="skip-link" href="#main">Skip to Main Content</a>
     <header>
-        <a class="brand" href="/">Routemaster</a>
+        <a class="brand" href="<%= locals.base || "/" %>"><%= locals.company ? locals.company.name : "Routemaster" %></a>
         <%
             // A link is current on its own page and on pages beneath it, so Staff stays marked inside /staff/day-board.
             const here = locals.currentPath || "";
+            const base = locals.base || "";
             const cur = (path) => (here === path || here.startsWith(path + "/") ? ' aria-current="page"' : "");
             const isOwner = locals.user && locals.user.role === "owner";
             const adminLinks = [
@@ -25,9 +26,9 @@
             const inAdmin = adminLinks.some(([path]) => cur(path));
         %>
         <nav aria-label="Main">
-            <a href="/services"<%- cur("/services") %>>Services</a>
-            <a href="/reviews"<%- cur("/reviews") %>>Reviews</a>
-            <a href="/contact"<%- cur("/contact") %>>Contact</a>
+            <a href="<%= base %>/services"<%- cur(base + "/services") %>>Services</a>
+            <a href="<%= base %>/reviews"<%- cur(base + "/reviews") %>>Reviews</a>
+            <a href="<%= base %>/contact"<%- cur(base + "/contact") %>>Contact</a>
             <% if (locals.user) { %>
                 <% if (locals.user.role === "customer") { %><a href="/requests"<%- cur("/requests") %>>My Requests</a><% } %>
                 <% if (["owner", "dispatcher"].includes(locals.user.role)) { %><a href="/staff"<%- cur("/staff") %>>Staff</a><% } %>

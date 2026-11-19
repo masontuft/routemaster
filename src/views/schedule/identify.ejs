@@ -2,7 +2,7 @@
 <h1>Schedule Service</h1>
 <p>Tell us who you are so we can find your appointment.</p>
 <%- include("../partials/errors") %>
-<form method="post" action="/schedule">
+<form method="post" action="<%= locals.base %>/schedule">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <label for="name">Name</label>
     <input id="name" name="name" value="<%= values.name || "" %>" required maxlength="100" autocomplete="name">

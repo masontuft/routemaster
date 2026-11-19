@@ -28,6 +28,21 @@ export async function findValid(pool, token) {
     return rows[0] ? { id: rows[0].id, customerId: rows[0].customer_id } : null;
 }
 
+// The company a link token belongs to, whether or not the link still works, or null for a token that is not one. An
+// expired or revoked link still names its customer, so the page that says "this link is not valid" can point at that
+// company's pages and not the first company's.
+export async function companyOf(pool, token) {
+    const { rows } = await pool.query(
+        `SELECT companies.id, companies.name, companies.slug
+         FROM access_links
+         JOIN customers ON customers.id = access_links.customer_id
+         JOIN companies ON companies.id = customers.company_id
+         WHERE access_links.token_hash = $1`,
+        [hashToken(String(token))],
+    );
+    return rows[0] ?? null;
+}
+
 export async function revoke(pool, id) {
     await pool.query("UPDATE access_links SET revoked_at = now() WHERE id = $1", [id]);
 }

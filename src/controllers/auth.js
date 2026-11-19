@@ -1,5 +1,6 @@
 import * as User from "../models/user.js";
-import { DEFAULT_COMPANY_ID } from "../config/company.js";
+import * as Company from "../models/company.js";
+import { publicCompanyId, companyHomePath } from "../utils/company.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 import { validateRegistration, normalizeEmail } from "../utils/validation.js";
 import { regenerateSession, destroySession } from "../utils/session.js";
@@ -16,9 +17,9 @@ export async function register(req, res) {
 
     if (errors.length === 0) {
         const passwordHash = await hashPassword(password);
-        // There is no company in the address of /register yet, so a self-registered customer joins the first company.
+        // The bare /register is the first company's, and /w/<slug>/register is that company's (publicCompanyId).
         const user = await User.create(req.app.locals.db, {
-            email, passwordHash, roleName: "customer", companyId: DEFAULT_COMPANY_ID,
+            email, passwordHash, roleName: "customer", companyId: publicCompanyId(req),
         });
 
         if (user) {
@@ -26,7 +27,7 @@ export async function register(req, res) {
             req.session.user = {
                 id: user.id, email: user.email, role: user.role, displayName: user.email, companyId: user.companyId,
             };
-            return res.redirect("/");
+            return res.redirect(companyHomePath(req.company));
         }
 
         errors.push("That email is already registered.");
@@ -57,7 +58,8 @@ export async function login(req, res) {
     req.session.user = {
         id: user.id, email: user.email, role: user.role, displayName: user.email, companyId: user.companyId,
     };
-    res.redirect("/");
+    // Back to the front page of the user's own company, not the bare site, which is the first company's.
+    res.redirect(companyHomePath(await Company.findById(req.app.locals.db, user.companyId)));
 }
 
 export async function logout(req, res) {
