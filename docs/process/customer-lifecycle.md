@@ -20,7 +20,7 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 | Dispatcher | Areas and days, links, matching, the day board, routes |
 | Customer | Opens a link or logs in, requests service, picks a day, cancels, reviews |
 
-Every user belongs to one company ([ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and the session carries it. Only one company exists today, Tuft Sprinkler Blowouts, and a second cannot be created safely yet. The users page lists and changes only the owner's own company's users, and "the last owner" means the last owner of that company. A staff user an owner creates joins the owner's company. A customer who opens a link joins the company of the customer the link belongs to. The public pages `/register` and `/schedule` have no company in their address yet, so they use the first company.
+Every user belongs to one company ([ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and the session carries it. Only one company exists today, Tuft Sprinkler Blowouts, and a second cannot be created safely yet. Each company has its own service catalog, requests, leads and reviews, and staff see and change only their own company's. The users page lists and changes only the owner's own company's users, and "the last owner" means the last owner of that company. A staff user an owner creates joins the owner's company. A customer who opens a link joins the company of the customer the link belongs to. The public pages `/register` and `/schedule` have no company in their address yet, so they use the first company, and so do the public `/reviews` and `/services` pages.
 
 ## Owner options
 
@@ -116,7 +116,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 ## Known gaps in the whole process
 
 - Sending links is manual and unrecorded.
-- Customers and properties are kept apart by company, and nothing else is yet: requests, leads, areas, routes and the import write are not. Do not create a second company until they are (ADR 0018, issue 75).
+- Customers, properties, users, requests, leads, reviews and the service catalog are kept apart by company, and nothing else is yet: areas, routes, settings, rebooking and the import write are not. Do not create a second company until they are (ADR 0018, issue 75).
 - A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is built, behind the owner option, in step 6.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.
@@ -127,6 +127,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 
 | Date | Change |
 | --- | --- |
+| 2026-11-19 | Who may do a step: the request queue, request pages, status changes, matching to a property or as a new customer, penciled-in confirmation, booking from the day board, review moderation and the service catalog are limited to the logged-in user's company (pass 2b of ADR 0018). Each company has its own service types, so an owner edits only their own. Matching refuses a property of another company. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
 | 2026-11-19 | Who may do a step: staff, customers and the customer search, edit, delete, link, bulk-delete and users pages are limited to the logged-in user's company (pass 2a of ADR 0018). A user belongs to one company, a link login joins the customer's company, and `/register` and `/schedule` use the first company. No page was added, removed or renamed, and the "Last verified" date is unchanged, because the steps were not re-read against the code. |
 | 2026-11-18 | Step 4, Messenger: the Messenger app now opens the deep link, texts each customer their own message and reports results (Mason shipped it and tested it in production). The Gaps line no longer says it cannot. The "Last verified" date is unchanged, because only this step was re-read: the routes and pages named in it match the code. |
 | 2026-11-17 | Deleting a customer, one or in bulk, also deletes the leads made into that customer and their unmatched requests (migration 027). The delete pages list the lead count. |

@@ -25,7 +25,7 @@ after(() => {
 });
 
 async function newRequest(overrides = {}) {
-    return ServiceRequest.create(pool, {
+    return ServiceRequest.create(pool, 1, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: "2027-01-15", ...overrides,
     });
 }
@@ -41,8 +41,8 @@ test("a request starts as Requested with one history row", async () => {
 });
 
 test("a request with no customer is stored as Needs Review and points at its lead", async () => {
-    const leadId = await Lead.findOrCreate(pool, { name: "Stranger", phone: "2085550000", address: "1 Elm St" });
-    const id = await ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2027-01-15", leadId });
+    const leadId = await Lead.findOrCreate(pool, 1, { name: "Stranger", phone: "2085550000", address: "1 Elm St" });
+    const id = await ServiceRequest.create(pool, 1, { serviceTypeId: 1, preferredDate: "2027-01-15", leadId });
     const { rows } = await pool.query(
         `SELECT request_statuses.name AS status, leads.name AS lead_name FROM service_requests
          JOIN request_statuses ON request_statuses.id = status_id
@@ -51,7 +51,7 @@ test("a request with no customer is stored as Needs Review and points at its lea
 });
 
 test("a request with neither a customer nor a lead is refused by the database", async () => {
-    await assert.rejects(ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2027-01-15" }), {
+    await assert.rejects(ServiceRequest.create(pool, 1, { serviceTypeId: 1, preferredDate: "2027-01-15" }), {
         constraint: "service_requests_matched_or_unmatched",
     });
 });

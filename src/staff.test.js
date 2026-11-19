@@ -68,7 +68,7 @@ function daysAhead(days) {
 async function matchedRequest(name = "Ann Lee", street = "12 Oak Street", phone = "208-555-0101") {
     const customerId = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, customerId, { street, city: "Rexburg" });
-    const id = await ServiceRequest.create(pool, {
+    const id = await ServiceRequest.create(pool, 1, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: daysAhead(10),
     });
     return { id, customerId, propertyId };
@@ -76,8 +76,8 @@ async function matchedRequest(name = "Ann Lee", street = "12 Oak Street", phone 
 
 // Asking again with the same details reuses the lead, as the public form does.
 async function unmatchedRequest(contact = { name: "Cy Doe", phone: "208-555-0303", address: "7 Birch Lane" }) {
-    const leadId = await Lead.findOrCreate(pool, contact);
-    return ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: daysAhead(10), leadId });
+    const leadId = await Lead.findOrCreate(pool, 1, contact);
+    return ServiceRequest.create(pool, 1, { serviceTypeId: 1, preferredDate: daysAhead(10), leadId });
 }
 
 async function statusOf(id) {
@@ -347,8 +347,8 @@ test("two staff matching different requests of one lead at once make one custome
     const first = await unmatchedRequest();
     const second = await unmatchedRequest();
     const results = await Promise.all([
-        Staff.matchAsNew(pool, first, { city: "Rexburg", zip: "" }, null),
-        Staff.matchAsNew(pool, second, { city: "Rexburg", zip: "" }, null),
+        Staff.matchAsNew(pool, 1, first, { city: "Rexburg", zip: "" }, null),
+        Staff.matchAsNew(pool, 1, second, { city: "Rexburg", zip: "" }, null),
     ]);
 
     // Whichever got the lead's lock first wins; the other then finds its request already matched.

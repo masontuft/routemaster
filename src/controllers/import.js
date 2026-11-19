@@ -101,7 +101,7 @@ async function mappingPage(req, res, { sheetId, sheet, headerRow, body, errors =
         fields: IMPORT_FIELDS,
         picked: pickedColumns(body),
         optionValues: pickedOptions(body),
-        serviceTypes: await ServiceType.listActive(req.app.locals.db),
+        serviceTypes: await ServiceType.listActive(req.app.locals.db, companyOf(req)),
         statuses: IMPORT_STATUSES,
         errors,
     }, status);
@@ -162,7 +162,7 @@ export async function showMapping(req, res) {
 async function readImport(req) {
     const { sheetId, sheets } = await loadSheets(req, canonicalLink(String(req.body.sheetId ?? "")));
     const mapping = parseMapping(req.body, sheets);
-    const serviceTypes = await ServiceType.listActive(req.app.locals.db);
+    const serviceTypes = await ServiceType.listActive(req.app.locals.db, companyOf(req));
     const options = parseOptions(req.body, serviceTypes);
     return { sheetId, sheets, mapping, options, errors: [...mapping.errors, ...options.errors] };
 }

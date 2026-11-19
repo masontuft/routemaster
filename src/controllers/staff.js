@@ -22,7 +22,7 @@ const TRANSITION_ERRORS = {
 
 async function loadRequest(req) {
     const id = parseId(req.params.id);
-    const request = id && await Staff.findRequest(req.app.locals.db, id);
+    const request = id && await Staff.findRequest(req.app.locals.db, companyOf(req), id);
 
     if (!request) {
         throw notFound();
@@ -32,7 +32,7 @@ async function loadRequest(req) {
 }
 
 async function renderRequest(req, res, request, { errors = [], status = 200 } = {}) {
-    const history = await Staff.historyFor(req.app.locals.db, request.id);
+    const history = await Staff.historyFor(req.app.locals.db, companyOf(req), request.id);
     res.status(status).render("staff/request", {
         title: `Request ${request.id}`, request, history, errors, today: todayString(),
         next: allowedNext(request.status).filter((name) => {
@@ -44,9 +44,9 @@ async function renderRequest(req, res, request, { errors = [], status = 200 } = 
 export async function dashboard(req, res) {
     const db = req.app.locals.db;
     const [counts, review, stats, newMessages] = await Promise.all([
-        Staff.countsByStatus(db),
-        Staff.listRequests(db, { status: "Needs Review", limit: 5 }),
-        req.session.user.role === "owner" ? Staff.stats(db) : null,
+        Staff.countsByStatus(db, companyOf(req)),
+        Staff.listRequests(db, companyOf(req), { status: "Needs Review", limit: 5 }),
+        req.session.user.role === "owner" ? Staff.stats(db, companyOf(req)) : null,
         ContactMessage.countNew(db),
     ]);
     res.render("staff/index", { title: "Staff Dashboard", counts, review, stats, newMessages });
@@ -55,7 +55,7 @@ export async function dashboard(req, res) {
 export async function listRequests(req, res) {
     // An unknown filter is ignored rather than passed on.
     const status = STATUSES.includes(req.query.status) ? req.query.status : null;
-    const requests = await Staff.listRequests(req.app.locals.db, { status });
+    const requests = await Staff.listRequests(req.app.locals.db, companyOf(req), { status });
     res.render("staff/requests", { title: "Requests", requests, status, statuses: STATUSES });
 }
 
@@ -71,7 +71,7 @@ export async function changeStatus(req, res) {
     const dateError = to === "Scheduled" ? validatePreferredDate(scheduledDate) : null;
     const result = dateError
         ? { error: "date" }
-        : await Staff.changeStatus(req.app.locals.db, request.id, {
+        : await Staff.changeStatus(req.app.locals.db, companyOf(req), request.id, {
             to, scheduledDate, note, changedBy: req.session.user.id,
         });
 
@@ -100,7 +100,7 @@ export async function setReferrer(req, res) {
         });
     }
 
-    const saved = await Staff.setReferrer(req.app.locals.db, request.id, referredBy === "" ? null : referredBy);
+    const saved = await Staff.setReferrer(req.app.locals.db, companyOf(req), request.id, referredBy === "" ? null : referredBy);
 
     if (!saved) {
         throw notFound();
@@ -156,7 +156,7 @@ export async function matchExisting(req, res) {
     const request = await loadRequest(req);
     const propertyId = parseId(req.body.propertyId);
     const result = propertyId
-        ? await Staff.matchToProperty(req.app.locals.db, request.id, propertyId, req.session.user.id)
+        ? await Staff.matchToProperty(req.app.locals.db, companyOf(req), request.id, propertyId, req.session.user.id)
         : { error: "property" };
     await finishMatch(req, res, request, result);
 }
@@ -171,7 +171,7 @@ export async function matchNew(req, res) {
         return renderMatch(req, res, request, { errors, status: 400 });
     }
 
-    const result = await Staff.matchAsNew(req.app.locals.db, request.id, values, req.session.user.id);
+    const result = await Staff.matchAsNew(req.app.locals.db, companyOf(req), request.id, values, req.session.user.id);
     await finishMatch(req, res, request, result);
 }
 
@@ -355,6 +355,6 @@ export async function deleteCustomer(req, res) {
 // Staff mark a penciled-in booking confirmed. Does nothing for a request that is not tentative.
 export async function confirmTentative(req, res) {
     const request = await loadRequest(req);
-    await Staff.confirmTentative(req.app.locals.db, request.id, req.session.user.id);
+    await Staff.confirmTentative(req.app.locals.db, companyOf(req), request.id, req.session.user.id);
     res.redirect(`/staff/requests/${request.id}`);
 }

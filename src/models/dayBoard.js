@@ -56,20 +56,23 @@ export async function busyDays(pool, today) {
 // the history entry are the same. Only requests still in Requested are booked here: a Scheduled one would pass the
 // transition rules as a reschedule, and moving a booked job to another day is not what this board is for. Anything
 // else (booked, cancelled, not matched, unknown id) is counted as skipped and does not stop the rest.
-export async function scheduleMany(pool, ids, { day, changedBy }) {
+// A request of another company is skipped like an unknown id. This is the only day board function scoped so far (it
+// calls the scoped status change); the others are pass 2c.
+export async function scheduleMany(pool, companyId, ids, { day, changedBy }) {
     const wanted = ids.slice(0, MAX_SCHEDULE);
     const { rows } = await pool.query(
         `SELECT service_requests.id
          FROM service_requests
          JOIN request_statuses ON request_statuses.id = service_requests.status_id
          WHERE service_requests.id = ANY($1::int[]) AND request_statuses.name = 'Requested'
+           AND service_requests.company_id = $2
          ORDER BY service_requests.id`,
-        [wanted],
+        [wanted, companyId],
     );
     const result = { scheduled: 0, skipped: wanted.length - rows.length };
 
     for (const { id } of rows) {
-        const outcome = await Staff.changeStatus(pool, id, {
+        const outcome = await Staff.changeStatus(pool, companyId, id, {
             to: "Scheduled", scheduledDate: day, note: "Booked from the day board", changedBy,
         });
 

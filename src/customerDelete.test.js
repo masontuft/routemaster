@@ -37,7 +37,7 @@ beforeEach(async () => {
     server = await listen(app);
     customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "(208) 555-0101", email: "ann@example.com" });
     propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg", zip: "83440" });
-    const requestId = await ServiceRequest.create(pool, {
+    const requestId = await ServiceRequest.create(pool, 1, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: "2030-01-01",
     });
     await pool.query("UPDATE service_requests SET status_id = (SELECT id FROM request_statuses WHERE name = 'Completed')");

@@ -2,10 +2,14 @@ import * as Review from "../models/review.js";
 import * as ServiceRequest from "../models/serviceRequest.js";
 import { notFound } from "../utils/errors.js";
 import { parseId, validateReview } from "../utils/validation.js";
+import { DEFAULT_COMPANY_ID } from "../config/company.js";
 
+// /reviews has no company in its address yet, so it shows the first company's reviews (see config/company.js).
 export async function listPublic(req, res) {
     const db = req.app.locals.db;
-    const [reviews, summary] = await Promise.all([Review.listPublic(db), Review.averageRating(db)]);
+    const [reviews, summary] = await Promise.all([
+        Review.listPublic(db, DEFAULT_COMPANY_ID), Review.averageRating(db, DEFAULT_COMPANY_ID),
+    ]);
     res.render("reviews/index", { title: "Reviews", reviews, summary });
 }
 

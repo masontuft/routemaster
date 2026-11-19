@@ -94,10 +94,10 @@ const DAY = inDays(3);
 async function booked(number, name = `Customer ${number}`) {
     const customerId = await Customer.create(pool, 1, { name, phone: "208-555-0101" });
     const propertyId = await Property.create(pool, customerId, { street: `${number} Elm St`, city: "Rexburg" });
-    const id = await ServiceRequest.create(pool, {
+    const id = await ServiceRequest.create(pool, 1, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: DAY, notes: `note ${number}`,
     });
-    await DayBoard.scheduleMany(pool, [id], { day: DAY, changedBy: null });
+    await DayBoard.scheduleMany(pool, 1, [id], { day: DAY, changedBy: null });
     return { id, propertyId };
 }
 

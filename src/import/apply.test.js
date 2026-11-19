@@ -266,7 +266,7 @@ test("a large sheet is written in a handful of statements, not one per row", asy
 test("an import of past jobs does not change this month's owner numbers", async () => {
     await runImport(SEASON);
 
-    const stats = await Staff.stats(pool);
+    const stats = await Staff.stats(pool, 1);
 
     assert.strictEqual(stats.requested_this_month, 0);
     assert.strictEqual(stats.completed_this_month, 0);

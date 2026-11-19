@@ -84,7 +84,7 @@ async function servedLastYear(name, { serviceTypeId = 1, area = areaId, street =
     const id = await Customer.create(pool, 1, { name, phone: "208-555-0101" });
     const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, area]);
-    const requestId = await ServiceRequest.create(pool, {
+    const requestId = await ServiceRequest.create(pool, 1, {
         customerId: id, propertyId, serviceTypeId, preferredDate: LAST_YEAR,
     });
     await pool.query(
@@ -135,7 +135,7 @@ test("with the option on, the board lists customers served before in areas that 
     const noDay = await Area.create(pool, "Pine Hills");
     await servedLastYear("Wrong Area", { area: noDay, street: "2 Pine Rd" });
     const booked = await servedLastYear("Already Booked", { street: "3 Elm St" });
-    await ServiceRequest.create(pool, {
+    await ServiceRequest.create(pool, 1, {
         customerId: booked.id, propertyId: booked.propertyId, serviceTypeId: 1, preferredDate: DAY,
     });
     const dispatcher = await staffAgent();
@@ -191,7 +191,7 @@ test("a forged form cannot pencil in a customer who was never served or who decl
     const neverProperty = await Property.create(pool, never, { street: "3 Elm St", city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [neverProperty, areaId]);
     const declined = await servedLastYear("Declined", { street: "4 Elm St" });
-    const cancelled = await ServiceRequest.create(pool, {
+    const cancelled = await ServiceRequest.create(pool, 1, {
         customerId: declined.id, propertyId: declined.propertyId, serviceTypeId: 1, preferredDate: DAY,
     });
     await pool.query(
@@ -217,7 +217,7 @@ test("a customer's own request waits for a penciling in that holds their row, so
     try {
         await holder.query("BEGIN");
         await holder.query("SELECT id FROM customers WHERE id = $1 FOR UPDATE", [ann.id]);
-        const asking = ServiceRequest.create(pool, {
+        const asking = ServiceRequest.create(pool, 1, {
             customerId: ann.id, propertyId: ann.propertyId, serviceTypeId: 1, preferredDate: DAY,
         }).then(() => {
             finished = true;

@@ -97,9 +97,10 @@ RouteMaster Database Schema
 | Name | Type | Constraints |
 |------|------|-------------|
 | `id` | `int4` | Primary |
-| `name` | `text` |  Unique |
+| `name` | `text` |  |
 | `price_cents` | `int4` |  |
 | `active` | `bool` |  |
+| `company_id` | `int4` |  |
 
 ## Table `request_statuses`
 
