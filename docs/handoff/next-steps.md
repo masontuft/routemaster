@@ -9,7 +9,7 @@ The Express server, authentication, service requests, staff dashboard, owner adm
 
 ## Recommended
 
-- Add a way back from a forgotten password. Changing your own password is built at `/account/password`, but a forgotten one has no reset until something can send email, so Mason resets it by hand. It is on the [roadmap](../product/roadmap.md) under Next.
+- Add a way back from a forgotten password. Changing your own password is built at `/account/password`, but a forgotten one has no reset, so Mason resets it by hand. It is blocked by email sending, which is the item above it on the [roadmap](../product/roadmap.md) under Next and needs Mason's approval for a mail library first.
 - Make the second company with `pnpm company:create`, using `--dry-run` first and `OWNER_PASSWORD` set for that one command ([environment variables](../setup/environment-variables.md)). Its customers reach it at `/w/<slug>`.
 - Apply migrations 022 and 023 to Supabase with `pnpm migrate` before deploying rebooking and tentative bookings. The owner option is off until the owner turns it on at `/admin/settings`. Try rebooking with last season's data: import the past tabs as Completed with their season year, then set a city on each area so map lookups can find the addresses.
 - Apply migrations 020 and 021 to Supabase with `pnpm migrate` before deploying the route builder. Optionally set `GOOGLE_MAPS_API_KEY`, `SERVICE_STATE` and `ROUTE_START_ADDRESS` on Render. The route builder has only been run against fake map responses, so try it once with real addresses and watch for addresses that come back not found.
