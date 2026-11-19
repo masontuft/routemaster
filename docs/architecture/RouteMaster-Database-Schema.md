@@ -239,7 +239,7 @@ RouteMaster Database Schema
 |------|------|-------------|
 | `id` | `int4` | Primary |
 | `name` | `text` |  |
-| `name_normalized` | `text` |  Unique |
+| `name_normalized` | `text` |  |
 | `city` | `text` |  Nullable |
 | `company_id` | `int4` |  |
 
@@ -275,7 +275,7 @@ RouteMaster Database Schema
 | Name | Type | Constraints |
 |------|------|-------------|
 | `id` | `int4` | Primary |
-| `route_day` | `date` |  Unique |
+| `route_day` | `date` |  |
 | `created_by` | `int4` |  Nullable |
 | `start_address` | `text` |  |
 | `start_lat` | `float8` |  |
@@ -311,7 +311,7 @@ RouteMaster Database Schema
 | `value` | `text` |  |
 | `updated_by` | `int4` |  Nullable |
 | `updated_at` | `timestamptz` |  |
-| `company_id` | `int4` |  |
+| `company_id` | `int4` | Primary |
 
 ## Table `messenger_batches`
 

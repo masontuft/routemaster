@@ -136,8 +136,8 @@ test("the request form rejects a past date, a missing service, and another custo
 test("a customer gets 404 for someone else's request, a missing one, and a bad id", async () => {
     const other = await customerWithProperty("Bo Kim", "208-555-0202", "9 Pine St");
     const { rows } = await pool.query(
-        `INSERT INTO service_requests (customer_id, property_id, service_type_id, status_id, preferred_date)
-         VALUES ($1, $2, 1, 2, '2099-01-01') RETURNING id`, [other.customerId, other.propertyId]);
+        `INSERT INTO service_requests (customer_id, property_id, service_type_id, status_id, preferred_date, company_id)
+         VALUES ($1, $2, 1, 2, '2099-01-01', 1) RETURNING id`, [other.customerId, other.propertyId]);
     const agent = request.agent(server);
     await loginAs(agent, "ann@example.com");
     await agent.get("/requests");

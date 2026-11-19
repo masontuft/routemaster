@@ -213,7 +213,10 @@ test("the bulk counts and the bulk delete are limited to the company they are gi
 });
 
 test("clearing one import batch also stays inside its company", async () => {
-    await pool.query("INSERT INTO import_batches (sheet_id, sheet_name, season_year, plan_hash) VALUES ('s', 'Jobs', 2026, $1)", ["a".repeat(64)]);
+    await pool.query(
+        "INSERT INTO import_batches (sheet_id, sheet_name, season_year, plan_hash, company_id) VALUES ('s', 'Jobs', 2026, $1, 2)",
+        ["a".repeat(64)],
+    );
     const batchId = (await pool.query("SELECT id FROM import_batches")).rows[0].id;
     await pool.query("UPDATE customers SET import_batch_id = $1", [batchId]);
 
@@ -495,9 +498,15 @@ test("a lead belongs to one company: another company cannot read or convert it, 
     assert.strictEqual(await Lead.findOrCreate(pool, 1, { name: "Sam Poe", phone: "208-555-0404", address: "2 Oak Street" }), lead);
     assert.strictEqual(await Lead.findById(pool, 2, lead), null);
     assert.strictEqual(await Lead.markConverted(pool, 2, lead, bo), false);
-    // The old three-column lead key is still in the database until the contract migration (issue 75), so company 2
-    // cannot hold the same person and street yet. It is refused. It is never answered with company 1's lead.
-    await assert.rejects(Lead.findOrCreate(pool, 2, { name: "Sam Poe", phone: "208-555-0404", address: "2 Oak Street" }), /unique/);
+    // The same person at the same street asking company 2 is a lead of company 2, never company 1's.
+    const other = await Lead.findOrCreate(pool, 2, { name: "Sam Poe", phone: "208-555-0404", address: "2 Oak Street" });
+    assert.notStrictEqual(other, lead);
+    assert.strictEqual((await Lead.findById(pool, 2, other)).id, other);
+    assert.strictEqual(await Lead.findById(pool, 1, other), null);
+    assert.deepStrictEqual(
+        (await pool.query("SELECT id, company_id FROM leads WHERE name = 'Sam Poe' ORDER BY id")).rows,
+        [{ id: lead, company_id: 1 }, { id: other, company_id: 2 }],
+    );
 });
 
 test("review moderation, the public list and the average are limited to one company", async () => {
@@ -585,7 +594,7 @@ test("the day board books only requests of the company it is given", async () =>
     });
 });
 
-// An area of each company. The names differ, because the old global area-name key stays until the contract migration.
+// An area of each company, with different names so the tests can tell them apart. The same name is its own test.
 async function twoAreas() {
     const area1 = await Area.create(pool, 1, "Oak Park");
     const area2 = await Area.create(pool, 2, "Maple Hills");
@@ -706,18 +715,33 @@ test("the route builder shows only the logged-in company's booked jobs", async (
     assert.strictEqual((await RoutePlan.bookedForDay(pool, 1, day)).length, 1);
 });
 
-test("a route belongs to a company: another company cannot read it, and a failed replace leaves it alone", async () => {
+test("a route belongs to a company: another company cannot read it, and builds its own for the same day", async () => {
     const requestId = await bookAnn(futureDay(10));
     await RoutePlan.replaceForDay(pool, 1, aRoute(requestId));
 
     assert.strictEqual(await RoutePlan.findForDay(pool, 2, futureDay(10)), null);
     assert.strictEqual((await RoutePlan.findForDay(pool, 1, futureDay(10))).stops.length, 1);
 
-    // The old global route-day key is still there until the contract migration (issue 75), so company 2 cannot build
-    // a route for a day company 1 has one. The attempt is refused and company 1's route is still there.
-    await assert.rejects(RoutePlan.replaceForDay(pool, 2, aRoute(requestId)), /unique/);
-    assert.strictEqual((await RoutePlan.findForDay(pool, 1, futureDay(10))).stops.length, 1);
-    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM routes WHERE company_id = 1")).rows[0].n, 1);
+    // Company 2 books Bo for the same day and builds its own route. Company 1's route is not replaced or read.
+    const boRequest = await ServiceRequest.create(pool, 2, {
+        customerId: bo, propertyId: boProperty, serviceTypeId: type2, preferredDate: futureDay(10),
+    });
+    await pool.query(
+        `UPDATE service_requests SET scheduled_date = $2::date,
+             status_id = (SELECT id FROM request_statuses WHERE name = 'Scheduled') WHERE id = $1`,
+        [boRequest, futureDay(10)],
+    );
+    await RoutePlan.replaceForDay(pool, 2, aRoute(boRequest));
+
+    const mine = await RoutePlan.findForDay(pool, 1, futureDay(10));
+    const theirs = await RoutePlan.findForDay(pool, 2, futureDay(10));
+    assert.deepStrictEqual(mine.stops.map((stop) => {
+        return stop.request_id;
+    }), [requestId]);
+    assert.deepStrictEqual(theirs.stops.map((stop) => {
+        return stop.request_id;
+    }), [boRequest]);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM routes")).rows[0].n, 2);
 });
 
 test("a company's own route is replaced in place, and it carries the company", async () => {
@@ -981,4 +1005,49 @@ test("the public contact form sends a message to the first company", async () =>
     const { rows } = await pool.query("SELECT company_id FROM contact_messages WHERE name = 'Rae'");
 
     assert.deepStrictEqual(rows, [{ company_id: 1 }]);
+});
+
+test("a second company can hold what the first holds: the same area name, setting and import mapping", async () => {
+    const area1 = await Area.create(pool, 1, "Oak Park");
+    const area2 = await Area.create(pool, 2, "Oak Park");
+    const owner2 = await agentFor(2, "owner");
+
+    assert.notStrictEqual(area1, null);
+    assert.notStrictEqual(area2, null);
+    assert.notStrictEqual(area1, area2);
+    assert.strictEqual(await Area.create(pool, 2, "OAK  PARK"), null, "within a company the name is still unique");
+    assert.deepStrictEqual((await Area.list(pool, 2, futureDay(0))).map((row) => {
+        return row.id;
+    }), [area2]);
+
+    // The same setting for both companies, each its own.
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
+    const saved = await send(owner2, "/admin/settings", "/admin/settings", { allowTentative: "1" });
+    assert.strictEqual(saved.status, 200);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 2), true);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "off", null);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 2), true);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM app_settings")).rows[0].n, 2);
+});
+
+test("two companies can import the same sheet and tab, each into its own data and with its own saved mapping", async () => {
+    const one = await runImport(1, [importRow(2, { name: "Dee Fox", area: "Pine Ridge" })], {
+        serviceTypeId: 1, statusName: "Completed", defaultCity: "",
+    });
+    const two = await runImport(2, [importRow(2, { name: "Dee Fox", area: "Pine Ridge" })], {
+        serviceTypeId: type2, statusName: "Completed", defaultCity: "",
+    });
+
+    assert.notStrictEqual(one.batchId, two.batchId);
+    assert.ok(await ImportBatch.findMapping(pool, 1, "sheet-1", "Fall"));
+    assert.ok(await ImportBatch.findMapping(pool, 2, "sheet-1", "Fall"));
+    assert.deepStrictEqual(
+        (await pool.query("SELECT company_id FROM customers WHERE name = 'Dee Fox' ORDER BY company_id")).rows,
+        [{ company_id: 1 }, { company_id: 2 }],
+    );
+    assert.deepStrictEqual(
+        (await pool.query("SELECT company_id FROM subdivisions WHERE name = 'Pine Ridge' ORDER BY company_id")).rows,
+        [{ company_id: 1 }, { company_id: 2 }],
+    );
 });

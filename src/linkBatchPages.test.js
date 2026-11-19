@@ -190,8 +190,8 @@ test("a bad area, lifetime or message makes nothing", async () => {
 
 test("a batch over the cap is refused with a message", async () => {
     await pool.query(
-        `INSERT INTO customers (name, name_normalized, phone, phone_normalized)
-         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0')
+        `INSERT INTO customers (name, name_normalized, phone, phone_normalized, company_id)
+         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0'), 1
          FROM generate_series(1, $1::int) g`,
         [LinkBatch.MAX_BATCH + 1],
     );

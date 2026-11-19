@@ -273,8 +273,8 @@ test("all areas lists an area it could not finish and still makes the others", a
     const big = await Area.create(pool, 1, "Big Hills");
     const inside = await servedLastYear("Inside");
     await pool.query(
-        `INSERT INTO customers (name, name_normalized, phone, phone_normalized)
-         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0')
+        `INSERT INTO customers (name, name_normalized, phone, phone_normalized, company_id)
+         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0'), 1
          FROM generate_series(1, 501) g`,
     );
     await pool.query(

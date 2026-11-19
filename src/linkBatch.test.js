@@ -161,8 +161,8 @@ test("preview counts match what a run would do and create nothing", async () => 
 
 test("a batch over the cap is refused before anything is created", async () => {
     await pool.query(
-        `INSERT INTO customers (name, name_normalized, phone, phone_normalized)
-         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0')
+        `INSERT INTO customers (name, name_normalized, phone, phone_normalized, company_id)
+         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0'), 1
          FROM generate_series(1, $1::int) g`,
         [LinkBatch.MAX_BATCH + 1],
     );
@@ -249,8 +249,8 @@ test("all areas with ticked customers links only those, and an id that is nobody
 test("an area over the cap is reported and the other areas still get their links", async () => {
     const ann = await customerIn(oakwood, "Ann Lee", "208-555-0101");
     await pool.query(
-        `INSERT INTO customers (name, name_normalized, phone, phone_normalized)
-         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0')
+        `INSERT INTO customers (name, name_normalized, phone, phone_normalized, company_id)
+         SELECT 'C' || g, 'c' || g, '20855' || lpad(g::text, 5, '0'), '20855' || lpad(g::text, 5, '0'), 1
          FROM generate_series(1, $1::int) g`,
         [LinkBatch.MAX_BATCH + 1],
     );

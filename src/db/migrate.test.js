@@ -72,6 +72,7 @@ test("applies the real migrations in order and records them", async () => {
         "030_requests_keep_to_their_company.sql",
         "031_company_area_route_setting_keys.sql",
         "032_company_import_mapping_key.sql",
+        "033_company_contract.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -121,7 +122,7 @@ test("rejects a missing directory", async () => {
 test("a user cannot reference a role that does not exist", async () => {
     await runMigrations(pool, realMigrations);
     await assert.rejects(
-        pool.query("INSERT INTO users (email, password_hash, role_id) VALUES ('a@b.c', 'x', 999)"),
+        pool.query("INSERT INTO users (email, password_hash, role_id, company_id) VALUES ('a@b.c', 'x', 999, 1)"),
         /foreign key/,
     );
 });
@@ -137,6 +138,19 @@ async function migrationsBefore(lastName) {
     }
 
     return tempDir(files);
+}
+
+const LAST_EXPAND = "032_company_import_mapping_key.sql";
+
+// Applies the migrations through 032 and no further, for a test of the expand phase. Returns what it applied.
+async function applyExpand() {
+    const dir = await migrationsBefore(LAST_EXPAND);
+
+    try {
+        return await runMigrations(pool, dir);
+    } finally {
+        await rm(dir, { recursive: true });
+    }
 }
 
 test("028 puts every row that already exists in company 1 and makes the next company 2", async () => {
@@ -165,7 +179,7 @@ test("028 puts every row that already exists in company 1 and makes the next com
         await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'on')");
         await pool.query("INSERT INTO contact_messages (name, email, message) VALUES ('A', 'a@example.com', 'Hi')");
 
-        assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
+        assert.deepStrictEqual(await applyExpand(), [
             "028_create_companies.sql",
             "029_company_service_types_and_lead_key.sql",
             "030_requests_keep_to_their_company.sql",
@@ -191,8 +205,8 @@ test("028 puts every row that already exists in company 1 and makes the next com
     }
 });
 
-test("a row without a company_id goes to company 1, so code from before 028 still works during a deploy", async () => {
-    await runMigrations(pool, realMigrations);
+test("through 032 a row without a company_id goes to company 1, so code from before 028 still works during a deploy", async () => {
+    await applyExpand();
     const { rows } = await pool.query(
         "INSERT INTO customers (name, name_normalized) VALUES ('Lee', 'lee') RETURNING company_id",
     );
@@ -207,7 +221,7 @@ test("a company id that does not exist is refused, and a company that has data c
         pool.query("INSERT INTO customers (name, name_normalized, company_id) VALUES ('Lee', 'lee', 99)"),
         /foreign key/,
     );
-    await pool.query("INSERT INTO customers (name, name_normalized) VALUES ('Lee', 'lee')");
+    await pool.query("INSERT INTO customers (name, name_normalized, company_id) VALUES ('Lee', 'lee', 1)");
     await assert.rejects(pool.query("DELETE FROM companies WHERE id = 1"), /foreign key/);
 });
 
@@ -231,7 +245,7 @@ test("029 puts the existing service types in company 1, and a name is unique wit
 
     try {
         await runMigrations(pool, before);
-        assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
+        assert.deepStrictEqual(await applyExpand(), [
             "029_company_service_types_and_lead_key.sql",
             "030_requests_keep_to_their_company.sql",
             "031_company_area_route_setting_keys.sql",
@@ -261,7 +275,7 @@ test("029 puts the existing service types in company 1, and a name is unique wit
 });
 
 test("029 keeps the old lead key for the running code and adds the per-company one", async () => {
-    await runMigrations(pool, realMigrations);
+    await applyExpand();
     await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
     const lead = (companyId, name = "Sam") => {
         return pool.query(
@@ -365,7 +379,7 @@ test("030: a request with no customer and no lead is not checked for either", as
 });
 
 test("031 adds the per-company area, route and setting keys and keeps the old ones for the running code", async () => {
-    await runMigrations(pool, realMigrations);
+    await applyExpand();
     await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
     const keys = await pool.query(
         `SELECT conname FROM pg_constraint
@@ -405,7 +419,7 @@ test("031 adds the per-company area, route and setting keys and keeps the old on
 });
 
 test("032 adds the per-company mapping key and keeps the old one for the running code", async () => {
-    await runMigrations(pool, realMigrations);
+    await applyExpand();
     await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
     const mapping = (companyId) => {
         return pool.query(
@@ -430,4 +444,117 @@ test("032 adds the per-company mapping key and keeps the old one for the running
     assert.strictEqual(same.rowCount, 0);
     // The old global key still refuses another company until the contract migration (issue 75).
     await assert.rejects(mapping(2), /unique/);
+});
+
+// What 033 does, on the real migrations.
+test("033 removes the default company, so an insert with no company is refused", async () => {
+    await runMigrations(pool, realMigrations);
+    const tables = [
+        "users", "customers", "leads", "subdivisions", "service_requests", "routes", "import_batches", "import_mappings",
+        "link_batches", "messenger_batches", "contact_messages", "app_settings", "service_types",
+    ];
+    const { rows } = await pool.query(
+        `SELECT table_name, column_default FROM information_schema.columns
+         WHERE table_schema = current_schema() AND column_name = 'company_id' ORDER BY table_name`,
+    );
+
+    assert.deepStrictEqual(rows.map((row) => {
+        return row.table_name;
+    }), [...tables].sort());
+    assert.deepStrictEqual(rows.filter((row) => {
+        return row.column_default !== null;
+    }), [], "a company_id column still has a default");
+    await assert.rejects(
+        pool.query("INSERT INTO customers (name, name_normalized) VALUES ('Lee', 'lee')"),
+        /null value in column "company_id"/,
+    );
+    await assert.rejects(
+        pool.query("INSERT INTO service_types (name) VALUES ('Aeration')"),
+        /null value in column "company_id"/,
+    );
+});
+
+test("033 keeps every existing row in its company", async () => {
+    const before = await migrationsBefore("032_company_import_mapping_key.sql");
+
+    try {
+        await runMigrations(pool, before);
+        await pool.query("INSERT INTO customers (name, name_normalized) VALUES ('Lee', 'lee')");
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'on')");
+        await pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('Oak Park', 'oak park')");
+
+        assert.deepStrictEqual(await runMigrations(pool, realMigrations), ["033_company_contract.sql"]);
+
+        for (const table of ["customers", "app_settings", "subdivisions", "service_types"]) {
+            const { rows } = await pool.query(`SELECT company_id FROM ${table}`);
+            assert.ok(rows.length > 0 && rows.every((row) => {
+                return row.company_id === 1;
+            }), `${table} changed company`);
+        }
+    } finally {
+        await rm(before, { recursive: true });
+    }
+});
+
+test("033 drops the old global keys, so a second company can hold what the first holds", async () => {
+    await runMigrations(pool, realMigrations);
+    const gone = [
+        "leads_name_normalized_phone_normalized_address_normalized_key", "subdivisions_name_normalized_key",
+        "routes_route_day_key", "import_mappings_sheet_id_sheet_name_key", "app_settings_company_key_key",
+    ];
+    const { rows } = await pool.query(
+        "SELECT conname FROM pg_constraint WHERE connamespace = current_schema()::regnamespace AND conname = ANY($1::text[])",
+        [gone],
+    );
+    assert.deepStrictEqual(rows, [], "an old key is still there");
+
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+
+    for (const companyId of [1, 2]) {
+        await pool.query(
+            `INSERT INTO leads (name, name_normalized, phone, phone_normalized, address, address_normalized, company_id)
+             VALUES ('Sam', 'sam', '208', '208', '2 Oak St', '2 oak st', $1)`,
+            [companyId],
+        );
+        await pool.query("INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('Oak Park', 'oak park', $1)", [companyId]);
+        await pool.query(
+            `INSERT INTO routes (route_day, start_address, start_lat, start_lng, start_time, service_minutes,
+                                 total_miles, travel_minutes, company_id)
+             VALUES ('2030-01-01', 'x', 1, 1, '08:00', 20, 1, 1, $1)`,
+            [companyId],
+        );
+        await pool.query("INSERT INTO app_settings (key, value, company_id) VALUES ('allow_tentative_booking', 'on', $1)", [companyId]);
+        await pool.query(
+            "INSERT INTO import_mappings (sheet_id, sheet_name, header_row, columns, company_id) VALUES ('s', 'Jobs', 1, '{}', $1)",
+            [companyId],
+        );
+    }
+
+    // Within one company they are still unique.
+    await assert.rejects(
+        pool.query("INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('OAK PARK', 'oak park', 2)"),
+        /unique/,
+    );
+    await assert.rejects(
+        pool.query("INSERT INTO app_settings (key, value, company_id) VALUES ('allow_tentative_booking', 'off', 2)"),
+        /unique|duplicate/,
+    );
+    // An email is still one login in one company.
+    await pool.query("INSERT INTO users (email, password_hash, role_id, company_id) VALUES ('a@b.c', 'x', 1, 1)");
+    await assert.rejects(
+        pool.query("INSERT INTO users (email, password_hash, role_id, company_id) VALUES ('a@b.c', 'x', 1, 2)"),
+        /unique/,
+    );
+});
+
+test("033 makes a setting's primary key its company and its key", async () => {
+    await runMigrations(pool, realMigrations);
+    const { rows } = await pool.query(
+        `SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+         WHERE i.indrelid = 'app_settings'::regclass AND i.indisprimary ORDER BY a.attname`,
+    );
+
+    assert.deepStrictEqual(rows.map((row) => {
+        return row.attname;
+    }), ["company_id", "key"]);
 });
