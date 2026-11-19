@@ -56,12 +56,13 @@ erDiagram
     companies ||--o{ routes : "company_id"
     users |o--o{ routes : "created_by"
     companies ||--o{ service_requests : "company_id"
-    customers |o--o{ service_requests : "customer_id"
+    customers |o--o{ service_requests : "customer_id, company_id"
     import_batches |o--o{ service_requests : "import_batch_id"
-    leads |o--o{ service_requests : "lead_id"
+    leads |o--o{ service_requests : "lead_id, company_id"
     properties |o--o{ service_requests : "property_id"
     request_statuses ||--o{ service_requests : "status_id"
     service_types ||--o{ service_requests : "service_type_id"
+    companies ||--o{ service_types : "company_id"
     request_statuses ||--o{ status_history : "status_id"
     service_requests ||--o{ status_history : "service_request_id"
     users |o--o{ status_history : "changed_by"
@@ -167,6 +168,7 @@ erDiagram
     }
     service_types {
         int4 id PK
+        int4 company_id FK
     }
     status_history {
         int4 id PK

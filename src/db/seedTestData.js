@@ -68,7 +68,7 @@ export async function seedTestData(pool, { today = new Date(), dispatcherId = nu
         const propertyId = await Property.create(pool, customerId, { street: sample.street, city: "Riverbend", zip: "83401" });
         await Property.saveLocation(pool, propertyId, { lat: sample.lat, lng: sample.lng });
         await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, areaIds[sample.area]]);
-        const requestId = await ServiceRequest.create(pool, {
+        const requestId = await ServiceRequest.create(pool, DEFAULT_COMPANY_ID, {
             customerId, propertyId, serviceTypeId, preferredDate: workDay, notes: "Seeded sample request",
         });
         requests.push({ ...sample, requestId });
@@ -77,13 +77,15 @@ export async function seedTestData(pool, { today = new Date(), dispatcherId = nu
     const toBook = requests.filter((request) => {
         return request.outcome === "Scheduled" || request.outcome === "Completed";
     });
-    await DayBoard.scheduleMany(pool, toBook.map((request) => {
+    await DayBoard.scheduleMany(pool, DEFAULT_COMPANY_ID, toBook.map((request) => {
         return request.requestId;
     }), { day: workDay, changedBy: dispatcherId });
 
     for (const request of requests) {
         if (request.outcome === "Completed" || request.outcome === "Cancelled") {
-            await Staff.changeStatus(pool, request.requestId, { to: request.outcome, changedBy: dispatcherId });
+            await Staff.changeStatus(pool, DEFAULT_COMPANY_ID, request.requestId, {
+                to: request.outcome, changedBy: dispatcherId,
+            });
         }
     }
 

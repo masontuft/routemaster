@@ -65,7 +65,7 @@ async function servedLastYear(name, { area = areaId, phone = "208-555-0101", str
     const id = await Customer.create(pool, 1, { name, phone });
     const propertyId = await Property.create(pool, id, { street, city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, area]);
-    const requestId = await ServiceRequest.create(pool, {
+    const requestId = await ServiceRequest.create(pool, 1, {
         customerId: id, propertyId, serviceTypeId: 1, preferredDate: "2025-10-01",
     });
     await pool.query(
@@ -99,7 +99,7 @@ test("the page sorts customers into groups, ticks the outreach list, and gives b
     const ann = await servedLastYear("Ann Lee");
     await servedLastYear("No Phone", { phone: null, street: "2 Elm St" });
     const booked = await servedLastYear("Already Booked", { street: "3 Elm St" });
-    await ServiceRequest.create(pool, {
+    await ServiceRequest.create(pool, 1, {
         customerId: booked, propertyId: (await Property.listForCustomer(pool, booked))[0].id,
         serviceTypeId: 1, preferredDate: "2026-10-10",
     });

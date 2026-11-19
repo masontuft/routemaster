@@ -2,16 +2,17 @@ import * as Review from "../models/review.js";
 import * as ContactMessage from "../models/contactMessage.js";
 import { notFound } from "../utils/errors.js";
 import { parseId } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 export async function listReviews(req, res) {
-    res.render("staff/reviews", { title: "Reviews", reviews: await Review.listAll(req.app.locals.db) });
+    res.render("staff/reviews", { title: "Reviews", reviews: await Review.listAll(req.app.locals.db, companyOf(req)) });
 }
 
 function reviewAction(work) {
     return async (req, res) => {
         const id = parseId(req.params.id);
 
-        if (!id || !await work(req.app.locals.db, id)) {
+        if (!id || !await work(req.app.locals.db, companyOf(req), id)) {
             throw notFound();
         }
 
@@ -19,14 +20,14 @@ function reviewAction(work) {
     };
 }
 
-export const hideReview = reviewAction((db, id) => {
-    return Review.setHidden(db, id, true);
+export const hideReview = reviewAction((db, companyId, id) => {
+    return Review.setHidden(db, companyId, id, true);
 });
-export const restoreReview = reviewAction((db, id) => {
-    return Review.setHidden(db, id, false);
+export const restoreReview = reviewAction((db, companyId, id) => {
+    return Review.setHidden(db, companyId, id, false);
 });
-export const deleteReview = reviewAction((db, id) => {
-    return Review.remove(db, id);
+export const deleteReview = reviewAction((db, companyId, id) => {
+    return Review.remove(db, companyId, id);
 });
 
 export async function listMessages(req, res) {

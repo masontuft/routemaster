@@ -71,7 +71,7 @@ async function requestFor(name, street, preferredDate, areaId = null) {
         await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, areaId]);
     }
 
-    return ServiceRequest.create(pool, { customerId, propertyId, serviceTypeId: 1, preferredDate });
+    return ServiceRequest.create(pool, 1, { customerId, propertyId, serviceTypeId: 1, preferredDate });
 }
 
 async function statusOf(id) {
@@ -166,7 +166,7 @@ test("the model caps one batch at its limit", async () => {
         return index + 1;
     });
 
-    const result = await DayBoard.scheduleMany(pool, ids, { day: inDays(3), changedBy: null });
+    const result = await DayBoard.scheduleMany(pool, 1, ids, { day: inDays(3), changedBy: null });
 
     assert.deepStrictEqual(result, { scheduled: 0, skipped: DayBoard.MAX_SCHEDULE });
 });

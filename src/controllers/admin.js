@@ -71,7 +71,7 @@ export async function createUser(req, res) {
 }
 
 export async function listServiceTypes(req, res) {
-    res.render("admin/service-types", { title: "Services", types: await ServiceType.listAll(req.app.locals.db) });
+    res.render("admin/service-types", { title: "Services", types: await ServiceType.listAll(req.app.locals.db, companyOf(req)) });
 }
 
 function renderTypeForm(res, { type, errors = [], values, status = 200 }) {
@@ -107,7 +107,9 @@ async function saveType(req, res, type) {
     let result = null;
 
     if (errors.length === 0) {
-        result = type ? await ServiceType.update(db, type.id, input) : await ServiceType.create(db, input);
+        result = type
+            ? await ServiceType.update(db, companyOf(req), type.id, input)
+            : await ServiceType.create(db, companyOf(req), input);
     }
 
     if (result?.error) {
@@ -127,7 +129,7 @@ export async function createServiceType(req, res) {
 
 async function loadType(req) {
     const id = parseId(req.params.id);
-    const type = id && await ServiceType.findById(req.app.locals.db, id);
+    const type = id && await ServiceType.findById(req.app.locals.db, companyOf(req), id);
 
     if (!type) {
         throw notFound();

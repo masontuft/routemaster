@@ -6,6 +6,7 @@ import * as Area from "../models/area.js";
 import { dayLabel } from "../utils/dayLabel.js";
 import { notFound } from "../utils/errors.js";
 import { parseId, validatePreferredDate, todayString } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 function labelled(days) {
     return days.map((day) => {
@@ -19,7 +20,7 @@ async function formData(req, extra = {}) {
     const db = req.app.locals.db;
     const [properties, types] = await Promise.all([
         Property.listForCustomer(db, req.session.user.customerId),
-        ServiceType.listActive(db),
+        ServiceType.listActive(db, companyOf(req)),
     ]);
     const values = extra.values ?? {};
     const selected = properties.find((property) => {
@@ -61,7 +62,7 @@ export async function create(req, res) {
     const notes = String(req.body.notes ?? "").trim().slice(0, 500);
     const errors = [];
 
-    if (!serviceTypeId || !await ServiceType.findActive(db, serviceTypeId)) {
+    if (!serviceTypeId || !await ServiceType.findActive(db, companyOf(req), serviceTypeId)) {
         errors.push("Choose a service.");
     }
 
@@ -90,7 +91,7 @@ export async function create(req, res) {
         return res.status(400).render("requests/new", { title: "New Request", ...await formData(req, { errors, values }) });
     }
 
-    const id = await ServiceRequest.create(db, {
+    const id = await ServiceRequest.create(db, companyOf(req), {
         customerId, propertyId, serviceTypeId, preferredDate, notes, changedBy: userId,
     });
     res.redirect(`/requests/${id}`);

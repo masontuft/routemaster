@@ -168,7 +168,7 @@ test("a malformed or past date keeps its own message, and a forged property id i
 test("changing a request: a day in the area works, another day is refused, and an unchanged day still allows a notes edit", async () => {
     const { agent, ids, customerId } = await setup(["12 Oak Street"]);
     const areaId = await areaWithDays("Oakwood", [inDays(3), inDays(10)], ids);
-    const id = await ServiceRequest.create(pool, {
+    const id = await ServiceRequest.create(pool, 1, {
         customerId, propertyId: ids[0], serviceTypeId: 1, preferredDate: inDays(3),
     });
     const page = `/requests/${id}/edit`;
@@ -193,7 +193,7 @@ test("changing a request: a day in the area works, another day is refused, and a
 
 test("with no days set, changing a request takes any valid date and says it is only a preference", async () => {
     const { agent, ids, customerId } = await setup(["12 Oak Street"]);
-    const id = await ServiceRequest.create(pool, {
+    const id = await ServiceRequest.create(pool, 1, {
         customerId, propertyId: ids[0], serviceTypeId: 1, preferredDate: inDays(3),
     });
     const page = `/requests/${id}/edit`;

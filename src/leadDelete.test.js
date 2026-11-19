@@ -28,8 +28,8 @@ after(() => {
 });
 
 async function unmatched(typed) {
-    const leadId = await Lead.findOrCreate(pool, typed);
-    return ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2030-01-01", leadId });
+    const leadId = await Lead.findOrCreate(pool, 1, typed);
+    return ServiceRequest.create(pool, 1, { serviceTypeId: 1, preferredDate: "2030-01-01", leadId });
 }
 
 async function count(table) {
@@ -45,16 +45,16 @@ async function buildScene() {
          VALUES ('sheet', 'Jobs', 2030, $1) RETURNING id`, ["a".repeat(64)]);
     batchId = batch.rows[0].id;
     const cancelled = await unmatched(ann);
-    await Staff.changeStatus(pool, cancelled, { to: "Cancelled", note: "spam", changedBy: null });
+    await Staff.changeStatus(pool, 1, cancelled, { to: "Cancelled", note: "spam", changedBy: null });
     const first = await unmatched(ann);
-    await Staff.matchAsNew(pool, first, { city: "Rexburg", zip: "83440" }, null);
+    await Staff.matchAsNew(pool, 1, first, { city: "Rexburg", zip: "83440" }, null);
     const annId = (await pool.query("SELECT customer_id FROM service_requests WHERE id = $1", [first])).rows[0].customer_id;
     await pool.query("UPDATE customers SET import_batch_id = $2 WHERE id = $1", [annId, batchId]);
 
     const boId = await Customer.create(pool, 1, { name: "Bo Kim", phone: "208-555-0202" });
     const boProperty = await Property.create(pool, boId, { street: "9 Elm Street", city: "Rexburg" });
     const again = await unmatched(ann);
-    await Staff.matchToProperty(pool, again, boProperty, null);
+    await Staff.matchToProperty(pool, 1, again, boProperty, null);
 
     const stranger = await unmatched({ name: "Cy Doe", phone: "208-555-0303", address: "7 Birch Lane" });
     return { annId, boId, cancelled, first, again, stranger };
@@ -105,8 +105,8 @@ test("clearing one import batch takes only that batch's customers and their lead
 test("a clear is refused when a lead appeared after the owner looked", async () => {
     const seen = await Customer.countClear(pool, 1, null);
     await Customer.update(pool, 1, scene.boId, { name: "Bo Kim" });
-    const boLead = await Lead.findOrCreate(pool, { name: "Bo Kim", phone: "208-555-0202", address: "9 Elm Street" });
-    await Lead.markConverted(pool, boLead, scene.boId);
+    const boLead = await Lead.findOrCreate(pool, 1, { name: "Bo Kim", phone: "208-555-0202", address: "9 Elm Street" });
+    await Lead.markConverted(pool, 1, boLead, scene.boId);
 
     const result = await Customer.clear(pool, 1, null, seen);
     assert.strictEqual(result.deleted, false);

@@ -21,7 +21,9 @@ export async function addHistory(client, requestId, statusName, changedBy, note)
 }
 
 // Matched request: needs customerId and propertyId. Unmatched request: pass leadId instead (see models/lead.js).
-export async function create(pool, details) {
+// The request belongs to companyId (ADR 0018), and its customer and service type must too. A customer or service
+// type of another company throws, and nothing is saved.
+export async function create(pool, companyId, details) {
     const { customerId, propertyId, leadId, serviceTypeId, preferredDate, notes, changedBy } = details;
     const statusName = customerId ? "Requested" : "Needs Review";
 
@@ -29,19 +31,34 @@ export async function create(pool, details) {
         // The same row lock penciling in takes, so a customer asking for a day and staff penciling them in for the
         // same year are serialized: whichever comes second sees the first's request.
         if (customerId) {
-            await client.query("SELECT id FROM customers WHERE id = $1 FOR UPDATE", [customerId]);
+            const owner = await client.query(
+                "SELECT id FROM customers WHERE id = $1 AND company_id = $2 FOR UPDATE",
+                [customerId, companyId],
+            );
+
+            if (owner.rowCount === 0) {
+                throw new Error("The customer is not in this company.");
+            }
         }
 
         const { rows } = await client.query(
             `INSERT INTO service_requests
-                (customer_id, property_id, lead_id, service_type_id, status_id, preferred_date, notes)
-             SELECT $1, $2, $3, $4, id, $5, $6 FROM request_statuses WHERE name = $7
+                (customer_id, property_id, lead_id, service_type_id, status_id, preferred_date, notes, company_id)
+             SELECT $1, $2, $3, service_types.id, request_statuses.id, $5, $6, $8
+             FROM request_statuses
+             JOIN service_types ON service_types.id = $4 AND service_types.company_id = $8
+             WHERE request_statuses.name = $7
              RETURNING id`,
             [
                 customerId ?? null, propertyId ?? null, leadId ?? null, serviceTypeId, preferredDate, notes || null,
-                statusName,
+                statusName, companyId,
             ],
         );
+
+        if (rows.length === 0) {
+            throw new Error("The service type is not in this company.");
+        }
+
         await addHistory(client, rows[0].id, statusName, changedBy ?? null, "Request received");
         return rows[0].id;
     });

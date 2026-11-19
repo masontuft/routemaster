@@ -21,7 +21,7 @@ export function identify(req, res) {
 }
 
 async function dateForm(req, res, status, errors, values) {
-    const types = await ServiceType.listActive(req.app.locals.db);
+    const types = await ServiceType.listActive(req.app.locals.db, DEFAULT_COMPANY_ID);
     res.status(status).render("schedule/date", { title: "Choose a Date", types, today: todayString(), errors, values });
 }
 
@@ -46,7 +46,7 @@ export async function submitDate(req, res) {
     const preferredDate = String(req.body.preferredDate ?? "");
     const errors = [];
 
-    if (!serviceTypeId || !await ServiceType.findActive(db, serviceTypeId)) {
+    if (!serviceTypeId || !await ServiceType.findActive(db, DEFAULT_COMPANY_ID, serviceTypeId)) {
         errors.push("Choose a service.");
     }
 
@@ -63,8 +63,8 @@ export async function submitDate(req, res) {
     // No match: the visitor becomes a lead, and asking again reuses that lead instead of copying their details.
     // /schedule has no company in its address yet, so it takes requests for the first company (see config/company.js).
     const match = await Customer.findByContact(db, DEFAULT_COMPANY_ID, contact);
-    const leadId = match ? null : await Lead.findOrCreate(db, contact);
-    await ServiceRequest.create(db, {
+    const leadId = match ? null : await Lead.findOrCreate(db, DEFAULT_COMPANY_ID, contact);
+    await ServiceRequest.create(db, DEFAULT_COMPANY_ID, {
         customerId: match?.customer_id,
         propertyId: match?.property_id,
         leadId,

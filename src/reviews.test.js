@@ -64,7 +64,7 @@ async function customerWithRequest(email, name, phone, status = "Completed") {
     const customerId = await Customer.ensureForUser(pool, await User.findByEmail(pool, email));
     await pool.query("UPDATE customers SET name = $2, phone = $3 WHERE id = $1", [customerId, name, phone]);
     const propertyId = await Property.create(pool, customerId, { street: "12 Oak Street", city: "Rexburg" });
-    const id = await ServiceRequest.create(pool, {
+    const id = await ServiceRequest.create(pool, 1, {
         customerId, propertyId, serviceTypeId: 1, preferredDate: daysAhead(5),
     });
     await pool.query(

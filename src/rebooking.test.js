@@ -37,7 +37,7 @@ async function customerIn(area, name, street = "1 Elm St") {
 
 // A request for the customer with the given status and dates, however the app would normally get it there.
 async function job(customer, status, preferred, scheduled = null) {
-    const id = await ServiceRequest.create(pool, {
+    const id = await ServiceRequest.create(pool, 1, {
         customerId: customer.id, propertyId: customer.propertyId, serviceTypeId: 1, preferredDate: preferred,
     });
     await pool.query(
@@ -146,8 +146,8 @@ test("contacted means a link made this year, and an active link is one that stil
 });
 
 test("an unmatched request, with no customer, is ignored", async () => {
-    const leadId = await Lead.findOrCreate(pool, { name: "Walk In", phone: "208-555-0100", address: "9 Oak" });
-    await ServiceRequest.create(pool, { serviceTypeId: 1, preferredDate: "2026-10-10", leadId });
+    const leadId = await Lead.findOrCreate(pool, 1, { name: "Walk In", phone: "208-555-0100", address: "9 Oak" });
+    await ServiceRequest.create(pool, 1, { serviceTypeId: 1, preferredDate: "2026-10-10", leadId });
     await customerIn(areaId, "Ann");
 
     assert.deepStrictEqual((await forArea(pool, areaId, 2026)).map((row) => {

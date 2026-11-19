@@ -219,7 +219,9 @@ test("the dashboard shows owner numbers to an owner and hides them from a dispat
     const date = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     for (const status of ["Scheduled", "Scheduled", "Completed", "Requested"]) {
-        const id = await ServiceRequest.create(pool, { customerId, propertyId, serviceTypeId: 1, preferredDate: date });
+        const id = await ServiceRequest.create(pool, 1, {
+            customerId, propertyId, serviceTypeId: 1, preferredDate: date,
+        });
         await pool.query(
             "UPDATE service_requests SET status_id = (SELECT id FROM request_statuses WHERE name = $2) WHERE id = $1", [id, status]);
     }

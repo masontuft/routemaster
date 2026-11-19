@@ -9,11 +9,17 @@ import * as Property from "./models/property.js";
 import * as AccessLink from "./models/accessLink.js";
 import * as Staff from "./models/staff.js";
 import * as Admin from "./models/admin.js";
+import * as ServiceRequest from "./models/serviceRequest.js";
+import * as ServiceType from "./models/serviceType.js";
+import * as Lead from "./models/lead.js";
+import * as Review from "./models/review.js";
+import * as DayBoard from "./models/dayBoard.js";
 import { hashPassword } from "./utils/password.js";
 
 // Two companies in one database (ADR 0018). Company 1 is Ann Lee's, company 2 is Bo Kim's. Each test checks that one
 // company's staff cannot find, change or delete the other's customers and properties, by id, by search and in bulk.
-// Only customers, properties and the users page are scoped so far (pass 2a), and these tests cover exactly that.
+// Customers, properties, the users page (pass 2a) and requests, leads, reviews and the service catalog (pass 2b) are
+// scoped so far, and these tests cover exactly those.
 
 const db = testDb("isolation");
 const pool = db.pool;
@@ -23,6 +29,7 @@ let ann;
 let annProperty;
 let bo;
 let boProperty;
+let type2;
 
 function listen(application) {
     return new Promise((resolve) => {
@@ -47,6 +54,10 @@ beforeEach(async () => {
     annProperty = await Property.create(pool, ann, { street: "12 Oak Street", city: "Rexburg", zip: "83440" });
     bo = await Customer.create(pool, 2, { name: "Bo Kim", phone: "(208) 555-0202" });
     boProperty = await Property.create(pool, bo, { street: "9 Elm Street", city: "Rigby", zip: "83442" });
+    // Company 1 keeps the two services migration 006 made (ids 1 and 2). Company 2 has one of its own.
+    type2 = (await pool.query(
+        "INSERT INTO service_types (name, price_cents, company_id) VALUES ('Lawn Aeration', 5000, 2) RETURNING id",
+    )).rows[0].id;
 });
 after(async () => {
     server?.close();
@@ -56,7 +67,13 @@ after(async () => {
 
 async function tokenFrom(agent, pagePath) {
     const res = await agent.get(pagePath);
-    return res.text.match(/name="_csrf" value="([^"]+)"/)[1];
+    const found = res.text.match(/name="_csrf" value="([^"]+)"/);
+
+    if (!found) {
+        throw new Error(`No CSRF token on GET ${pagePath}: status ${res.status}, location ${res.headers.location}, body ${res.text.slice(0, 200)}`);
+    }
+
+    return found[1];
 }
 
 async function send(agent, pagePath, action, fields) {
@@ -268,7 +285,7 @@ test("matching a request as a new customer puts the customer in the request's co
         [lead.rows[0].id],
     );
 
-    const result = await Staff.matchAsNew(pool, requestRow.rows[0].id, { city: "Rigby", zip: "83442" }, null);
+    const result = await Staff.matchAsNew(pool, 2, requestRow.rows[0].id, { city: "Rigby", zip: "83442" }, null);
     const made = await pool.query("SELECT company_id FROM customers WHERE name = 'Cy Roe'");
 
     assert.strictEqual(result.ok, true);
@@ -348,4 +365,210 @@ test("the last owner rule counts one company's owners, not everyone's", async ()
 
     await User.create(pool, { companyId: 2, email: "b2@example.com", passwordHash: "x", roleName: "owner" });
     assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", 0), { ok: true });
+});
+
+function futureDay(days = 20) {
+    return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+}
+
+async function annRequest() {
+    return ServiceRequest.create(pool, 1, {
+        customerId: ann, propertyId: annProperty, serviceTypeId: 1, preferredDate: futureDay(),
+    });
+}
+
+async function setStatus(requestId, name) {
+    await pool.query(
+        "UPDATE service_requests SET status_id = (SELECT id FROM request_statuses WHERE name = $2) WHERE id = $1",
+        [requestId, name],
+    );
+}
+
+test("the request queue, the dashboard counts and a request page show only the logged-in company's requests", async () => {
+    const requestId = await annRequest();
+    const owner1 = await agentFor(1, "owner");
+    const owner2 = await agentFor(2, "owner");
+
+    const mine = await owner1.get("/staff/requests");
+    const theirs = await owner2.get("/staff/requests");
+
+    assert.match(mine.text, /Ann Lee/);
+    assert.doesNotMatch(theirs.text, /Ann Lee/);
+    assert.strictEqual((await owner1.get(`/staff/requests/${requestId}`)).status, 200);
+    assert.strictEqual((await owner2.get(`/staff/requests/${requestId}`)).status, 404);
+    assert.deepStrictEqual(
+        (await Staff.countsByStatus(pool, 2)).map((row) => {
+            return row.total;
+        }).filter(Boolean),
+        [],
+    );
+    assert.strictEqual((await Staff.countsByStatus(pool, 1)).find((row) => {
+        return row.status === "Requested";
+    }).total, 1);
+});
+
+test("another company's request cannot be moved, confirmed, given a referrer or matched: 404 and nothing changes", async () => {
+    const requestId = await annRequest();
+    const owner2 = await agentFor(2, "owner");
+    const page = `/staff/requests/${requestId}`;
+
+    const status = await send(owner2, "/staff", `${page}/status`, { status: "Cancelled", note: "" });
+    const confirm = await send(owner2, "/staff", `${page}/confirm`, {});
+    const referrer = await send(owner2, "/staff", `${page}/referrer`, { referredBy: "Hacker" });
+    const match = await send(owner2, "/staff", `${page}/match`, { propertyId: boProperty });
+
+    assert.deepStrictEqual([status.status, confirm.status, referrer.status, match.status], [404, 404, 404, 404]);
+    const { rows } = await pool.query(
+        `SELECT request_statuses.name AS status, referred_by FROM service_requests
+         JOIN request_statuses ON request_statuses.id = service_requests.status_id WHERE service_requests.id = $1`,
+        [requestId],
+    );
+    assert.deepStrictEqual(rows[0], { status: "Requested", referred_by: null });
+});
+
+test("the request model answers 'not found' for another company's request, and the owner numbers count one company", async () => {
+    const requestId = await annRequest();
+
+    assert.strictEqual(await Staff.findRequest(pool, 2, requestId), null);
+    assert.strictEqual((await Staff.findRequest(pool, 1, requestId)).id, requestId);
+    assert.deepStrictEqual(await Staff.changeStatus(pool, 2, requestId, { to: "Cancelled", changedBy: null }), { error: "not_found" });
+    assert.strictEqual(await Staff.setReferrer(pool, 2, requestId, "x"), false);
+    assert.strictEqual(await Staff.confirmTentative(pool, 2, requestId, null), false);
+    assert.deepStrictEqual(await Staff.historyFor(pool, 2, requestId), []);
+    assert.ok((await Staff.historyFor(pool, 1, requestId)).length > 0);
+    assert.strictEqual((await Staff.stats(pool, 1)).requested_this_month, 1);
+    assert.strictEqual((await Staff.stats(pool, 2)).requested_this_month, 0);
+    assert.strictEqual((await Staff.listRequests(pool, 2)).length, 0);
+});
+
+test("matching to a property takes only a property of the same company", async () => {
+    const lead = await Lead.findOrCreate(pool, 2, { name: "Cy Roe", phone: "208-555-0303", address: "3 Pine Street" });
+    const requestId = await ServiceRequest.create(pool, 2, {
+        leadId: lead, serviceTypeId: type2, preferredDate: futureDay(),
+    });
+
+    const wrong = await Staff.matchToProperty(pool, 2, requestId, annProperty, null);
+    const right = await Staff.matchToProperty(pool, 2, requestId, boProperty, null);
+    const elsewhere = await Staff.matchToProperty(pool, 1, requestId, annProperty, null);
+
+    assert.deepStrictEqual(wrong, { error: "property" });
+    assert.strictEqual(right.ok, true);
+    assert.deepStrictEqual(elsewhere, { error: "not_found" });
+});
+
+test("a request is made only with a customer and a service type of its own company", async () => {
+    await assert.rejects(
+        ServiceRequest.create(pool, 2, {
+            customerId: ann, propertyId: annProperty, serviceTypeId: type2, preferredDate: futureDay(),
+        }),
+        /customer is not in this company/,
+    );
+    await assert.rejects(
+        ServiceRequest.create(pool, 2, {
+            customerId: bo, propertyId: boProperty, serviceTypeId: 1, preferredDate: futureDay(),
+        }),
+        /service type is not in this company/,
+    );
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM service_requests")).rows[0].n, 0);
+
+    const id = await ServiceRequest.create(pool, 2, {
+        customerId: bo, propertyId: boProperty, serviceTypeId: type2, preferredDate: futureDay(),
+    });
+    assert.strictEqual((await pool.query("SELECT company_id FROM service_requests WHERE id = $1", [id])).rows[0].company_id, 2);
+});
+
+test("a lead belongs to one company: another company cannot read or convert it, and is never handed it", async () => {
+    const lead = await Lead.findOrCreate(pool, 1, { name: "Sam Poe", phone: "208-555-0404", address: "2 Oak Street" });
+
+    assert.strictEqual(await Lead.findOrCreate(pool, 1, { name: "Sam Poe", phone: "208-555-0404", address: "2 Oak Street" }), lead);
+    assert.strictEqual(await Lead.findById(pool, 2, lead), null);
+    assert.strictEqual(await Lead.markConverted(pool, 2, lead, bo), false);
+    // The old three-column lead key is still in the database until the contract migration (issue 75), so company 2
+    // cannot hold the same person and street yet. It is refused. It is never answered with company 1's lead.
+    await assert.rejects(Lead.findOrCreate(pool, 2, { name: "Sam Poe", phone: "208-555-0404", address: "2 Oak Street" }), /unique/);
+});
+
+test("review moderation, the public list and the average are limited to one company", async () => {
+    const requestId = await annRequest();
+    await setStatus(requestId, "Completed");
+    const reviewId = await Review.save(pool, { requestId, customerId: ann, rating: 5, body: "Great work" });
+    const owner2 = await agentFor(2, "owner");
+
+    const staffList = await owner2.get("/staff/reviews");
+    const hide = await send(owner2, "/staff/reviews", `/staff/reviews/${reviewId}/hide`, {});
+    const remove = await send(owner2, "/staff/reviews", `/staff/reviews/${reviewId}/delete`, {});
+
+    assert.doesNotMatch(staffList.text, /Great work/);
+    assert.deepStrictEqual([hide.status, remove.status], [404, 404]);
+    assert.strictEqual((await pool.query("SELECT hidden FROM reviews WHERE id = $1", [reviewId])).rows[0].hidden, false);
+    assert.strictEqual((await Review.listPublic(pool, 2)).length, 0);
+    assert.strictEqual((await Review.listPublic(pool, 1)).length, 1);
+    assert.strictEqual((await Review.averageRating(pool, 2)).total, 0);
+    assert.strictEqual((await Review.averageRating(pool, 1)).total, 1);
+    assert.strictEqual(await Review.setHidden(pool, 2, reviewId, true), false);
+    assert.strictEqual(await Review.remove(pool, 2, reviewId), false);
+});
+
+test("each company has its own service catalog: an owner sees and edits only their own", async () => {
+    const owner2 = await agentFor(2, "owner");
+
+    const list = await owner2.get("/admin/service-types");
+    const edit = await owner2.get("/admin/service-types/1/edit");
+    const save = await send(owner2, "/admin/service-types", "/admin/service-types/1", { name: "Hacked", price: "0.01", active: "on" });
+
+    assert.match(list.text, /Lawn Aeration/);
+    assert.doesNotMatch(list.text, /Sprinkler Blowout/);
+    assert.strictEqual(edit.status, 404);
+    assert.strictEqual(save.status, 404);
+    assert.strictEqual((await ServiceType.findById(pool, 1, 1)).name, "Sprinkler Blowout");
+    assert.strictEqual(await ServiceType.findById(pool, 2, 1), null);
+    assert.deepStrictEqual((await ServiceType.listActive(pool, 2)).map((row) => {
+        return row.name;
+    }), ["Lawn Aeration"]);
+    assert.strictEqual(await ServiceType.findActive(pool, 2, 1), null);
+});
+
+test("a service name can repeat across companies, but not within one", async () => {
+    assert.deepStrictEqual(await ServiceType.create(pool, 2, { name: "Sprinkler Blowout", priceCents: 9000, active: true }), { ok: true });
+    assert.deepStrictEqual(await ServiceType.create(pool, 2, { name: "Sprinkler Blowout", priceCents: 9000, active: true }), { error: "name_taken" });
+    assert.deepStrictEqual(await ServiceType.update(pool, 2, 1, { name: "Hacked", priceCents: 1, active: true }), { ok: true });
+    assert.strictEqual((await ServiceType.findById(pool, 1, 1)).name, "Sprinkler Blowout", "updating through company 2 changed nothing");
+});
+
+test("a customer arriving by link sees only their company's services, and cannot request another company's", async () => {
+    const token = await AccessLink.create(pool, { customerId: bo });
+    const visitor = request.agent(server);
+    await send(visitor, `/l/${token}`, `/l/${token}`, {});
+
+    const form = await visitor.get("/requests/new");
+    const wrong = await send(visitor, "/requests/new", "/requests", {
+        serviceTypeId: 1, propertyId: boProperty, preferredDate: futureDay(), notes: "",
+    });
+    const right = await send(visitor, "/requests/new", "/requests", {
+        serviceTypeId: type2, propertyId: boProperty, preferredDate: futureDay(), notes: "",
+    });
+
+    assert.match(form.text, /Lawn Aeration/);
+    assert.doesNotMatch(form.text, /Sprinkler Blowout/);
+    assert.strictEqual(wrong.status, 400);
+    assert.strictEqual(right.status, 302);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM service_requests")).rows[0].n, 1);
+    assert.strictEqual((await pool.query("SELECT company_id FROM service_requests")).rows[0].company_id, 2);
+});
+
+test("the day board books only requests of the company it is given", async () => {
+    const requestId = await annRequest();
+
+    const result = await DayBoard.scheduleMany(pool, 2, [requestId], { day: futureDay(5), changedBy: null });
+
+    assert.deepStrictEqual(result, { scheduled: 0, skipped: 1 });
+    assert.strictEqual(
+        (await pool.query(
+            "SELECT request_statuses.name FROM service_requests JOIN request_statuses ON request_statuses.id = status_id",
+        )).rows[0].name,
+        "Requested",
+    );
+    assert.deepStrictEqual(await DayBoard.scheduleMany(pool, 1, [requestId], { day: futureDay(5), changedBy: null }), {
+        scheduled: 1, skipped: 0,
+    });
 });

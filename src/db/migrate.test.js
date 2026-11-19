@@ -68,6 +68,8 @@ test("applies the real migrations in order and records them", async () => {
         "026_drop_request_contact_columns.sql",
         "027_leads_go_with_their_customer.sql",
         "028_create_companies.sql",
+        "029_company_service_types_and_lead_key.sql",
+        "030_requests_keep_to_their_company.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -161,7 +163,11 @@ test("028 puts every row that already exists in company 1 and makes the next com
         await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'on')");
         await pool.query("INSERT INTO contact_messages (name, email, message) VALUES ('A', 'a@example.com', 'Hi')");
 
-        assert.deepStrictEqual(await runMigrations(pool, realMigrations), ["028_create_companies.sql"]);
+        assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
+            "028_create_companies.sql",
+            "029_company_service_types_and_lead_key.sql",
+            "030_requests_keep_to_their_company.sql",
+        ]);
 
         const first = await pool.query("SELECT id, name, slug FROM companies");
         assert.deepStrictEqual(first.rows, [{ id: 1, name: "Tuft Sprinkler Blowouts", slug: "tuft-sprinkler-blowouts" }]);
@@ -214,4 +220,140 @@ test("a company slug must be lower-case words joined by hyphens, and each slug i
 
     await pool.query("INSERT INTO companies (name, slug) VALUES ('Second', 'second-co')");
     await assert.rejects(pool.query("INSERT INTO companies (name, slug) VALUES ('Again', 'second-co')"), /unique/);
+});
+
+test("029 puts the existing service types in company 1, and a name is unique within a company only", async () => {
+    const before = await migrationsBefore("028_create_companies.sql");
+
+    try {
+        await runMigrations(pool, before);
+        assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
+            "029_company_service_types_and_lead_key.sql",
+            "030_requests_keep_to_their_company.sql",
+        ]);
+
+        const types = await pool.query("SELECT name, company_id FROM service_types ORDER BY id");
+        assert.deepStrictEqual(types.rows, [
+            { name: "Sprinkler Blowout", company_id: 1 },
+            { name: "Sprinkler Startup", company_id: 1 },
+        ]);
+
+        await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+        await pool.query("INSERT INTO service_types (name, company_id) VALUES ('Sprinkler Blowout', 2)");
+        await assert.rejects(
+            pool.query("INSERT INTO service_types (name, company_id) VALUES ('Sprinkler Blowout', 2)"),
+            /unique/,
+        );
+        await assert.rejects(
+            pool.query("INSERT INTO service_types (name) VALUES ('Sprinkler Blowout')"),
+            /unique/,
+            "a name already in company 1 is refused in company 1",
+        );
+    } finally {
+        await rm(before, { recursive: true });
+    }
+});
+
+test("029 keeps the old lead key for the running code and adds the per-company one", async () => {
+    await runMigrations(pool, realMigrations);
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+    const lead = (companyId, name = "Sam") => {
+        return pool.query(
+            `INSERT INTO leads (name, name_normalized, phone, phone_normalized, address, address_normalized, company_id)
+             VALUES ($1, 'sam', '208', '208', '2 Oak St', '2 oak st', $2)
+             ON CONFLICT (name_normalized, phone_normalized, address_normalized) DO UPDATE SET name = leads.name
+             RETURNING id, company_id`,
+            [name, companyId],
+        );
+    };
+
+    const first = await lead(1);
+    const again = await lead(1);
+
+    assert.strictEqual(first.rows[0].id, again.rows[0].id, "the old ON CONFLICT target still works");
+    await assert.rejects(
+        pool.query(
+            `INSERT INTO leads (name, name_normalized, phone, phone_normalized, address, address_normalized, company_id)
+             VALUES ('Sam', 'sam', '208', '208', '2 Oak St', '2 oak st', 1)`,
+        ),
+        /unique/,
+    );
+    const keys = await pool.query(
+        "SELECT conname FROM pg_constraint WHERE conrelid = 'leads'::regclass AND contype = 'u' ORDER BY conname",
+    );
+    assert.ok(keys.rows.some((row) => {
+        return row.conname === "leads_company_match_key";
+    }));
+});
+
+// A company 2, a customer and a lead in each company, and a service type each. Returns the ids.
+async function twoCompanies() {
+    await runMigrations(pool, realMigrations);
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+    const customer = async (companyId, name) => {
+        return (await pool.query(
+            "INSERT INTO customers (name, name_normalized, company_id) VALUES ($1, $1, $2) RETURNING id",
+            [name, companyId],
+        )).rows[0].id;
+    };
+    const lead = async (companyId, name) => {
+        return (await pool.query(
+            `INSERT INTO leads (name, name_normalized, phone, phone_normalized, address, address_normalized, company_id)
+             VALUES ($1, $1, $1, $1, $1, $1, $2) RETURNING id`,
+            [name, companyId],
+        )).rows[0].id;
+    };
+    const property = async (customerId) => {
+        return (await pool.query(
+            "INSERT INTO properties (customer_id, street, city, address_normalized) VALUES ($1, 'x', 'y', 'x') RETURNING id",
+            [customerId],
+        )).rows[0].id;
+    };
+    const ann = await customer(1, "ann");
+    const bo = await customer(2, "bo");
+
+    return { ann, bo, annProperty: await property(ann), boProperty: await property(bo), lead1: await lead(1, "l1"), lead2: await lead(2, "l2") };
+}
+
+function insertRequest({ customerId = null, propertyId = null, leadId = null, companyId }) {
+    return pool.query(
+        `INSERT INTO service_requests (customer_id, property_id, lead_id, service_type_id, status_id, preferred_date, company_id)
+         VALUES ($1, $2, $3, 1, 1, '2030-01-01', $4) RETURNING id`,
+        [customerId, propertyId, leadId, companyId],
+    );
+}
+
+test("030: a request cannot name a customer or a lead of another company", async () => {
+    const ids = await twoCompanies();
+
+    await assert.rejects(
+        insertRequest({ customerId: ids.ann, propertyId: ids.annProperty, companyId: 2 }),
+        /foreign key/,
+        "company 2 request, company 1 customer",
+    );
+    await assert.rejects(insertRequest({ leadId: ids.lead1, companyId: 2 }), /foreign key|check/, "company 2 request, company 1 lead");
+    await insertRequest({ customerId: ids.bo, propertyId: ids.boProperty, companyId: 2 });
+    await insertRequest({ customerId: ids.ann, propertyId: ids.annProperty, leadId: ids.lead1, companyId: 1 });
+});
+
+test("030: deleting a customer still deletes their requests, and deleting a lead clears only the lead", async () => {
+    const ids = await twoCompanies();
+    await insertRequest({ customerId: ids.ann, propertyId: ids.annProperty, leadId: ids.lead1, companyId: 1 });
+    await insertRequest({ customerId: ids.bo, propertyId: ids.boProperty, companyId: 2 });
+
+    await pool.query("DELETE FROM leads WHERE id = $1", [ids.lead1]);
+    const kept = await pool.query("SELECT lead_id, company_id FROM service_requests WHERE customer_id = $1", [ids.ann]);
+    assert.deepStrictEqual(kept.rows, [{ lead_id: null, company_id: 1 }]);
+
+    await pool.query("DELETE FROM customers WHERE id = $1", [ids.ann]);
+    const left = await pool.query("SELECT customer_id FROM service_requests");
+    assert.deepStrictEqual(left.rows, [{ customer_id: ids.bo }]);
+});
+
+test("030: a request with no customer and no lead is not checked for either", async () => {
+    await twoCompanies();
+
+    // The CHECK on service_requests still wants an unmatched request to have a lead, so this one is refused by that
+    // rule and not by the foreign keys: the message is a check violation, not a foreign key violation.
+    await assert.rejects(insertRequest({ companyId: 1 }), /check/);
 });

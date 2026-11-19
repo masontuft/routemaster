@@ -1,6 +1,7 @@
 import * as DayBoard from "../models/dayBoard.js";
 import * as AppSetting from "../models/appSetting.js";
 import { parseId, todayString, validatePreferredDate } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 // Every page here carries customer names and phones, so none may be cached.
 async function boardPage(req, res, { day, errors = [], notice = null, status = 200 }) {
@@ -50,7 +51,7 @@ export async function schedule(req, res) {
         return boardPage(req, res, { day: shownDay, errors, status: 400 });
     }
 
-    const result = await DayBoard.scheduleMany(req.app.locals.db, ids, {
+    const result = await DayBoard.scheduleMany(req.app.locals.db, companyOf(req), ids, {
         day, changedBy: req.session.user.id,
     });
     const skippedText = result.skipped > 0 ? ` ${result.skipped} could not be scheduled (already booked or cancelled).` : "";

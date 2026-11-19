@@ -20,27 +20,30 @@ const LIST_SELECT = `
     LEFT JOIN leads ON leads.id = service_requests.lead_id
 `;
 
-export async function countsByStatus(pool) {
+// Every function here takes the company first (ADR 0018). A request of another company is "not found".
+export async function countsByStatus(pool, companyId) {
     const { rows } = await pool.query(
         `SELECT request_statuses.name AS status, count(service_requests.id)::int AS total
          FROM request_statuses
          LEFT JOIN service_requests ON service_requests.status_id = request_statuses.id
+                                   AND service_requests.company_id = $1
          GROUP BY request_statuses.id ORDER BY request_statuses.id`,
+        [companyId],
     );
     return rows;
 }
 
 // status is optional and is only ever a bound parameter. Oldest first for the Needs Review queue.
-export async function listRequests(pool, { status = null, limit = 200 } = {}) {
+export async function listRequests(pool, companyId, { status = null, limit = 200 } = {}) {
     const { rows } = await pool.query(
-        `${LIST_SELECT} WHERE ($1::text IS NULL OR request_statuses.name = $1)
+        `${LIST_SELECT} WHERE service_requests.company_id = $3 AND ($1::text IS NULL OR request_statuses.name = $1)
          ORDER BY service_requests.created_at DESC, service_requests.id DESC LIMIT $2`,
-        [status, limit],
+        [status, limit, companyId],
     );
     return rows;
 }
 
-export async function findRequest(pool, id) {
+export async function findRequest(pool, companyId, id) {
     const { rows } = await pool.query(
         `SELECT service_requests.id, service_requests.customer_id, service_requests.notes,
                 service_requests.lead_id, leads.name AS lead_name, leads.phone AS lead_phone,
@@ -61,45 +64,47 @@ export async function findRequest(pool, id) {
          LEFT JOIN customers ON customers.id = service_requests.customer_id
          LEFT JOIN properties ON properties.id = service_requests.property_id
          LEFT JOIN leads ON leads.id = service_requests.lead_id
-         WHERE service_requests.id = $1`,
-        [id],
+         WHERE service_requests.id = $1 AND service_requests.company_id = $2`,
+        [id, companyId],
     );
     return rows[0] ?? null;
 }
 
 // referredBy is already trimmed. Null clears the name. Payout amounts are not stored.
-export async function setReferrer(pool, id, referredBy) {
+export async function setReferrer(pool, companyId, id, referredBy) {
     const { rowCount } = await pool.query(
-        `UPDATE service_requests SET referred_by = $2, updated_at = now() WHERE id = $1`,
-        [id, referredBy],
+        `UPDATE service_requests SET referred_by = $2, updated_at = now() WHERE id = $1 AND company_id = $3`,
+        [id, referredBy, companyId],
     );
     return rowCount === 1;
 }
 
-export async function historyFor(pool, id) {
+export async function historyFor(pool, companyId, id) {
     const { rows } = await pool.query(
         `SELECT request_statuses.name AS status, status_history.note, status_history.changed_at,
                 users.email AS changed_by_email
          FROM status_history
+         JOIN service_requests ON service_requests.id = status_history.service_request_id
+                              AND service_requests.company_id = $2
          JOIN request_statuses ON request_statuses.id = status_history.status_id
          LEFT JOIN users ON users.id = status_history.changed_by
          WHERE status_history.service_request_id = $1
          ORDER BY status_history.changed_at, status_history.id`,
-        [id],
+        [id, companyId],
     );
     return rows;
 }
 
 // Locks the request row so two staff members acting at once cannot both pass the transition check.
-async function lockRequest(client, id) {
+async function lockRequest(client, companyId, id) {
     const { rows } = await client.query(
         `SELECT service_requests.customer_id, service_requests.lead_id, service_requests.company_id,
                 request_statuses.name AS status
          FROM service_requests
          JOIN request_statuses ON request_statuses.id = service_requests.status_id
-         WHERE service_requests.id = $1
+         WHERE service_requests.id = $1 AND service_requests.company_id = $2
          FOR UPDATE OF service_requests`,
-        [id],
+        [id, companyId],
     );
     return rows[0] ?? null;
 }
@@ -118,13 +123,13 @@ async function setStatus(client, id, to, scheduledDate, note, changedBy) {
 }
 
 // Staff mark a penciled-in booking confirmed, for example after the customer said yes by phone.
-export async function confirmTentative(pool, id, changedBy) {
+export async function confirmTentative(pool, companyId, id, changedBy) {
     return withTransaction(pool, async (client) => {
         const { rowCount } = await client.query(
             `UPDATE service_requests SET tentative = false, updated_at = now()
-             WHERE id = $1 AND tentative
+             WHERE id = $1 AND company_id = $2 AND tentative
                AND status_id = (SELECT id FROM request_statuses WHERE name = 'Scheduled')`,
-            [id],
+            [id, companyId],
         );
 
         if (rowCount === 1) {
@@ -136,9 +141,9 @@ export async function confirmTentative(pool, id, changedBy) {
 }
 
 // Returns { ok: true } or { error } where error is one of: not_found, transition, unmatched, date.
-export async function changeStatus(pool, id, { to, scheduledDate, note, changedBy }) {
+export async function changeStatus(pool, companyId, id, { to, scheduledDate, note, changedBy }) {
     return withTransaction(pool, async (client) => {
-        const current = await lockRequest(client, id);
+        const current = await lockRequest(client, companyId, id);
 
         if (!current) {
             return { error: "not_found" };
@@ -174,20 +179,20 @@ async function attach(client, id, customerId, propertyId, changedBy, note) {
 // Locks a request's lead before the request itself. Matching one request also matches the lead's other open
 // requests, so two staff matching different requests of one lead must queue on the lead first. If each locked its
 // own request first and then reached for the other's, they could wait on each other for ever.
-async function lockLeadOf(client, requestId) {
+async function lockLeadOf(client, companyId, requestId) {
     await client.query(
         `SELECT leads.id FROM leads
          JOIN service_requests ON service_requests.lead_id = leads.id
-         WHERE service_requests.id = $1
+         WHERE service_requests.id = $1 AND service_requests.company_id = $2
          FOR UPDATE OF leads`,
-        [requestId],
+        [requestId, companyId],
     );
 }
 
 // Matches the request, then the lead's other Needs Review requests to the same customer and property, because
 // they are the same person at the same address. A request already cancelled is left alone. Then the lead is
 // marked as converted. Returns how many other requests were matched too.
-async function attachWithLead(client, id, customerId, propertyId, changedBy, note) {
+async function attachWithLead(client, companyId, id, customerId, propertyId, changedBy, note) {
     const { rows } = await client.query("SELECT lead_id FROM service_requests WHERE id = $1", [id]);
     const leadId = rows[0].lead_id;
     await attach(client, id, customerId, propertyId, changedBy, note);
@@ -210,15 +215,15 @@ async function attachWithLead(client, id, customerId, propertyId, changedBy, not
         await attach(client, other.id, customerId, propertyId, changedBy, `Matched together with request ${id}`);
     }
 
-    await Lead.markConverted(client, leadId, customerId);
+    await Lead.markConverted(client, companyId, leadId, customerId);
     return others.rowCount;
 }
 
 // Returns { ok: true } or { error } where error is one of: not_found, transition, property.
-export async function matchToProperty(pool, id, propertyId, changedBy) {
+export async function matchToProperty(pool, companyId, id, propertyId, changedBy) {
     return withTransaction(pool, async (client) => {
-        await lockLeadOf(client, id);
-        const current = await lockRequest(client, id);
+        await lockLeadOf(client, companyId, id);
+        const current = await lockRequest(client, companyId, id);
 
         if (!current) {
             return { error: "not_found" };
@@ -228,24 +233,32 @@ export async function matchToProperty(pool, id, propertyId, changedBy) {
             return { error: "transition" };
         }
 
-        const property = await client.query("SELECT customer_id FROM properties WHERE id = $1", [propertyId]);
+        // The property comes from a form field, so it must belong to a customer of this company. Another company's
+        // property is "not a property you can choose", the same answer as one that does not exist.
+        const property = await client.query(
+            `SELECT properties.customer_id FROM properties
+             JOIN customers ON customers.id = properties.customer_id
+             WHERE properties.id = $1 AND customers.company_id = $2`,
+            [propertyId, companyId],
+        );
 
         if (!property.rows[0]) {
             return { error: "property" };
         }
 
         const alsoMatched = await attachWithLead(
-            client, id, property.rows[0].customer_id, propertyId, changedBy, "Matched to an existing customer",
+            client, companyId, id, property.rows[0].customer_id, propertyId, changedBy,
+            "Matched to an existing customer",
         );
         return { ok: true, alsoMatched };
     });
 }
 
 // Makes a customer and property from the lead's typed details, with the city and ZIP staff supply.
-export async function matchAsNew(pool, id, { city, zip }, changedBy) {
+export async function matchAsNew(pool, companyId, id, { city, zip }, changedBy) {
     return withTransaction(pool, async (client) => {
-        await lockLeadOf(client, id);
-        const current = await lockRequest(client, id);
+        await lockLeadOf(client, companyId, id);
+        const current = await lockRequest(client, companyId, id);
 
         if (!current) {
             return { error: "not_found" };
@@ -255,17 +268,18 @@ export async function matchAsNew(pool, id, { city, zip }, changedBy) {
             return { error: "transition" };
         }
 
-        const lead = await Lead.findById(client, current.lead_id);
-        // The new customer belongs to the company of the request being matched. Staff cannot choose another one.
-        const customerId = await Customer.create(client, current.company_id, { name: lead.name, phone: lead.phone });
+        const lead = await Lead.findById(client, companyId, current.lead_id);
+        const customerId = await Customer.create(client, companyId, { name: lead.name, phone: lead.phone });
         const propertyId = await Property.create(client, customerId, { street: lead.address, city, zip });
-        const alsoMatched = await attachWithLead(client, id, customerId, propertyId, changedBy, "Matched to a new customer");
+        const alsoMatched = await attachWithLead(
+            client, companyId, id, customerId, propertyId, changedBy, "Matched to a new customer",
+        );
         return { ok: true, alsoMatched };
     });
 }
 
 // Owner numbers. Month boundaries use the database time zone. Scheduled value uses today's catalog prices.
-export async function stats(pool) {
+export async function stats(pool, companyId) {
     const { rows } = await pool.query(
         `SELECT
             count(*) FILTER (WHERE service_requests.created_at >= date_trunc('month', now()))::int AS requested_this_month,
@@ -275,7 +289,9 @@ export async function stats(pool) {
                 AS scheduled_cents
          FROM service_requests
          JOIN request_statuses ON request_statuses.id = service_requests.status_id
-         JOIN service_types ON service_types.id = service_requests.service_type_id`,
+         JOIN service_types ON service_types.id = service_requests.service_type_id
+         WHERE service_requests.company_id = $1`,
+        [companyId],
     );
     return rows[0];
 }

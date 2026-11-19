@@ -24,9 +24,9 @@ after(async () => {
 
 test("the services page lists active services and prices only when set", async () => {
     await pool.query("DELETE FROM service_types");
-    await ServiceType.create(pool, { name: "Spring Startup", priceCents: 7500, active: true });
-    await ServiceType.create(pool, { name: "Winterization", priceCents: 0, active: true });
-    await ServiceType.create(pool, { name: "Retired Service", priceCents: 1000, active: false });
+    await ServiceType.create(pool, 1, { name: "Spring Startup", priceCents: 7500, active: true });
+    await ServiceType.create(pool, 1, { name: "Winterization", priceCents: 0, active: true });
+    await ServiceType.create(pool, 1, { name: "Retired Service", priceCents: 1000, active: false });
 
     const res = await request(app).get("/services");
     assert.strictEqual(res.status, 200);
