@@ -6,11 +6,12 @@ import { isProduction } from "../utils/env.js";
 import { notFound } from "../utils/errors.js";
 import { qrSvg } from "../utils/qr.js";
 import { parseId, todayString, validateLinkBatch, isValidLinkMessage, DEFAULT_LINK_MESSAGE } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 // Every page here carries names, or a deep link that opens a batch of them, so none may be cached or replayed.
 async function formPage(req, res, { values, errors = [], status = 200 }) {
     const db = req.app.locals.db;
-    const areas = await Area.list(db, todayString());
+    const areas = await Area.list(db, companyOf(req), todayString());
     const preview = values.areaId ? await LinkBatch.preview(db, values.areaId, values) : null;
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/messenger-batch-new", {
@@ -59,7 +60,7 @@ export async function create(req, res) {
         return formPage(req, res, { values: { ...values, days: req.body.days }, errors, status: 400 });
     }
 
-    const area = await Area.find(db, values.areaId);
+    const area = await Area.find(db, companyOf(req), values.areaId);
 
     if (!area) {
         throw notFound();

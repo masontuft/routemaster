@@ -14,12 +14,16 @@ import * as ServiceType from "./models/serviceType.js";
 import * as Lead from "./models/lead.js";
 import * as Review from "./models/review.js";
 import * as DayBoard from "./models/dayBoard.js";
+import * as Area from "./models/area.js";
+import * as RoutePlan from "./models/routePlan.js";
+import * as AppSetting from "./models/appSetting.js";
+import * as Rebooking from "./models/rebooking.js";
 import { hashPassword } from "./utils/password.js";
 
 // Two companies in one database (ADR 0018). Company 1 is Ann Lee's, company 2 is Bo Kim's. Each test checks that one
 // company's staff cannot find, change or delete the other's customers and properties, by id, by search and in bulk.
-// Customers, properties, the users page (pass 2a) and requests, leads, reviews and the service catalog (pass 2b) are
-// scoped so far, and these tests cover exactly those.
+// Customers, properties, the users page (pass 2a), requests, leads, reviews and the service catalog (pass 2b), and
+// areas, routes, settings, rebooking and the day board (pass 2c) are scoped so far, and these tests cover those.
 
 const db = testDb("isolation");
 const pool = db.pool;
@@ -571,4 +575,222 @@ test("the day board books only requests of the company it is given", async () =>
     assert.deepStrictEqual(await DayBoard.scheduleMany(pool, 1, [requestId], { day: futureDay(5), changedBy: null }), {
         scheduled: 1, skipped: 0,
     });
+});
+
+// An area of each company. The names differ, because the old global area-name key stays until the contract migration.
+async function twoAreas() {
+    const area1 = await Area.create(pool, 1, "Oak Park");
+    const area2 = await Area.create(pool, 2, "Maple Hills");
+    await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [annProperty, area1]);
+    await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [boProperty, area2]);
+    return { area1, area2 };
+}
+
+async function areaDays(areaId) {
+    return (await pool.query(
+        "SELECT to_char(day, 'YYYY-MM-DD') AS day FROM area_days WHERE subdivision_id = $1 ORDER BY day",
+        [areaId],
+    )).rows.map((row) => {
+        return row.day;
+    });
+}
+
+test("the areas page lists only the logged-in company's areas, and an area of another company is not found", async () => {
+    const { area1, area2 } = await twoAreas();
+    const owner2 = await agentFor(2, "owner");
+
+    const list = await owner2.get("/staff/areas");
+
+    assert.match(list.text, /Maple Hills/);
+    assert.doesNotMatch(list.text, /Oak Park/);
+    assert.strictEqual((await owner2.get(`/staff/areas/${area2}`)).status, 200);
+    assert.strictEqual((await owner2.get(`/staff/areas/${area1}`)).status, 404);
+});
+
+test("another company's area cannot be renamed, given days, or have a day removed: 404 and nothing changes", async () => {
+    const { area1 } = await twoAreas();
+    const day = futureDay(30);
+    await Area.addDays(pool, 1, area1, [day]);
+    const owner2 = await agentFor(2, "owner");
+    const page = `/staff/areas/${area1}`;
+
+    const rename = await send(owner2, "/staff/areas", page, { name: "Hacked" });
+    const add = await send(owner2, "/staff/areas", `${page}/days`, { day: futureDay(31) });
+    const remove = await send(owner2, "/staff/areas", `${page}/days/delete`, { day });
+
+    assert.deepStrictEqual([rename.status, add.status, remove.status], [404, 404, 404]);
+    assert.strictEqual((await Area.find(pool, 1, area1)).name, "Oak Park");
+    assert.deepStrictEqual(await areaDays(area1), [day]);
+});
+
+test("a company can create an area and it belongs to that company", async () => {
+    const owner2 = await agentFor(2, "owner");
+
+    const res = await send(owner2, "/staff/areas", "/staff/areas", { name: "Birch Lane" });
+    const { rows } = await pool.query("SELECT company_id FROM subdivisions WHERE name = 'Birch Lane'");
+
+    assert.strictEqual(res.status, 303);
+    assert.deepStrictEqual(rows, [{ company_id: 2 }]);
+});
+
+test("the area model finds, renames, adds days to, removes days from and sets the city of only its own company's areas", async () => {
+    const { area1 } = await twoAreas();
+    const day = futureDay(30);
+
+    assert.strictEqual(await Area.find(pool, 2, area1), null);
+    assert.strictEqual(await Area.rename(pool, 2, area1, "Hacked"), false);
+    assert.strictEqual(await Area.addDays(pool, 2, area1, [day]), 0);
+    assert.strictEqual(await Area.addDays(pool, 1, area1, [day]), 1);
+    assert.deepStrictEqual(await Area.upcomingDays(pool, 2, area1, futureDay(0)), []);
+    assert.strictEqual(await Area.removeDay(pool, 2, area1, day), false);
+    assert.strictEqual(await Area.setCity(pool, 2, area1, "Nowhere"), false);
+    assert.strictEqual((await Area.find(pool, 1, area1)).city, null);
+    assert.deepStrictEqual(await Area.upcomingDays(pool, 1, area1, futureDay(0)), [day]);
+    assert.strictEqual((await Area.list(pool, 2, futureDay(0))).length, 1);
+    assert.deepStrictEqual(await Area.daysForProperty(pool, 2, annProperty, futureDay(0)), []);
+    assert.deepStrictEqual(await Area.daysForProperty(pool, 1, annProperty, futureDay(0)), [day]);
+});
+
+test("a property cannot be put in another company's area", async () => {
+    const { area1 } = await twoAreas();
+    const owner2 = await agentFor(2, "owner");
+
+    const res = await send(owner2, "/staff/customers", `/staff/properties/${boProperty}/edit`, {
+        street: "9 Elm Street", city: "Rigby", zip: "83442", notes: "", subdivisionId: String(area1),
+    });
+
+    assert.strictEqual(res.status, 400);
+    assert.match(res.text, /Choose an area from the list/);
+    assert.notStrictEqual((await pool.query("SELECT subdivision_id FROM properties WHERE id = $1", [boProperty])).rows[0].subdivision_id, area1);
+});
+
+async function bookAnn(day) {
+    const id = await annRequest();
+    await pool.query(
+        `UPDATE service_requests SET scheduled_date = $2::date,
+             status_id = (SELECT id FROM request_statuses WHERE name = 'Scheduled') WHERE id = $1`,
+        [id, day],
+    );
+    return id;
+}
+
+function aRoute(requestId) {
+    return {
+        day: futureDay(10), createdBy: null, start: { address: "1 Depot Way", lat: 43.8, lng: -111.7 },
+        startTime: "08:00", serviceMinutes: 20, totals: { miles: 1.5, travelMinutes: 5 },
+        stops: [{ requestId, legMiles: 1.5, legMinutes: 5, arriveMinutes: 485, departMinutes: 505 }],
+    };
+}
+
+test("the route builder shows only the logged-in company's booked jobs", async () => {
+    const day = futureDay(10);
+    await bookAnn(day);
+    const owner1 = await agentFor(1, "owner");
+    const owner2 = await agentFor(2, "owner");
+
+    const mine = await owner1.get(`/staff/routes?day=${day}`);
+    const theirs = await owner2.get(`/staff/routes?day=${day}`);
+
+    // The page gives counts until a job has a map point, so the count is what shows whose jobs it lists.
+    assert.match(mine.text, /1 booked/);
+    assert.doesNotMatch(theirs.text, /1 booked/);
+    assert.strictEqual((await RoutePlan.bookedForDay(pool, 2, day)).length, 0);
+    assert.strictEqual((await RoutePlan.bookedForDay(pool, 1, day)).length, 1);
+});
+
+test("a route belongs to a company: another company cannot read it, and a failed replace leaves it alone", async () => {
+    const requestId = await bookAnn(futureDay(10));
+    await RoutePlan.replaceForDay(pool, 1, aRoute(requestId));
+
+    assert.strictEqual(await RoutePlan.findForDay(pool, 2, futureDay(10)), null);
+    assert.strictEqual((await RoutePlan.findForDay(pool, 1, futureDay(10))).stops.length, 1);
+
+    // The old global route-day key is still there until the contract migration (issue 75), so company 2 cannot build
+    // a route for a day company 1 has one. The attempt is refused and company 1's route is still there.
+    await assert.rejects(RoutePlan.replaceForDay(pool, 2, aRoute(requestId)), /unique/);
+    assert.strictEqual((await RoutePlan.findForDay(pool, 1, futureDay(10))).stops.length, 1);
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM routes WHERE company_id = 1")).rows[0].n, 1);
+});
+
+test("a company's own route is replaced in place, and it carries the company", async () => {
+    const requestId = await bookAnn(futureDay(10));
+    await RoutePlan.replaceForDay(pool, 1, aRoute(requestId));
+    await RoutePlan.replaceForDay(pool, 1, aRoute(requestId));
+
+    const { rows } = await pool.query("SELECT company_id FROM routes");
+    assert.deepStrictEqual(rows, [{ company_id: 1 }]);
+});
+
+test("a setting is a company's own: one company's choice does not change another's", async () => {
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
+    assert.strictEqual(await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null), true);
+
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), true);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 2), false);
+    assert.strictEqual(await AppSetting.set(pool, 1, "allow_tentative_booking", "off", null), true);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
+    assert.strictEqual((await pool.query("SELECT company_id FROM app_settings")).rows[0].company_id, 1);
+
+    const owner2 = await agentFor(2, "owner");
+    assert.doesNotMatch((await owner2.get("/admin/settings")).text, /checked/);
+});
+
+test("rebooking lists only the logged-in company's customers, including for 'all areas'", async () => {
+    await twoAreas();
+    const year = new Date().getFullYear();
+
+    const company1 = (await Rebooking.forArea(pool, 1, null, year)).map((row) => {
+        return row.name;
+    });
+    const company2 = (await Rebooking.forArea(pool, 2, null, year)).map((row) => {
+        return row.name;
+    });
+    const owner2 = await agentFor(2, "owner");
+    const page = await owner2.get(`/staff/rebooking?areaId=all&year=${year}`);
+
+    assert.deepStrictEqual(company1, ["Ann Lee"]);
+    assert.deepStrictEqual(company2, ["Bo Kim"]);
+    assert.match(page.text, /Bo Kim/);
+    assert.doesNotMatch(page.text, /Ann Lee/);
+});
+
+test("the day board shows and books only the logged-in company's requests", async () => {
+    const day = futureDay(12);
+    const requestId = await ServiceRequest.create(pool, 1, {
+        customerId: ann, propertyId: annProperty, serviceTypeId: 1, preferredDate: day,
+    });
+    const owner1 = await agentFor(1, "owner");
+    const owner2 = await agentFor(2, "owner");
+
+    assert.match((await owner1.get(`/staff/day-board?day=${day}`)).text, /Ann Lee/);
+    assert.doesNotMatch((await owner2.get(`/staff/day-board?day=${day}`)).text, /Ann Lee/);
+    assert.strictEqual((await DayBoard.forDay(pool, 2, day)).waiting.length, 0);
+    assert.deepStrictEqual(await DayBoard.busyDays(pool, 2, futureDay(0)), []);
+    assert.strictEqual((await DayBoard.busyDays(pool, 1, futureDay(0))).length, 1);
+    assert.ok(requestId > 0);
+});
+
+test("penciling in takes only a customer of its own company, and puts the booking there", async () => {
+    const { area1 } = await twoAreas();
+    const day = futureDay(40);
+    const year = Number(day.slice(0, 4));
+    // Ann was served in an earlier year and has nothing this year, so she is on the outreach list for company 1.
+    const old = await ServiceRequest.create(pool, 1, {
+        customerId: ann, propertyId: annProperty, serviceTypeId: 1, preferredDate: `${year - 1}-06-01`,
+    });
+    await setStatus(old, "Completed");
+    await Area.addDays(pool, 1, area1, [day]);
+
+    const refused = await DayBoard.pencilIn(pool, 2, [ann], { day, changedBy: null });
+    assert.deepStrictEqual(refused, { pencilledIn: 0, skipped: 1 });
+    assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM service_requests")).rows[0].n, 1);
+
+    assert.deepStrictEqual((await DayBoard.pencilInCandidates(pool, 2, day)), []);
+    assert.deepStrictEqual((await DayBoard.pencilInCandidates(pool, 1, day)).map((row) => {
+        return row.name;
+    }), ["Ann Lee"]);
+    const allowed = await DayBoard.pencilIn(pool, 1, [ann], { day, changedBy: null });
+    assert.deepStrictEqual(allowed, { pencilledIn: 1, skipped: 0 });
+    const made = await pool.query("SELECT company_id, service_type_id FROM service_requests WHERE tentative");
+    assert.deepStrictEqual(made.rows, [{ company_id: 1, service_type_id: 1 }]);
 });

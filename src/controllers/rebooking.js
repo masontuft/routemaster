@@ -5,14 +5,15 @@ import { renderResult, renderResults } from "./linkBatches.js";
 import { notFound } from "../utils/errors.js";
 import { normalizePhone } from "../utils/normalize.js";
 import { parseId, todayString, validateRebooking, DEFAULT_REBOOK_MESSAGE } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 // Names and phones, so the page is never cached.
 // choice is "all" (every customer), an area id, or null (nothing chosen yet).
 async function page(req, res, options) {
     const { choice, year, days = 30, template = DEFAULT_REBOOK_MESSAGE, errors = [], status = 200 } = options;
     const db = req.app.locals.db;
-    const areas = await Area.list(db, todayString());
-    const customers = choice ? await Rebooking.forArea(db, choice === "all" ? null : choice, year) : [];
+    const areas = await Area.list(db, companyOf(req), todayString());
+    const customers = choice ? await Rebooking.forArea(db, companyOf(req), choice === "all" ? null : choice, year) : [];
     const counts = Rebooking.countByGroup(customers);
 
     res.set("Cache-Control", "no-store");
@@ -38,7 +39,7 @@ function yearFrom(value) {
 
 export async function show(req, res) {
     const areaId = req.query.areaId === "all" ? null : parseId(req.query.areaId);
-    const area = areaId ? await Area.find(req.app.locals.db, areaId) : null;
+    const area = areaId ? await Area.find(req.app.locals.db, companyOf(req), areaId) : null;
     const choice = req.query.areaId === "all" ? "all" : area ? areaId : null;
     await page(req, res, { choice, year: yearFrom(req.query.year) });
 }

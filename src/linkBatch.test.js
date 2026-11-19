@@ -19,8 +19,8 @@ before(() => {
 });
 beforeEach(async () => {
     await db.reset();
-    oakwood = await Area.create(pool, "Oakwood");
-    pine = await Area.create(pool, "Pine Hills");
+    oakwood = await Area.create(pool, 1, "Oakwood");
+    pine = await Area.create(pool, 1, "Pine Hills");
     const user = await User.create(pool, { companyId: 1, email: "dispatch@example.com", passwordHash: "x", roleName: "dispatcher" });
     userId = user.id;
 });

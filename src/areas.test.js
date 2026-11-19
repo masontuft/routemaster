@@ -69,11 +69,11 @@ function inDays(count) {
 }
 
 async function daysOf(areaId) {
-    return Area.upcomingDays(pool, areaId, todayString());
+    return Area.upcomingDays(pool, 1, areaId, todayString());
 }
 
 async function newArea(name = "Oakwood") {
-    return Area.create(pool, name);
+    return Area.create(pool, 1, name);
 }
 
 test("creating areas: staff can, a duplicate name in any case is refused, a customer cannot", async () => {
@@ -86,7 +86,7 @@ test("creating areas: staff can, a duplicate name in any case is refused, a cust
     assert.match(duplicate.text, /already exists/);
     const blank = await send(dispatcher, "/staff/areas", "/staff/areas", { name: "   " });
     assert.strictEqual(blank.status, 400);
-    assert.strictEqual((await Area.list(pool, todayString())).length, 1);
+    assert.strictEqual((await Area.list(pool, 1, todayString())).length, 1);
 
     const customer = await agentFor("customer");
     assert.strictEqual((await customer.get("/staff/areas")).status, 403);
@@ -142,7 +142,7 @@ test("removing a day works once, and a day that is not there gives 404", async (
     const owner = await agentFor("owner");
     const page = `/staff/areas/${id}`;
     const day = inDays(5);
-    await Area.addDays(pool, id, [day]);
+    await Area.addDays(pool, 1, id, [day]);
 
     assert.strictEqual((await send(owner, page, `${page}/days/delete`, { day })).status, 303);
     assert.deepStrictEqual(await daysOf(id), []);
@@ -157,10 +157,10 @@ test("renaming works, and taking another area's name is refused", async () => {
     const page = `/staff/areas/${id}`;
 
     assert.strictEqual((await send(owner, page, page, { name: "Oakwood East" })).status, 303);
-    assert.strictEqual((await Area.find(pool, id)).name, "Oakwood East");
+    assert.strictEqual((await Area.find(pool, 1, id)).name, "Oakwood East");
     const taken = await send(owner, page, page, { name: "pine hills" });
     assert.strictEqual(taken.status, 400);
-    assert.strictEqual((await Area.find(pool, id)).name, "Oakwood East");
+    assert.strictEqual((await Area.find(pool, 1, id)).name, "Oakwood East");
     assert.strictEqual((await owner.get("/staff/areas/9999")).status, 404);
 });
 
@@ -189,7 +189,7 @@ test("staff assign a property to an area and clear it; an unknown or malformed a
 
 test("deleting an area removes its days", async () => {
     const id = await newArea();
-    await Area.addDays(pool, id, [inDays(2)]);
+    await Area.addDays(pool, 1, id, [inDays(2)]);
 
     await pool.query("DELETE FROM subdivisions WHERE id = $1", [id]);
 

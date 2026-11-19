@@ -22,32 +22,35 @@ const BOARD_SELECT = `
 
 // What staff see for one day: requests that asked for it and are still waiting, and requests already booked for it.
 // Ordered by area then street, so customers who share a street sit together on the page.
-export async function forDay(pool, day) {
+export async function forDay(pool, companyId, day) {
     const waiting = await pool.query(
         `${BOARD_SELECT}
          WHERE request_statuses.name = 'Requested' AND service_requests.preferred_date = $1::date
+           AND service_requests.company_id = $2
          ORDER BY subdivisions.name NULLS LAST, properties.street, service_requests.id`,
-        [day],
+        [day, companyId],
     );
     const booked = await pool.query(
         `${BOARD_SELECT}
          WHERE request_statuses.name = 'Scheduled' AND service_requests.scheduled_date = $1::date
+           AND service_requests.company_id = $2
          ORDER BY subdivisions.name NULLS LAST, properties.street, service_requests.id`,
-        [day],
+        [day, companyId],
     );
     return { waiting: waiting.rows, booked: booked.rows };
 }
 
 // Days that have waiting requests, with how many, so staff can see which days need attention.
-export async function busyDays(pool, today) {
+export async function busyDays(pool, companyId, today) {
     const { rows } = await pool.query(
         `SELECT to_char(service_requests.preferred_date, 'YYYY-MM-DD') AS day, count(*)::int AS waiting
          FROM service_requests
          JOIN request_statuses ON request_statuses.id = service_requests.status_id
          WHERE request_statuses.name = 'Requested' AND service_requests.preferred_date >= $1::date
+           AND service_requests.company_id = $2
          GROUP BY service_requests.preferred_date
          ORDER BY service_requests.preferred_date`,
-        [today],
+        [today, companyId],
     );
     return rows;
 }
@@ -56,8 +59,7 @@ export async function busyDays(pool, today) {
 // the history entry are the same. Only requests still in Requested are booked here: a Scheduled one would pass the
 // transition rules as a reschedule, and moving a booked job to another day is not what this board is for. Anything
 // else (booked, cancelled, not matched, unknown id) is counted as skipped and does not stop the rest.
-// A request of another company is skipped like an unknown id. This is the only day board function scoped so far (it
-// calls the scoped status change); the others are pass 2c.
+// A request of another company is skipped like an unknown id.
 export async function scheduleMany(pool, companyId, ids, { day, changedBy }) {
     const wanted = ids.slice(0, MAX_SCHEDULE);
     const { rows } = await pool.query(
@@ -88,19 +90,19 @@ export async function scheduleMany(pool, companyId, ids, { day, changedBy }) {
 
 // Customers staff could pencil in for a day: those in an area that works the day, who were served in an earlier year
 // and have nothing booked in the day's year (the rebooking "not yet booked" group). Each appears once.
-export async function pencilInCandidates(pool, day) {
+export async function pencilInCandidates(pool, companyId, day) {
     const year = Number(day.slice(0, 4));
     const areas = await pool.query(
         `SELECT subdivisions.id, subdivisions.name FROM area_days
-         JOIN subdivisions ON subdivisions.id = area_days.subdivision_id
+         JOIN subdivisions ON subdivisions.id = area_days.subdivision_id AND subdivisions.company_id = $2
          WHERE area_days.day = $1::date ORDER BY subdivisions.name, subdivisions.id`,
-        [day],
+        [day, companyId],
     );
     const seen = new Set();
     const found = [];
 
     for (const area of areas.rows) {
-        for (const customer of await Rebooking.forArea(pool, area.id, year)) {
+        for (const customer of await Rebooking.forArea(pool, companyId, area.id, year)) {
             if (customer.group === "not_yet_booked" && !seen.has(customer.id)) {
                 seen.add(customer.id);
                 found.push({ ...customer, area: area.name });
@@ -117,18 +119,22 @@ export async function pencilInCandidates(pool, day) {
 // when they are not in the "not yet booked" group for the year (never served, declined, or already booked), or when
 // there is no active service. The customer row is locked, and the customer's own booking path takes the same lock,
 // so a customer who books themselves at the same moment is not double booked.
-export async function pencilIn(pool, customerIds, { day, changedBy }) {
+export async function pencilIn(pool, companyId, customerIds, { day, changedBy }) {
     const result = { pencilledIn: 0, skipped: 0 };
     const year = Number(day.slice(0, 4));
 
     for (const customerId of customerIds.slice(0, MAX_SCHEDULE)) {
         const done = await withTransaction(pool, async (client) => {
-            const locked = await client.query("SELECT id FROM customers WHERE id = $1 FOR UPDATE", [customerId]);
+            const locked = await client.query(
+                "SELECT id FROM customers WHERE id = $1 AND company_id = $2 FOR UPDATE",
+                [customerId, companyId],
+            );
             const property = await client.query(
                 `SELECT properties.id FROM properties
-                 JOIN area_days ON area_days.subdivision_id = properties.subdivision_id AND area_days.day = $2::date
+                 JOIN subdivisions ON subdivisions.id = properties.subdivision_id AND subdivisions.company_id = $3
+                 JOIN area_days ON area_days.subdivision_id = subdivisions.id AND area_days.day = $2::date
                  WHERE properties.customer_id = $1 ORDER BY properties.id LIMIT 1`,
-                [customerId, day],
+                [customerId, day, companyId],
             );
 
             if (!locked.rows[0] || !property.rows[0]) {
@@ -149,12 +155,13 @@ export async function pencilIn(pool, customerIds, { day, changedBy }) {
                      JOIN request_statuses ON request_statuses.id = service_requests.status_id
                      JOIN service_types ON service_types.id = service_requests.service_type_id
                      WHERE service_requests.customer_id = $1 AND request_statuses.name = 'Completed'
-                       AND service_types.active
+                       AND service_types.active AND service_types.company_id = $2
                      UNION ALL
-                     SELECT service_types.id, 1, NULL FROM service_types WHERE service_types.active
+                     SELECT service_types.id, 1, NULL FROM service_types
+                     WHERE service_types.active AND service_types.company_id = $2
                  ) AS choices
                  ORDER BY rank, day DESC NULLS LAST, id LIMIT 1`,
-                [customerId],
+                [customerId, companyId],
             );
 
             if (!service.rows[0]) {
@@ -163,10 +170,11 @@ export async function pencilIn(pool, customerIds, { day, changedBy }) {
 
             const created = await client.query(
                 `INSERT INTO service_requests
-                    (customer_id, property_id, service_type_id, status_id, preferred_date, scheduled_date, tentative)
-                 SELECT $1, $2, $3, id, $4::date, $4::date, true FROM request_statuses WHERE name = 'Scheduled'
+                    (customer_id, property_id, service_type_id, status_id, preferred_date, scheduled_date, tentative,
+                     company_id)
+                 SELECT $1, $2, $3, id, $4::date, $4::date, true, $5 FROM request_statuses WHERE name = 'Scheduled'
                  RETURNING id`,
-                [customerId, property.rows[0].id, service.rows[0].id, day],
+                [customerId, property.rows[0].id, service.rows[0].id, day, companyId],
             );
             await addHistory(
                 client, created.rows[0].id, "Scheduled", changedBy,

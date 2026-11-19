@@ -90,7 +90,7 @@ const book = (agent, fields) => {
 };
 
 test("the board lists waiting requests for a day with their area, and not other days", async () => {
-    const areaId = await Area.create(pool, "Oakwood");
+    const areaId = await Area.create(pool, 1, "Oakwood");
     await requestFor("Ann Lee", "1 Elm St", inDays(3), areaId);
     await requestFor("Bob Ray", "2 Elm St", inDays(4));
     const dispatcher = await agentFor("dispatcher");

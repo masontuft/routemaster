@@ -34,7 +34,7 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    areaId = await Area.create(pool, "Meridian 1");
+    areaId = await Area.create(pool, 1, "Meridian 1");
     customerId = await Customer.create(pool, 1, { name: "Ann Lee", phone: "208-555-0101" });
 });
 after(async () => {
@@ -78,19 +78,19 @@ const found = async () => {
 };
 
 test("an area has no city until one is set, and setting then clearing it works", async () => {
-    assert.strictEqual((await Area.find(pool, areaId)).city, null);
+    assert.strictEqual((await Area.find(pool, 1, areaId)).city, null);
 
-    assert.strictEqual(await Area.setCity(pool, areaId, "Meridian"), true);
-    assert.strictEqual((await Area.find(pool, areaId)).city, "Meridian");
-    assert.strictEqual((await Area.list(pool, "2026-01-01"))[0].city, "Meridian");
+    assert.strictEqual(await Area.setCity(pool, 1, areaId, "Meridian"), true);
+    assert.strictEqual((await Area.find(pool, 1, areaId)).city, "Meridian");
+    assert.strictEqual((await Area.list(pool, 1, "2026-01-01"))[0].city, "Meridian");
 
-    assert.strictEqual(await Area.setCity(pool, areaId, ""), true);
-    assert.strictEqual((await Area.find(pool, areaId)).city, null);
-    assert.strictEqual(await Area.setCity(pool, 99999, "Nowhere"), false);
+    assert.strictEqual(await Area.setCity(pool, 1, areaId, ""), true);
+    assert.strictEqual((await Area.find(pool, 1, areaId)).city, null);
+    assert.strictEqual(await Area.setCity(pool, 1, 99999, "Nowhere"), false);
 });
 
 test("a property with no city is looked up with its area's city, and its own city wins", async () => {
-    await Area.setCity(pool, areaId, "Meridian");
+    await Area.setCity(pool, 1, areaId, "Meridian");
     const bare = await property("1 Elm St");
     const own = await property("2 Elm St", "Eagle");
     const asked = [];
@@ -119,15 +119,15 @@ test("without any city, the property is still too vague to look up", async () =>
 });
 
 test("changing the area's city sends city-less properties back to be looked up, and leaves the rest", async () => {
-    await Area.setCity(pool, areaId, "Meridian");
+    await Area.setCity(pool, 1, areaId, "Meridian");
     const bare = await property("1 Elm St");
     const own = await property("2 Elm St", "Eagle");
     await locateProperties(pool, [bare, own], { geocode: found });
 
-    await Area.setCity(pool, areaId, "Meridian");
+    await Area.setCity(pool, 1, areaId, "Meridian");
     assert.strictEqual((await stateOf(bare)).geocode_status, "ok");
 
-    await Area.setCity(pool, areaId, "Nampa");
+    await Area.setCity(pool, 1, areaId, "Nampa");
     assert.deepStrictEqual(await stateOf(bare), { geocode_status: "pending", latitude: null });
     assert.strictEqual((await stateOf(own)).geocode_status, "ok");
 });
@@ -137,14 +137,14 @@ test("a failed property becomes lookup-able when its area gets a city", async ()
     await locateProperties(pool, [bare], { geocode: found });
     assert.strictEqual((await stateOf(bare)).geocode_status, "failed");
 
-    await Area.setCity(pool, areaId, "Meridian");
+    await Area.setCity(pool, 1, areaId, "Meridian");
 
     assert.strictEqual((await stateOf(bare)).geocode_status, "pending");
 });
 
 test("moving a property to another area clears its point, and saving the same area keeps it", async () => {
-    const other = await Area.create(pool, "Eagle 1");
-    await Area.setCity(pool, areaId, "Meridian");
+    const other = await Area.create(pool, 1, "Eagle 1");
+    await Area.setCity(pool, 1, areaId, "Meridian");
     const bare = await property("1 Elm St");
     await locateProperties(pool, [bare], { geocode: found });
 
@@ -156,8 +156,8 @@ test("moving a property to another area clears its point, and saving the same ar
 });
 
 test("the areas page saves many cities at once, and a blank clears one", async () => {
-    const second = await Area.create(pool, "Eagle 1");
-    await Area.setCity(pool, second, "Eagle");
+    const second = await Area.create(pool, 1, "Eagle 1");
+    await Area.setCity(pool, 1, second, "Eagle");
     const dispatcher = await agentFor("dispatcher");
 
     const page = await dispatcher.get("/staff/areas");
@@ -169,12 +169,12 @@ test("the areas page saves many cities at once, and a blank clears one", async (
     });
 
     assert.strictEqual(res.status, 303);
-    assert.strictEqual((await Area.find(pool, areaId)).city, "Meridian");
-    assert.strictEqual((await Area.find(pool, second)).city, null);
+    assert.strictEqual((await Area.find(pool, 1, areaId)).city, "Meridian");
+    assert.strictEqual((await Area.find(pool, 1, second)).city, null);
 });
 
 test("one bad city saves nothing", async () => {
-    const second = await Area.create(pool, "Eagle 1");
+    const second = await Area.create(pool, 1, "Eagle 1");
     const dispatcher = await agentFor("dispatcher");
 
     const res = await send(dispatcher, "/staff/areas", "/staff/areas/cities", {
@@ -183,7 +183,7 @@ test("one bad city saves nothing", async () => {
 
     assert.strictEqual(res.status, 400);
     assert.match(res.text, /city of up to 100 characters/);
-    assert.strictEqual((await Area.find(pool, areaId)).city, null);
+    assert.strictEqual((await Area.find(pool, 1, areaId)).city, null);
 });
 
 test("customers and signed-out visitors cannot set cities", async () => {
@@ -192,5 +192,5 @@ test("customers and signed-out visitors cannot set cities", async () => {
     assert.strictEqual((await request(server).get("/staff/areas")).status, 302);
     const res = await customer.post("/staff/areas/cities").type("form").send({ [`city_${areaId}`]: "Meridian" });
     assert.notStrictEqual(res.status, 303);
-    assert.strictEqual((await Area.find(pool, areaId)).city, null);
+    assert.strictEqual((await Area.find(pool, 1, areaId)).city, null);
 });

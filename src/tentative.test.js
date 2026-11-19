@@ -44,8 +44,8 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    areaId = await Area.create(pool, "Oakwood");
-    await Area.addDays(pool, areaId, [DAY, OTHER_DAY]);
+    areaId = await Area.create(pool, 1, "Oakwood");
+    await Area.addDays(pool, 1, areaId, [DAY, OTHER_DAY]);
 });
 after(async () => {
     server?.close();
@@ -130,9 +130,9 @@ test("with the option off, the board hides the section and the post is refused",
 });
 
 test("with the option on, the board lists customers served before in areas that work the day", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     await servedLastYear("Ann Lee");
-    const noDay = await Area.create(pool, "Pine Hills");
+    const noDay = await Area.create(pool, 1, "Pine Hills");
     await servedLastYear("Wrong Area", { area: noDay, street: "2 Pine Rd" });
     const booked = await servedLastYear("Already Booked", { street: "3 Elm St" });
     await ServiceRequest.create(pool, 1, {
@@ -149,7 +149,7 @@ test("with the option on, the board lists customers served before in areas that 
 });
 
 test("penciling in makes a tentative Scheduled request for the same service, on the area property, with history", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const ann = await servedLastYear("Ann Lee", { serviceTypeId: 2 });
     const dispatcher = await staffAgent();
 
@@ -169,9 +169,9 @@ test("penciling in makes a tentative Scheduled request for the same service, on 
 });
 
 test("a customer is skipped when already booked this year, outside a working area, or penciled in twice", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const ann = await servedLastYear("Ann Lee");
-    const noDay = await Area.create(pool, "Pine Hills");
+    const noDay = await Area.create(pool, 1, "Pine Hills");
     const outside = await servedLastYear("Outside", { area: noDay, street: "2 Pine Rd" });
     const dispatcher = await staffAgent();
 
@@ -186,7 +186,7 @@ test("a customer is skipped when already booked this year, outside a working are
 });
 
 test("a forged form cannot pencil in a customer who was never served or who declined this year", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const never = await Customer.create(pool, 1, { name: "Never Served", phone: "208-555-0102" });
     const neverProperty = await Property.create(pool, never, { street: "3 Elm St", city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [neverProperty, areaId]);
@@ -235,17 +235,17 @@ test("a customer's own request waits for a penciling in that holds their row, so
 });
 
 test("the service falls back to the first active one when the last service is switched off", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const ann = await servedLastYear("Ann Lee", { serviceTypeId: 2 });
     await pool.query("UPDATE service_types SET active = false WHERE id = 2");
 
-    await DayBoard.pencilIn(pool, [ann.id], { day: DAY, changedBy: null });
+    await DayBoard.pencilIn(pool, 1, [ann.id], { day: DAY, changedBy: null });
 
     assert.strictEqual((await latestRequest(ann.id)).service_type_id, 1);
 });
 
 test("bad input pencils nobody: no ticks, a past day", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const ann = await servedLastYear("Ann Lee");
     const dispatcher = await staffAgent();
 
@@ -259,7 +259,7 @@ test("bad input pencils nobody: no ticks, a past day", async () => {
 
 test("the customer sees the penciled-in day and confirming it keeps the booking", async () => {
     const ann = await servedLastYear("Ann Lee");
-    await DayBoard.pencilIn(pool, [ann.id], { day: DAY, changedBy: null });
+    await DayBoard.pencilIn(pool, 1, [ann.id], { day: DAY, changedBy: null });
     const created = await latestRequest(ann.id);
     const agent = await customerAgent(ann.id);
 
@@ -278,7 +278,7 @@ test("the customer sees the penciled-in day and confirming it keeps the booking"
 test("choosing a different day returns the request to Requested for staff to book, and the same day confirms", async () => {
     const ann = await servedLastYear("Ann Lee");
     const bob = await servedLastYear("Bob Ray", { street: "2 Elm St" });
-    await DayBoard.pencilIn(pool, [ann.id, bob.id], { day: DAY, changedBy: null });
+    await DayBoard.pencilIn(pool, 1, [ann.id, bob.id], { day: DAY, changedBy: null });
     const annRequest = await latestRequest(ann.id);
     const bobRequest = await latestRequest(bob.id);
     const annAgent = await customerAgent(ann.id);
@@ -299,7 +299,7 @@ test("choosing a different day returns the request to Requested for staff to boo
 test("declining a penciled-in day cancels it, and a customer cannot confirm someone else's", async () => {
     const ann = await servedLastYear("Ann Lee");
     const bob = await servedLastYear("Bob Ray", { street: "2 Elm St" });
-    await DayBoard.pencilIn(pool, [ann.id], { day: DAY, changedBy: null });
+    await DayBoard.pencilIn(pool, 1, [ann.id], { day: DAY, changedBy: null });
     const created = await latestRequest(ann.id);
     const bobAgent = await customerAgent(bob.id);
     const annAgent = await customerAgent(ann.id);
@@ -316,7 +316,7 @@ test("declining a penciled-in day cancels it, and a customer cannot confirm some
 test("staff can mark a penciled-in booking confirmed, and completing one clears the flag", async () => {
     const ann = await servedLastYear("Ann Lee");
     const bob = await servedLastYear("Bob Ray", { street: "2 Elm St" });
-    await DayBoard.pencilIn(pool, [ann.id, bob.id], { day: DAY, changedBy: null });
+    await DayBoard.pencilIn(pool, 1, [ann.id, bob.id], { day: DAY, changedBy: null });
     const annRequest = await latestRequest(ann.id);
     const bobRequest = await latestRequest(bob.id);
     const dispatcher = await staffAgent();
@@ -339,7 +339,7 @@ test("staff can mark a penciled-in booking confirmed, and completing one clears 
 });
 
 test("a customer cannot pencil anyone in", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const ann = await servedLastYear("Ann Lee");
     const agent = await customerAgent(ann.id);
 

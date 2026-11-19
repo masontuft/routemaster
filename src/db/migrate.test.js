@@ -70,6 +70,7 @@ test("applies the real migrations in order and records them", async () => {
         "028_create_companies.sql",
         "029_company_service_types_and_lead_key.sql",
         "030_requests_keep_to_their_company.sql",
+        "031_company_area_route_setting_keys.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -167,6 +168,7 @@ test("028 puts every row that already exists in company 1 and makes the next com
             "028_create_companies.sql",
             "029_company_service_types_and_lead_key.sql",
             "030_requests_keep_to_their_company.sql",
+            "031_company_area_route_setting_keys.sql",
         ]);
 
         const first = await pool.query("SELECT id, name, slug FROM companies");
@@ -230,6 +232,7 @@ test("029 puts the existing service types in company 1, and a name is unique wit
         assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
             "029_company_service_types_and_lead_key.sql",
             "030_requests_keep_to_their_company.sql",
+            "031_company_area_route_setting_keys.sql",
         ]);
 
         const types = await pool.query("SELECT name, company_id FROM service_types ORDER BY id");
@@ -356,4 +359,44 @@ test("030: a request with no customer and no lead is not checked for either", as
     // The CHECK on service_requests still wants an unmatched request to have a lead, so this one is refused by that
     // rule and not by the foreign keys: the message is a check violation, not a foreign key violation.
     await assert.rejects(insertRequest({ companyId: 1 }), /check/);
+});
+
+test("031 adds the per-company area, route and setting keys and keeps the old ones for the running code", async () => {
+    await runMigrations(pool, realMigrations);
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+    const keys = await pool.query(
+        `SELECT conname FROM pg_constraint
+         WHERE contype = 'u' AND connamespace = current_schema()::regnamespace AND conname IN
+               ('subdivisions_company_name_key', 'routes_company_day_key', 'app_settings_company_key_key')
+         ORDER BY conname`,
+    );
+    assert.deepStrictEqual(keys.rows.map((row) => {
+        return row.conname;
+    }), ["app_settings_company_key_key", "routes_company_day_key", "subdivisions_company_name_key"]);
+
+    // The old conflict targets still work, because the running code names them.
+    await pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('Oak Park', 'oak park')");
+    const again = await pool.query(
+        `INSERT INTO subdivisions (name, name_normalized) VALUES ('Oak Park', 'oak park')
+         ON CONFLICT (name_normalized) DO NOTHING RETURNING id`,
+    );
+    assert.strictEqual(again.rowCount, 0);
+    await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'on')");
+    await pool.query(
+        `INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'off')
+         ON CONFLICT (key) DO UPDATE SET value = 'off'`,
+    );
+
+    // The new targets work for the same company.
+    const same = await pool.query(
+        `INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('Oak Park', 'oak park', 1)
+         ON CONFLICT (company_id, name_normalized) DO NOTHING RETURNING id`,
+    );
+    assert.strictEqual(same.rowCount, 0);
+
+    // The old global keys still refuse another company until the contract migration (issue 75).
+    await assert.rejects(
+        pool.query("INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('Oak Park', 'oak park', 2)"),
+        /unique/,
+    );
 });

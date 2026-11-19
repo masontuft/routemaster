@@ -52,8 +52,8 @@ export async function seedTestData(pool, { today = new Date(), dispatcherId = nu
 
     const areaIds = [];
     for (const name of AREAS) {
-        const id = await Area.create(pool, name);
-        await Area.addDays(pool, id, [1, 2, 3].map((offset) => {
+        const id = await Area.create(pool, DEFAULT_COMPANY_ID, name);
+        await Area.addDays(pool, DEFAULT_COMPANY_ID, id, [1, 2, 3].map((offset) => {
             return isoDay(today, offset);
         }));
         areaIds.push(id);
@@ -105,7 +105,7 @@ export async function seedTestData(pool, { today = new Date(), dispatcherId = nu
         previous = request;
     }
 
-    await RoutePlan.replaceForDay(pool, {
+    await RoutePlan.replaceForDay(pool, DEFAULT_COMPANY_ID, {
         day: workDay, createdBy: dispatcherId, start: START, startTime: "08:00", serviceMinutes: SERVICE_MINUTES,
         totals: {
             miles: stops.reduce((sum, stop) => {

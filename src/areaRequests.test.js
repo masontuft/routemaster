@@ -74,8 +74,8 @@ async function setup(streets) {
 }
 
 async function areaWithDays(name, days, propertyIds = []) {
-    const areaId = await Area.create(pool, name);
-    await Area.addDays(pool, areaId, days);
+    const areaId = await Area.create(pool, 1, name);
+    await Area.addDays(pool, 1, areaId, days);
 
     for (const id of propertyIds) {
         await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [id, areaId]);
@@ -185,7 +185,7 @@ test("changing a request: a day in the area works, another day is refused, and a
     assert.strictEqual((await post(agent, page, page, { preferredDate: inDays(10), notes: "" })).status, 302);
     assert.strictEqual(await savedDate(), inDays(10));
 
-    await Area.removeDay(pool, areaId, inDays(10));
+    await Area.removeDay(pool, 1, areaId, inDays(10));
     const form = await agent.get(page);
     assert.ok(form.text.includes(`value="${inDays(10)}"`));
     assert.strictEqual((await post(agent, page, page, { preferredDate: inDays(10), notes: "bring a key" })).status, 302);

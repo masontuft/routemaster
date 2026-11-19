@@ -5,6 +5,7 @@ import { locateProperties } from "../geocoding/locate.js";
 import { addressText } from "../geocoding/geocoder.js";
 import { buildRoute, formatClock, mapsLinks } from "../routing/engine.js";
 import { todayString, validateRouteBuild } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -24,9 +25,9 @@ function joinNotes(stop) {
 
 // The booked jobs a route may use. Tentative ones (penciled in, not yet confirmed) count only while the owner option
 // is on. With it off they are left out and counted, so the page can say how many were left off.
-async function jobsFor(db, day) {
-    const all = await RoutePlan.bookedForDay(db, day);
-    const booked = await AppSetting.allowsTentativeBooking(db)
+async function jobsFor(db, companyId, day) {
+    const all = await RoutePlan.bookedForDay(db, companyId, day);
+    const booked = await AppSetting.allowsTentativeBooking(db, companyId)
         ? all
         : all.filter((stop) => {
             return !stop.tentative;
@@ -38,9 +39,9 @@ async function jobsFor(db, day) {
 async function routePage(req, res, { day, values, errors = [], notice = null, status = 200 }) {
     const db = req.app.locals.db;
     const state = req.app.locals.serviceState;
-    const { booked, leftOff } = await jobsFor(db, day);
-    const allowTentative = await AppSetting.allowsTentativeBooking(db);
-    const saved = await RoutePlan.findForDay(db, day);
+    const { booked, leftOff } = await jobsFor(db, companyOf(req), day);
+    const allowTentative = await AppSetting.allowsTentativeBooking(db, companyOf(req));
+    const saved = await RoutePlan.findForDay(db, companyOf(req), day);
     const located = booked.filter((stop) => {
         return stop.geocode_status === "ok";
     });
@@ -115,7 +116,7 @@ export async function show(req, res) {
 export async function locate(req, res) {
     const db = req.app.locals.db;
     const day = dayFrom(req.body.day);
-    const { booked } = await jobsFor(db, day);
+    const { booked } = await jobsFor(db, companyOf(req), day);
     const ids = booked.map((stop) => {
         return stop.property_id;
     });
@@ -151,7 +152,7 @@ export async function build(req, res) {
     }
 
     const db = req.app.locals.db;
-    const { booked } = await jobsFor(db, day);
+    const { booked } = await jobsFor(db, companyOf(req), day);
     const located = booked.filter((stop) => {
         return stop.geocode_status === "ok";
     });
@@ -179,7 +180,7 @@ export async function build(req, res) {
         startTime: values.startTime, serviceMinutes: values.serviceMinutes,
     });
 
-    await RoutePlan.replaceForDay(db, {
+    await RoutePlan.replaceForDay(db, companyOf(req), {
         day,
         createdBy: req.session.user.id,
         start: { address: values.startAddress, ...start },

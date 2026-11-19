@@ -55,26 +55,26 @@ async function agentFor(roleName) {
 }
 
 test("a fresh database has tentative booking off", async () => {
-    assert.strictEqual(await AppSetting.get(pool, "allow_tentative_booking"), "off");
-    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool), false);
+    assert.strictEqual(await AppSetting.get(pool, 1, "allow_tentative_booking"), "off");
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
 });
 
 test("the model saves an allowed value, changes it again, and records who", async () => {
     const { id } = await agentFor("owner");
 
-    assert.strictEqual(await AppSetting.set(pool, "allow_tentative_booking", "on", id), true);
-    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool), true);
-    assert.strictEqual(await AppSetting.set(pool, "allow_tentative_booking", "off", id), true);
-    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool), false);
+    assert.strictEqual(await AppSetting.set(pool, 1, "allow_tentative_booking", "on", id), true);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), true);
+    assert.strictEqual(await AppSetting.set(pool, 1, "allow_tentative_booking", "off", id), true);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
     const { rows } = await pool.query("SELECT updated_by FROM app_settings");
     assert.strictEqual(rows.length, 1);
     assert.strictEqual(rows[0].updated_by, id);
 });
 
 test("the model refuses a value the setting does not allow, and an unknown setting", async () => {
-    assert.strictEqual(await AppSetting.set(pool, "allow_tentative_booking", "maybe", null), false);
-    assert.strictEqual(await AppSetting.set(pool, "no_such_setting", "on", null), false);
-    await assert.rejects(AppSetting.get(pool, "no_such_setting"), RangeError);
+    assert.strictEqual(await AppSetting.set(pool, 1, "allow_tentative_booking", "maybe", null), false);
+    assert.strictEqual(await AppSetting.set(pool, 1, "no_such_setting", "on", null), false);
+    await assert.rejects(AppSetting.get(pool, 1, "no_such_setting"), RangeError);
     const { rows } = await pool.query("SELECT count(*)::int AS n FROM app_settings");
     assert.strictEqual(rows[0].n, 0);
 });
@@ -82,7 +82,7 @@ test("the model refuses a value the setting does not allow, and an unknown setti
 test("a saved value that is no longer allowed falls back to the default", async () => {
     await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'sometimes')");
 
-    assert.strictEqual(await AppSetting.get(pool, "allow_tentative_booking"), "off");
+    assert.strictEqual(await AppSetting.get(pool, 1, "allow_tentative_booking"), "off");
 });
 
 test("the owner turns the option on and off from the settings page", async () => {
@@ -95,11 +95,11 @@ test("the owner turns the option on and off from the settings page", async () =>
     const on = await send(agent, "/admin/settings", "/admin/settings", { allowTentative: "1" });
     assert.match(on.text, /Settings saved/);
     assert.match(on.text, /checked/);
-    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool), true);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), true);
 
     const off = await send(agent, "/admin/settings", "/admin/settings", {});
     assert.doesNotMatch(off.text, /checked/);
-    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool), false);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
 });
 
 test("a dispatcher, a customer and a signed-out visitor cannot reach the settings", async () => {
@@ -111,7 +111,7 @@ test("a dispatcher, a customer and a signed-out visitor cannot reach the setting
     assert.strictEqual((await customer.agent.get("/admin/settings")).status, 403);
     const post = await dispatcher.agent.post("/admin/settings").type("form").send({ allowTentative: "1" });
     assert.notStrictEqual(post.status, 200);
-    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool), false);
+    assert.strictEqual(await AppSetting.allowsTentativeBooking(pool, 1), false);
 });
 
 test("requests start out confirmed", async () => {

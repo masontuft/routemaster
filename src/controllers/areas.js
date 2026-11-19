@@ -4,11 +4,12 @@ import { dayLabel, WEEKDAYS } from "../utils/dayLabel.js";
 import {
     parseId, todayString, validateAreaName, validateAreaDays, validateAreaCity,
 } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 const NAME_TAKEN = "An area with that name already exists.";
 
 async function listPage(req, res, { errors = [], values = {}, status = 200 } = {}) {
-    const areas = await Area.list(req.app.locals.db, todayString());
+    const areas = await Area.list(req.app.locals.db, companyOf(req), todayString());
     res.status(status).render("staff/areas", { title: "Areas", areas, errors, values });
 }
 
@@ -19,7 +20,7 @@ export async function list(req, res) {
 export async function create(req, res) {
     const { name, errors } = validateAreaName(req.body.name);
 
-    if (errors.length === 0 && await Area.create(req.app.locals.db, name) === null) {
+    if (errors.length === 0 && await Area.create(req.app.locals.db, companyOf(req), name) === null) {
         errors.push(NAME_TAKEN);
     }
 
@@ -32,7 +33,7 @@ export async function create(req, res) {
 
 async function loadArea(req) {
     const id = parseId(req.params.id);
-    const area = id && await Area.find(req.app.locals.db, id);
+    const area = id && await Area.find(req.app.locals.db, companyOf(req), id);
 
     if (!area) {
         throw notFound();
@@ -42,7 +43,7 @@ async function loadArea(req) {
 }
 
 async function areaPage(req, res, area, { errors = [], values = {}, status = 200 } = {}) {
-    const days = await Area.upcomingDays(req.app.locals.db, area.id, todayString());
+    const days = await Area.upcomingDays(req.app.locals.db, companyOf(req), area.id, todayString());
     res.status(status).render("staff/area", {
         title: area.name, area, errors, values, today: todayString(), weekdays: WEEKDAYS,
         days: days.map((day) => {
@@ -59,7 +60,7 @@ export async function rename(req, res) {
     const area = await loadArea(req);
     const { name, errors } = validateAreaName(req.body.name);
 
-    if (errors.length === 0 && await Area.rename(req.app.locals.db, area.id, name) === false) {
+    if (errors.length === 0 && await Area.rename(req.app.locals.db, companyOf(req), area.id, name) === false) {
         errors.push(NAME_TAKEN);
     }
 
@@ -78,7 +79,7 @@ export async function addDays(req, res) {
         return areaPage(req, res, area, { errors, values: req.body, status: 400 });
     }
 
-    await Area.addDays(req.app.locals.db, area.id, days);
+    await Area.addDays(req.app.locals.db, companyOf(req), area.id, days);
     res.redirect(303, `/staff/areas/${area.id}`);
 }
 
@@ -87,7 +88,10 @@ export async function removeDay(req, res) {
     const day = String(req.body.day ?? "");
 
     // Only a real date reaches the query; anything else is treated as a day that is not there.
-    if (/^\d{4}-\d{2}-\d{2}$/.test(day) === false || await Area.removeDay(req.app.locals.db, area.id, day) === false) {
+    const removed = /^\d{4}-\d{2}-\d{2}$/.test(day)
+        && await Area.removeDay(req.app.locals.db, companyOf(req), area.id, day);
+
+    if (!removed) {
         throw notFound();
     }
 
@@ -119,7 +123,7 @@ export async function setCities(req, res) {
     }
 
     for (const { id, city } of checked) {
-        await Area.setCity(req.app.locals.db, id, city);
+        await Area.setCity(req.app.locals.db, companyOf(req), id, city);
     }
 
     res.redirect(303, "/staff/areas");

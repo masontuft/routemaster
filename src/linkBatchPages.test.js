@@ -66,7 +66,7 @@ async function agentFor(roleName) {
 let areaId;
 
 beforeEach(async () => {
-    areaId = await Area.create(pool, "Oakwood");
+    areaId = await Area.create(pool, 1, "Oakwood");
 });
 
 async function customerIn(area, name, phone, street = "1 Elm St") {
@@ -119,7 +119,7 @@ test("the preview shows the counts and nothing is made until the form is posted"
 
 test("making links lists only that area's customers, each link works, and the page is not cacheable", async () => {
     const ann = await customerIn(areaId, "Ann Lee", "(208) 555-0101");
-    const other = await Area.create(pool, "Pine Hills");
+    const other = await Area.create(pool, 1, "Pine Hills");
     await customerIn(other, "Bo Kim", "208-555-0102");
     const dispatcher = await agentFor("dispatcher");
 

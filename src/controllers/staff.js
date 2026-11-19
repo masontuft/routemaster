@@ -272,7 +272,7 @@ async function loadProperty(req) {
 }
 
 async function propertyEditPage(req, res, { property, values, errors = [], status = 200 }) {
-    const areas = await Area.list(req.app.locals.db, todayString());
+    const areas = await Area.list(req.app.locals.db, companyOf(req), todayString());
     res.status(status).render("staff/property-edit", {
         title: "Edit Property", property, values, errors, areas, editable: editableFields("property", req.session.user.role),
     });
@@ -293,7 +293,7 @@ export async function updateProperty(req, res) {
 
     const { values, errors } = validatePropertyEdit(req.body, editableFields("property", role));
 
-    if (values.subdivisionId && !await Area.find(req.app.locals.db, values.subdivisionId)) {
+    if (values.subdivisionId && !await Area.find(req.app.locals.db, companyOf(req), values.subdivisionId)) {
         errors.push("Choose an area from the list.");
     }
 
