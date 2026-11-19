@@ -41,8 +41,8 @@ async function count(table) {
 // Ann, then asks again and that request is matched to a different customer, Bo. Cy is a stranger with an open request.
 async function buildScene() {
     const batch = await pool.query(
-        `INSERT INTO import_batches (sheet_id, sheet_name, season_year, plan_hash)
-         VALUES ('sheet', 'Jobs', 2030, $1) RETURNING id`, ["a".repeat(64)]);
+        `INSERT INTO import_batches (sheet_id, sheet_name, season_year, plan_hash, company_id)
+         VALUES ('sheet', 'Jobs', 2030, $1, 1) RETURNING id`, ["a".repeat(64)]);
     batchId = batch.rows[0].id;
     const cancelled = await unmatched(ann);
     await Staff.changeStatus(pool, 1, cancelled, { to: "Cancelled", note: "spam", changedBy: null });

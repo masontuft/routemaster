@@ -135,8 +135,8 @@ test("deleting a user keeps the customer and blanks the link", async () => {
 
 test("a request cannot mix matched and unmatched shapes", async () => {
     await assert.rejects(
-        pool.query(`INSERT INTO service_requests (customer_id, service_type_id, status_id, preferred_date)
-                    VALUES (NULL, 1, 1, '2027-01-01')`),
+        pool.query(`INSERT INTO service_requests (customer_id, service_type_id, status_id, preferred_date, company_id)
+                    VALUES (NULL, 1, 1, '2027-01-01', 1)`),
         /service_requests_matched_or_unmatched/,
     );
 });

@@ -201,7 +201,7 @@ test("the chosen status decides whether a job is booked", async () => {
 });
 
 test("areas are shared across spellings, and an area already on a property is never overwritten", async () => {
-    const elm = (await pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('Elm Park', 'elm park') RETURNING id")).rows[0].id;
+    const elm = (await pool.query("INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('Elm Park', 'elm park', 1) RETURNING id")).rows[0].id;
     const ada = await Customer.create(pool, 1, { name: "Ada Example", phone: "801-555-0100" });
     const adaHome = await Property.create(pool, ada, { street: "1 Test St", city: "Testville" });
     const bob = await Customer.create(pool, 1, { name: "Bob Known", phone: "801-555-0111" });

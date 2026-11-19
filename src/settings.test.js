@@ -80,7 +80,7 @@ test("the model refuses a value the setting does not allow, and an unknown setti
 });
 
 test("a saved value that is no longer allowed falls back to the default", async () => {
-    await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'sometimes')");
+    await pool.query("INSERT INTO app_settings (key, value, company_id) VALUES ('allow_tentative_booking', 'sometimes', 1)");
 
     assert.strictEqual(await AppSetting.get(pool, 1, "allow_tentative_booking"), "off");
 });

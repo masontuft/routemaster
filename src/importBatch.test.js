@@ -101,10 +101,10 @@ test("rows created by a batch point at it, and the pointer is cleared if the bat
 
 test("an area is unique by normalized name and cannot be deleted while a property uses it", async () => {
     const area = await pool.query(
-        "INSERT INTO subdivisions (name, name_normalized) VALUES ('Oak Hills', 'oak hills') RETURNING id",
+        "INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('Oak Hills', 'oak hills', 1) RETURNING id",
     );
     await assert.rejects(
-        pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('OAK  HILLS', 'oak hills')"),
+        pool.query("INSERT INTO subdivisions (name, name_normalized, company_id) VALUES ('OAK  HILLS', 'oak hills', 1)"),
         /unique/i,
     );
 
@@ -120,8 +120,9 @@ test("a job amount cannot be negative but may be empty", async () => {
     const propertyId = await Property.create(pool, customerId, { street: "1 Test St", city: "Testville" });
     const insert = (amount) => {
         return pool.query(
-            `INSERT INTO service_requests (customer_id, property_id, service_type_id, status_id, preferred_date, amount_cents)
-             VALUES ($1, $2, 1, 1, '2025-10-14', $3)`,
+            `INSERT INTO service_requests
+                (customer_id, property_id, service_type_id, status_id, preferred_date, amount_cents, company_id)
+             VALUES ($1, $2, 1, 1, '2025-10-14', $3, 1)`,
             [customerId, propertyId, amount],
         );
     };

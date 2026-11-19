@@ -78,7 +78,7 @@ erDiagram
     app_settings {
         text key PK
         int4 updated_by FK "nullable"
-        int4 company_id FK
+        int4 company_id PK, FK
     }
     area_days {
         int4 subdivision_id PK, FK
