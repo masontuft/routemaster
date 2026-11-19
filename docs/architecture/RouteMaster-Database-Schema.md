@@ -360,3 +360,17 @@ RouteMaster Database Schema
 | `customer_id` | `int4` |  Nullable |
 | `created_at` | `timestamptz` |  |
 | `company_id` | `int4` |  |
+
+## Table `audit_log`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `company_id` | `int4` |  |
+| `actor_id` | `int4` |  Nullable |
+| `action` | `text` |  |
+| `target_id` | `int4` |  Nullable |
+| `details` | `jsonb` |  |
+| `created_at` | `timestamptz` |  |

@@ -28,6 +28,9 @@ erDiagram
     companies ||--o{ app_settings : "company_id"
     users |o--o{ app_settings : "updated_by"
     subdivisions ||--o{ area_days : "subdivision_id"
+    companies ||--o{ audit_log : "company_id"
+    users |o--o{ audit_log : "actor_id"
+    users |o--o{ audit_log : "target_id"
     companies ||--o{ contact_messages : "company_id"
     users |o--o{ contact_messages : "replied_by"
     companies ||--o{ customers : "company_id"
@@ -83,6 +86,12 @@ erDiagram
     area_days {
         int4 subdivision_id PK, FK
         date day PK
+    }
+    audit_log {
+        int4 id PK
+        int4 company_id FK
+        int4 actor_id FK "nullable"
+        int4 target_id FK "nullable"
     }
     companies {
         int4 id PK

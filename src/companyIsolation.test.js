@@ -354,7 +354,7 @@ test("an owner cannot change the role of another company's user: 404, and nothin
 
     assert.strictEqual(res.status, 404);
     assert.strictEqual(await roleOf(dispatcher1.id), "dispatcher");
-    assert.deepStrictEqual(await Admin.changeRole(pool, 2, dispatcher1.id, "owner", 0), { error: "not_found" });
+    assert.deepStrictEqual(await Admin.changeRole(pool, 2, dispatcher1.id, "owner", null), { error: "not_found" });
 });
 
 test("an owner can still change the role of a user in their own company", async () => {
@@ -375,11 +375,11 @@ test("the last owner rule counts one company's owners, not everyone's", async ()
     await User.create(pool, { companyId: 1, email: "a2@example.com", passwordHash: "x", roleName: "owner" });
     const only2 = await User.create(pool, { companyId: 2, email: "b1@example.com", passwordHash: "x", roleName: "owner" });
 
-    assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", 0), { error: "last_owner" });
+    assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", null), { error: "last_owner" });
     assert.strictEqual(await roleOf(only2.id), "owner");
 
     await User.create(pool, { companyId: 2, email: "b2@example.com", passwordHash: "x", roleName: "owner" });
-    assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", 0), { ok: true });
+    assert.deepStrictEqual(await Admin.changeRole(pool, 2, only2.id, "dispatcher", null), { ok: true });
 });
 
 function futureDay(days = 20) {

@@ -73,6 +73,7 @@ test("applies the real migrations in order and records them", async () => {
         "031_company_area_route_setting_keys.sql",
         "032_company_import_mapping_key.sql",
         "033_company_contract.sql",
+        "034_create_audit_log.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -451,7 +452,7 @@ test("033 removes the default company, so an insert with no company is refused",
     await runMigrations(pool, realMigrations);
     const tables = [
         "users", "customers", "leads", "subdivisions", "service_requests", "routes", "import_batches", "import_mappings",
-        "link_batches", "messenger_batches", "contact_messages", "app_settings", "service_types",
+        "link_batches", "messenger_batches", "contact_messages", "app_settings", "service_types", "audit_log",
     ];
     const { rows } = await pool.query(
         `SELECT table_name, column_default FROM information_schema.columns
@@ -483,7 +484,10 @@ test("033 keeps every existing row in its company", async () => {
         await pool.query("INSERT INTO app_settings (key, value) VALUES ('allow_tentative_booking', 'on')");
         await pool.query("INSERT INTO subdivisions (name, name_normalized) VALUES ('Oak Park', 'oak park')");
 
-        assert.deepStrictEqual(await runMigrations(pool, realMigrations), ["033_company_contract.sql"]);
+        assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
+            "033_company_contract.sql",
+            "034_create_audit_log.sql",
+        ]);
 
         for (const table of ["customers", "app_settings", "subdivisions", "service_types"]) {
             const { rows } = await pool.query(`SELECT company_id FROM ${table}`);
@@ -557,4 +561,23 @@ test("033 makes a setting's primary key its company and its key", async () => {
     assert.deepStrictEqual(rows.map((row) => {
         return row.attname;
     }), ["company_id", "key"]);
+});
+
+test("034 makes the audit log: a company is required, a deleted user leaves the row, and a company with a log cannot be deleted", async () => {
+    await runMigrations(pool, realMigrations);
+    const user = await pool.query(
+        "INSERT INTO users (email, password_hash, role_id, company_id) VALUES ('a@b.c', 'x', 1, 1) RETURNING id",
+    );
+
+    await assert.rejects(pool.query("INSERT INTO audit_log (action) VALUES ('email_changed')"), /null value in column "company_id"/);
+    await assert.rejects(pool.query("INSERT INTO audit_log (company_id, action) VALUES (1, '')"), /check/);
+    await pool.query(
+        "INSERT INTO audit_log (company_id, actor_id, action, target_id) VALUES (1, $1, 'email_changed', $1)",
+        [user.rows[0].id],
+    );
+    await assert.rejects(pool.query("DELETE FROM companies WHERE id = 1"), /foreign key/);
+    await pool.query("DELETE FROM users WHERE id = $1", [user.rows[0].id]);
+
+    const { rows } = await pool.query("SELECT actor_id, target_id, details FROM audit_log");
+    assert.deepStrictEqual(rows, [{ actor_id: null, target_id: null, details: {} }]);
 });

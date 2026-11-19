@@ -1,4 +1,5 @@
 import * as User from "../models/user.js";
+import * as AuditLog from "../models/auditLog.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 import { validatePasswordChange, validateNewEmail } from "../utils/validation.js";
 import { regenerateSession } from "../utils/session.js";
@@ -43,7 +44,21 @@ export async function changeEmail(req, res) {
         return page(400, null, user.email);
     }
 
-    const result = await User.setEmail(req.app.locals.db, user.id, email);
+    const result = await withTransaction(req.app.locals.db, async (client) => {
+        // The old address is read inside the transaction, from the locked row, so the record is right even if another
+        // session changed it a moment ago.
+        const locked = await client.query("SELECT email FROM users WHERE id = $1 FOR UPDATE", [user.id]);
+        const changed = await User.setEmail(client, user.id, email);
+
+        if (changed === true) {
+            await AuditLog.record(client, {
+                companyId: user.companyId, actorId: user.id, action: "email_changed", targetId: user.id,
+                details: { from: locked.rows[0].email, to: email },
+            });
+        }
+
+        return changed;
+    });
 
     if (result === "taken") {
         errors.push("That email already has a login.");
@@ -79,6 +94,9 @@ export async function changePassword(req, res) {
     await withTransaction(db, async (client) => {
         await User.setPasswordHash(client, user.id, passwordHash);
         await User.endOtherSessions(client, user.id, req.sessionID);
+        await AuditLog.record(client, {
+            companyId: user.companyId, actorId: user.id, action: "password_changed", targetId: user.id,
+        });
     });
     res.render("account/password", { title: "Change Password", errors: [], notice: "Your password was changed." });
 }

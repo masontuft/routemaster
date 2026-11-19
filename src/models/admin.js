@@ -1,5 +1,6 @@
 import { withTransaction } from "../db/transaction.js";
 import * as User from "./user.js";
+import * as AuditLog from "./auditLog.js";
 
 // Users are listed and changed one company at a time (ADR 0018): an owner sees and manages only their own company's
 // people, and "the last owner" means the last owner of that company.
@@ -27,25 +28,55 @@ export async function listRoles(pool) {
 // in by link has no email) or taken. The password is not asked for, because it is someone else's login; the user keeps
 // their password, and an email is not enough to take an account over while nothing sends a reset.
 export async function changeEmail(pool, companyId, id, email, actingUserId) {
-    const { rows } = await pool.query(
-        "SELECT id, email, password_hash FROM users WHERE id = $1 AND company_id = $2",
-        [id, companyId],
-    );
+    // One transaction, so the change and its audit row stand or fall together.
+    return withTransaction(pool, async (client) => {
+        const { rows } = await client.query(
+            "SELECT id, email, password_hash FROM users WHERE id = $1 AND company_id = $2 FOR UPDATE",
+            [id, companyId],
+        );
 
-    if (!rows[0]) {
-        return { error: "not_found" };
-    }
+        if (!rows[0]) {
+            return { error: "not_found" };
+        }
 
-    if (id === actingUserId) {
-        return { error: "self" };
-    }
+        if (id === actingUserId) {
+            return { error: "self" };
+        }
 
-    if (!rows[0].email || !rows[0].password_hash) {
-        return { error: "no_login" };
-    }
+        if (!rows[0].email || !rows[0].password_hash) {
+            return { error: "no_login" };
+        }
 
-    const result = await User.setEmail(pool, id, email);
-    return result === "taken" ? { error: "taken" } : { ok: result };
+        const result = await User.setEmail(client, id, email);
+
+        if (result === "taken") {
+            return { error: "taken" };
+        }
+
+        await AuditLog.record(client, {
+            companyId, actorId: actingUserId, action: "email_changed", targetId: id,
+            details: { from: rows[0].email, to: email },
+        });
+        return { ok: result };
+    });
+}
+
+// An owner makes a staff login in their own company. Returns the new user, or null when the email already has a login.
+// The row in the audit log is written with it.
+export async function createStaff(pool, companyId, actingUserId, { email, passwordHash, roleName }) {
+    return withTransaction(pool, async (client) => {
+        const user = await User.create(client, { email, passwordHash, roleName, companyId });
+
+        if (!user) {
+            return null;
+        }
+
+        await AuditLog.record(client, {
+            companyId, actorId: actingUserId, action: "user_created", targetId: user.id,
+            details: { email, role: roleName },
+        });
+        return user;
+    });
 }
 
 // Returns { ok: true } or { error } where error is one of: not_found, self, no_login, role, last_owner.
@@ -88,6 +119,10 @@ export async function changeRole(pool, companyId, id, roleName, actingUserId) {
         }
 
         await client.query("UPDATE users SET role_id = $2 WHERE id = $1", [id, role.rows[0].id]);
+        await AuditLog.record(client, {
+            companyId, actorId: actingUserId, action: "role_changed", targetId: id,
+            details: { from: target.rows[0].role, to: roleName },
+        });
         return { ok: true };
     });
 }

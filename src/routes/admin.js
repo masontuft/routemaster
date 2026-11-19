@@ -9,6 +9,7 @@ const router = Router();
 router.use("/admin", requireRole("owner"));
 
 router.get("/admin/users", admin.listUsers);
+router.get("/admin/audit", admin.showAudit);
 router.get("/admin/users/new", admin.showNewUser);
 router.post("/admin/users", admin.createUser);
 router.post("/admin/users/:id/role", admin.changeRole);

@@ -1,5 +1,5 @@
 import * as Admin from "../models/admin.js";
-import * as User from "../models/user.js";
+import * as AuditLog from "../models/auditLog.js";
 import * as ServiceType from "../models/serviceType.js";
 import { hashPassword } from "../utils/password.js";
 import { notFound } from "../utils/errors.js";
@@ -31,6 +31,11 @@ const EMAIL_ERRORS = {
     no_login: "That customer signs in by link and has no email login.",
     taken: "That email already has a login.",
 };
+
+export async function showAudit(req, res) {
+    res.set("Cache-Control", "no-store");
+    res.render("admin/audit", { title: "Audit Log", entries: await AuditLog.list(req.app.locals.db, companyOf(req)) });
+}
 
 export async function changeEmail(req, res) {
     const id = parseId(req.params.id);
@@ -84,9 +89,10 @@ export async function createUser(req, res) {
         errors.push("Choose a staff role.");
     }
 
-    const created = errors.length === 0 && await User.create(req.app.locals.db, {
-        email, passwordHash: await hashPassword(password), roleName: role, companyId: companyOf(req),
-    });
+    const created = errors.length === 0 && await Admin.createStaff(
+        req.app.locals.db, companyOf(req), req.session.user.id,
+        { email, passwordHash: await hashPassword(password), roleName: role },
+    );
 
     if (errors.length === 0 && !created) {
         errors.push("That email is already registered.");

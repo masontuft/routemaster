@@ -126,11 +126,11 @@ test("an unknown role, an unknown user and a link-only customer are rejected", a
 test("the last owner cannot be demoted", async () => {
     const only = await User.create(pool, { companyId: 1, email: "solo@example.com", passwordHash: "x", roleName: "owner" });
 
-    assert.deepStrictEqual(await Admin.changeRole(pool, 1, only.id, "dispatcher", 0), { error: "last_owner" });
+    assert.deepStrictEqual(await Admin.changeRole(pool, 1, only.id, "dispatcher", null), { error: "last_owner" });
     assert.strictEqual(await roleOf(only.id), "owner");
 
     await User.create(pool, { companyId: 1, email: "two@example.com", passwordHash: "x", roleName: "owner" });
-    assert.deepStrictEqual(await Admin.changeRole(pool, 1, only.id, "dispatcher", 0), { ok: true });
+    assert.deepStrictEqual(await Admin.changeRole(pool, 1, only.id, "dispatcher", null), { ok: true });
 });
 
 test("an owner creates a staff user with a hashed password, and bad input is rejected", async () => {

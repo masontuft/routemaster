@@ -1,0 +1,23 @@
+<%- include("../partials/head") %>
+<h1>Audit Log</h1>
+<p>The latest changes to logins in your company: emails, passwords, roles and new staff users. Passwords are never shown.</p>
+<% if (entries.length === 0) { %>
+    <p>Nothing has been recorded yet.</p>
+<% } else { %>
+    <div class="table-scroll" role="region" aria-label="Audit log" tabindex="0">
+    <table>
+        <thead><tr><th>When</th><th>Who</th><th>What</th><th>About</th></tr></thead>
+        <tbody>
+            <% entries.forEach((entry) => { %>
+                <tr>
+                    <td><%= entry.at %></td>
+                    <td><%= entry.actor_email ?? "(deleted user)" %></td>
+                    <td><%= entry.summary %></td>
+                    <td><%= entry.target_email ?? "(deleted user)" %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+    </div>
+<% } %>
+<%- include("../partials/foot") %>
