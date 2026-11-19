@@ -4,11 +4,12 @@ Names only. Never commit values. Production hosting is in [ADR 0010](../adr/0010
 
 | Name | Purpose | Read by |
 | --- | --- | --- |
-| `DATABASE_URL` | Postgres connection string. The production plan is the Supabase session pooler. TLS comes from `sslmode` in the URL. | `src/server.js` (required), `pnpm migrate`, `pnpm seed`, `pnpm link:create`, and the test-database guard |
+| `DATABASE_URL` | Postgres connection string. The production plan is the Supabase session pooler. TLS comes from `sslmode` in the URL. | `src/server.js` (required), `pnpm migrate`, `pnpm seed`, `pnpm link:create`, `pnpm company:create`, and the test-database guard |
 | `SESSION_SECRET` | Signs the session cookie. 32+ characters in production | `src/server.js` (required) |
 | `NODE_ENV` | The session cookie is `Secure`, and HSTS is sent, only when this is exactly `production`. Dev reload treats a trimmed, case-folded `production` as production (`src/utils/env.js`). | `src/middleware/session.js`, `src/middleware/securityHeaders.js` and `src/app.js` |
 | `PORT` | Port the server binds. Defaults to 3000. Render sets this. | `src/server.js` |
 | `SEED_PASSWORD` | Password for the seeded test accounts. Never commit the real value ([#22](https://github.com/masontuft/routemaster/issues/22)). | `pnpm seed` only |
+| `OWNER_PASSWORD` | The password of the owner that `pnpm company:create` makes. Set it for that one command, for example `OWNER_PASSWORD=... pnpm company:create ...`, and do not keep it in `.env`. It is hashed before it is stored and is never printed. | `pnpm company:create` only |
 | `TEST_DATABASE_URL` | Throwaway database for tests. Must differ in host, port, or database name from `DATABASE_URL`. | `src/config/testDatabase.js` only. The server does not read it. |
 | `BASE_URL` | Optional host printed by `pnpm link:create`. Defaults to `http://localhost:3000`. | `scripts/create-link.js` only. Not listed in `.env.example`. |
 | `GOOGLE_MAPS_API_KEY` | Optional. When set, addresses are looked up with Google first, then OpenStreetMap Nominatim. Without it only Nominatim is used, at one lookup a second. Never commit the value. | `src/server.js` |

@@ -20,7 +20,8 @@
     "stage:test-batch": "node scripts/stage-test-batch.js",
     "erd": "node --env-file=.env scripts/generate-erd.js",
     "seed:test": "node --env-file=.env scripts/seed-test-data.js",
-    "link:create": "node --env-file=.env scripts/create-link.js"
+    "link:create": "node --env-file=.env scripts/create-link.js",
+    "company:create": "node --env-file=.env scripts/create-company.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
