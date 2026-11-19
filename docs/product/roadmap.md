@@ -24,7 +24,7 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 
 ## Next
 
-- A page to change your own password. Nobody can change a password today: an owner made by `pnpm company:create` keeps the one they were given, and so does anyone who registered. The page would ask for the current password and then the new one, with the same rules as registration, and it would sign out the user's other sessions. A forgotten password has no way back yet either, since nothing sends email, so Mason would reset it by hand. Wanted before a second company's owner is given a password to use for real. Not started.
+- Forgot password. Changing your own password is built (`/account/password`), but a forgotten one has no way back: nothing sends email, so Mason resets it by hand. Wanted before a second company's owner depends on a password. Not started.
 - Record that a customer replied by phone. The app records that a link was made, not that the customer answered a call or text.
 - Property type: mark each property as a residence, a rental or a second home. A customer with several properties usually lives at one and is the landlord of the rest. Today the customer's first property (the lowest id) decides which area owns them when links are made for all areas, and that is only a stand-in for "the residence". A type would let the app pick the residence, and let rebooking tell a homeowner from a landlord. Open question: how it is captured, since the import sheet has no such column.
 - Service frequency per company: the rebooking list treats a customer served earlier this year as booked, which suits a once-a-year service. A company that serves twice a year would need a setting for how many visits a year, so the list shows who is due for another.
