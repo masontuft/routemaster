@@ -16,6 +16,7 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 
 | Role | Does |
 | --- | --- |
+| 2026-11-19 | A company can be made: `pnpm company:create` makes a company, its owner login and its services in one step, run by Mason with the owner's password in `OWNER_PASSWORD`. The owner then logs in at `/login` and works in their own company, with an empty customer list. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
 | 2026-11-19 | Rules: two companies can now hold the same area name, route day, setting, import mapping and lead, and an insert with no company is refused instead of going to company 1 (migration 033 of ADR 0018). Nothing a user does changes. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
 | 2026-11-19 | Who may do a step: the spreadsheet import and its saved mappings, the import batch pages and the clear pages that list batches, link batches and the rebooking links, staging and reading Messenger batches, and the contact messages inbox are limited to the logged-in user's company (pass 2d of ADR 0018). The import writes its customers, properties, areas and jobs into the owner's company and refuses a service type of another. A Messenger batch holds only its company's customers. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
 | 2026-11-19 | Who may do a step: the areas page and an area's days and city, the route builder, the scheduling settings, the rebooking page, the day board and penciling in, and the area chosen on a property's edit page are limited to the logged-in user's company (pass 2c of ADR 0018). A property cannot be put in another company's area. No page was added, removed or renamed, and the "Last verified" date is unchanged. |
@@ -119,7 +120,7 @@ The owner sets company-wide options at `/admin/settings` (saved by posting there
 ## Known gaps in the whole process
 
 - Sending links is manual and unrecorded.
-- Every table that holds one company's data is kept apart by company, and the database no longer has a default company or a global key that stops two companies holding the same area name, route day, setting, lead or import mapping (migration 033, ADR 0018). A second company still cannot be used: the public pages for its customers to reach, one address for each company, and the script that creates a company with its owner and service types are not built.
+- Every table that holds one company's data is kept apart by company, and the database no longer has a default company or a global key that stops two companies holding the same area name, route day, setting, lead or import mapping (migration 033, ADR 0018). Mason can make a second company with its owner and services by running `pnpm company:create`. A second company's customers cannot reach it yet: the public pages with an address for each company are not built, and the bare public pages belong to the first company.
 - A Completed or Cancelled request cannot be reopened. Rebooking makes a new request through the customer's own choice of day (step 9). Booking a customer who has not confirmed is built, behind the owner option, in step 6.
 - There is no per-day capacity limit, so a day can be over-booked.
 - The route builder has been tested with fake map responses and not yet with real addresses.

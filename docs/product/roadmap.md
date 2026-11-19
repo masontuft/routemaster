@@ -24,6 +24,7 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 
 ## Next
 
+- A page to change your own password. Nobody can change a password today: an owner made by `pnpm company:create` keeps the one they were given, and so does anyone who registered. The page would ask for the current password and then the new one, with the same rules as registration, and it would sign out the user's other sessions. A forgotten password has no way back yet either, since nothing sends email, so Mason would reset it by hand. Wanted before a second company's owner is given a password to use for real. Not started.
 - Record that a customer replied by phone. The app records that a link was made, not that the customer answered a call or text.
 - Property type: mark each property as a residence, a rental or a second home. A customer with several properties usually lives at one and is the landlord of the rest. Today the customer's first property (the lowest id) decides which area owns them when links are made for all areas, and that is only a stand-in for "the residence". A type would let the app pick the residence, and let rebooking tell a homeowner from a landlord. Open question: how it is captured, since the import sheet has no such column.
 - Service frequency per company: the rebooking list treats a customer served earlier this year as booked, which suits a once-a-year service. A company that serves twice a year would need a setting for how many visits a year, so the list shows who is due for another.
@@ -41,12 +42,12 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 - Export to `.xlsx`, then two-way spreadsheet sync via an admin button (needs Google OAuth or a service account).
 - An instructor-hosted database as an optional target for server agents.
 - Technician logins. Planned, not a commitment. See [Technician Logins](#technician-logins).
-- Branded business workspaces (multi-tenant). Planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
+- Branded business workspaces (multi-tenant). Started: each company's data is kept apart and Mason can make a company with `pnpm company:create`. The public pages with an address for each company are the next step. Branding, a sign-up for businesses, plans and an operator role are planned, not a commitment. See [Branded Business Workspaces](#branded-business-workspaces).
 - Opt-out and consent for texted links. Not built, and not needed today: this web app is a partner to Sprinkler Messenger, and owners text from their own business phones, so a shared company number is not planned. If that changes, do this first, since consent and opt-out rules vary by country and state. Not legal advice.
 
 ## Branded Business Workspaces
 
-**Status:** Planned. Future work, and not a commitment. Not currently implemented. This page does not change the single-company decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md).
+**Status:** Started. The data of separate companies is built and kept apart (the companies work of [ADR 0018](../adr/0018-companies-and-company-scoped-data.md)), and Mason can make a company with its owner and services by running `pnpm company:create`. Not built yet: a public sign-up page for each company, branding, a way for a business to sign itself up, plans and pricing, and an operator role. This page does not change the single-company decision in [ADR 0001](../adr/0001-app-type-and-repo-shape.md), which ADR 0018 amends.
 
 A business signs up with Routemaster and is allocated its own workspace. That workspace includes a mirrored copy of the customer-facing service sign-up, branded for that business. A way for each business to customize that branding is part of the same plan.
 
