@@ -40,8 +40,9 @@ export async function groupOf(db, customerId, year) {
     });
 }
 
-// areaId null means every customer who has a property, in any area or none.
-export async function forArea(pool, areaId, year) {
+// areaId null means every customer of this company who has a property, in any area or none, and never another
+// company's (ADR 0018).
+export async function forArea(pool, companyId, areaId, year) {
     const { rows } = await pool.query(
         `SELECT customers.id, customers.name, customers.phone,
                 (SELECT string_agg(properties.street, '; ' ORDER BY properties.id) FROM properties
@@ -69,11 +70,12 @@ export async function forArea(pool, areaId, year) {
              WHERE service_requests.customer_id IS NOT NULL
              GROUP BY service_requests.customer_id
          ) AS seen ON seen.customer_id = customers.id
-         WHERE EXISTS (SELECT 1 FROM properties
+         WHERE customers.company_id = $3
+           AND EXISTS (SELECT 1 FROM properties
                        WHERE properties.customer_id = customers.id
                          AND ($1::int IS NULL OR properties.subdivision_id = $1::int))
          ORDER BY customers.name, customers.id`,
-        [areaId, year],
+        [areaId, year, companyId],
     );
 
     return rows.map((row) => {

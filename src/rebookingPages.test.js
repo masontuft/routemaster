@@ -34,7 +34,7 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    areaId = await Area.create(pool, "Oakwood");
+    areaId = await Area.create(pool, 1, "Oakwood");
 });
 after(async () => {
     server?.close();
@@ -135,7 +135,7 @@ test("making links covers only the ticked customers, records a batch, and each l
 });
 
 test("a ticked id from another area is ignored, so a forged form reaches no outside customer", async () => {
-    const otherArea = await Area.create(pool, "Pine Hills");
+    const otherArea = await Area.create(pool, 1, "Pine Hills");
     const inside = await servedLastYear("Inside");
     const outside = await servedLastYear("Outside", { area: otherArea, street: "9 Pine Rd" });
     const dispatcher = await agentFor("dispatcher");
@@ -206,7 +206,7 @@ test("the page offers all areas, and the buttons and script that select a whole 
 });
 
 test("all areas lists every customer with a property, in any area or none, once each", async () => {
-    const other = await Area.create(pool, "Pine Hills");
+    const other = await Area.create(pool, 1, "Pine Hills");
     await servedLastYear("Inside");
     await servedLastYear("Elsewhere", { area: other, street: "9 Pine Rd" });
     const noArea = await Customer.create(pool, 1, { name: "No Area", phone: "208-555-0102" });
@@ -225,7 +225,7 @@ test("all areas lists every customer with a property, in any area or none, once 
 });
 
 test("making links for all areas makes a batch for each owning area and shows a section for each", async () => {
-    const other = await Area.create(pool, "Pine Hills");
+    const other = await Area.create(pool, 1, "Pine Hills");
     const inside = await servedLastYear("Inside");
     const outside = await servedLastYear("Elsewhere", { area: other, street: "9 Pine Rd" });
     const dispatcher = await agentFor("dispatcher");
@@ -270,7 +270,7 @@ test("all areas takes more ticked customers than one batch holds, and the page s
 });
 
 test("all areas lists an area it could not finish and still makes the others", async () => {
-    const big = await Area.create(pool, "Big Hills");
+    const big = await Area.create(pool, 1, "Big Hills");
     const inside = await servedLastYear("Inside");
     await pool.query(
         `INSERT INTO customers (name, name_normalized, phone, phone_normalized)

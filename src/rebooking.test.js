@@ -18,7 +18,7 @@ before(() => {
 });
 beforeEach(async () => {
     await db.reset();
-    areaId = await Area.create(pool, "Oakwood");
+    areaId = await Area.create(pool, 1, "Oakwood");
 });
 after(() => {
     return db.close();
@@ -49,7 +49,7 @@ async function job(customer, status, preferred, scheduled = null) {
 }
 
 async function groupOf(name, year = 2026) {
-    const found = (await forArea(pool, areaId, year)).find((customer) => {
+    const found = (await forArea(pool, 1, areaId, year)).find((customer) => {
         return customer.name === name;
     });
     return found?.group;
@@ -60,7 +60,7 @@ test("completed in an earlier year and nothing this year is the outreach list, w
     await job(ann, "Completed", "2025-09-01", "2025-10-04");
     await job(ann, "Completed", "2024-09-01", "2024-10-02");
 
-    const [row] = await forArea(pool, areaId, 2026);
+    const [row] = await forArea(pool, 1, areaId, 2026);
 
     assert.strictEqual(row.group, "not_yet_booked");
     assert.strictEqual(row.lastServed, "2025-10-04");
@@ -114,14 +114,14 @@ test("the day it was booked for decides the year, not the day it was asked for",
 });
 
 test("only customers with a property in the area appear, once each", async () => {
-    const other = await Area.create(pool, "Pine Hills");
+    const other = await Area.create(pool, 1, "Pine Hills");
     await customerIn(other, "Elsewhere");
     await customerIn(null, "No Area");
     const twice = await customerIn(areaId, "Twice", "1 Elm St");
     const second = await Property.create(pool, twice.id, { street: "2 Elm St", city: "Rexburg" });
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [second, areaId]);
 
-    const rows = await forArea(pool, areaId, 2026);
+    const rows = await forArea(pool, 1, areaId, 2026);
 
     assert.deepStrictEqual(rows.map((row) => {
         return row.name;
@@ -136,7 +136,7 @@ test("contacted means a link made this year, and an active link is one that stil
     await AccessLink.create(pool, { customerId: fresh.id, days: 30 });
     await AccessLink.create(pool, { customerId: stale.id, days: 30 });
     await pool.query("UPDATE access_links SET created_at = '2025-05-01', expires_at = '2025-06-01' WHERE customer_id = $1", [stale.id]);
-    const byName = Object.fromEntries((await forArea(pool, areaId, new Date().getFullYear())).map((row) => {
+    const byName = Object.fromEntries((await forArea(pool, 1, areaId, new Date().getFullYear())).map((row) => {
         return [row.name, row];
     }));
 
@@ -150,7 +150,7 @@ test("an unmatched request, with no customer, is ignored", async () => {
     await ServiceRequest.create(pool, 1, { serviceTypeId: 1, preferredDate: "2026-10-10", leadId });
     await customerIn(areaId, "Ann");
 
-    assert.deepStrictEqual((await forArea(pool, areaId, 2026)).map((row) => {
+    assert.deepStrictEqual((await forArea(pool, 1, areaId, 2026)).map((row) => {
         return row.name;
     }), ["Ann"]);
 });

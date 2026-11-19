@@ -7,10 +7,10 @@ import { companyOf } from "../utils/company.js";
 async function boardPage(req, res, { day, errors = [], notice = null, status = 200 }) {
     const db = req.app.locals.db;
     const today = todayString();
-    const board = await DayBoard.forDay(db, day);
-    const busyDays = await DayBoard.busyDays(db, today);
-    const allowTentative = await AppSetting.allowsTentativeBooking(db);
-    const candidates = allowTentative && day >= today ? await DayBoard.pencilInCandidates(db, day) : [];
+    const board = await DayBoard.forDay(db, companyOf(req), day);
+    const busyDays = await DayBoard.busyDays(db, companyOf(req), today);
+    const allowTentative = await AppSetting.allowsTentativeBooking(db, companyOf(req));
+    const candidates = allowTentative && day >= today ? await DayBoard.pencilInCandidates(db, companyOf(req), day) : [];
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/day-board", {
         title: "Day Board", day, today, board, busyDays, errors, notice, allowTentative, candidates,
@@ -67,7 +67,7 @@ export async function pencilIn(req, res) {
     const ids = [...new Set([].concat(req.body.customerIds ?? []).map(parseId).filter(Boolean))];
     const errors = [];
 
-    if (!await AppSetting.allowsTentativeBooking(db)) {
+    if (!await AppSetting.allowsTentativeBooking(db, companyOf(req))) {
         errors.push("Booking customers who have not confirmed is turned off. The owner can turn it on in Settings.");
     }
 
@@ -87,7 +87,7 @@ export async function pencilIn(req, res) {
         return boardPage(req, res, { day: dayError ? todayString() : day, errors, status: 400 });
     }
 
-    const result = await DayBoard.pencilIn(db, ids, { day, changedBy: req.session.user.id });
+    const result = await DayBoard.pencilIn(db, companyOf(req), ids, { day, changedBy: req.session.user.id });
     const skippedText = result.skipped > 0
         ? ` ${result.skipped} could not be penciled in (no property in an area that works that day, or already booked this year).`
         : "";

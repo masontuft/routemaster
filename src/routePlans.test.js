@@ -162,7 +162,7 @@ test("building orders the stops by distance, saves one route, and shows times an
     assert.match(res.text, /8:3\d AM/);
     assert.match(res.text, /https:\/\/www\.google\.com\/maps\/dir\/\?api=1/);
     assert.strictEqual(await routeCount(), 1);
-    const saved = await RoutePlan.findForDay(pool, DAY);
+    const saved = await RoutePlan.findForDay(pool, 1, DAY);
     assert.deepStrictEqual(saved.stops.map((stop) => {
         return stop.position;
     }), [1, 2, 3]);
@@ -178,7 +178,7 @@ test("building again replaces the route instead of adding a second", async () =>
     await build(dispatcher, { startTime: "10:00" });
 
     assert.strictEqual(await routeCount(), 1);
-    assert.strictEqual((await RoutePlan.findForDay(pool, DAY)).start_time, "10:00");
+    assert.strictEqual((await RoutePlan.findForDay(pool, 1, DAY)).start_time, "10:00");
 });
 
 test("a job booked after the route was built makes the page say the route is out of date", async () => {
@@ -195,9 +195,9 @@ test("a job booked after the route was built makes the page say the route is out
 
 test("changing an area's city after a route was built flags it, and finding the points again keeps it flagged", async () => {
     const job = await booked(1);
-    const area = await Area.create(pool, "Oakwood");
+    const area = await Area.create(pool, 1, "Oakwood");
     await pool.query("UPDATE properties SET city = NULL, subdivision_id = $2 WHERE id = $1", [job.propertyId, area]);
-    await Area.setCity(pool, area, "Rexburg");
+    await Area.setCity(pool, 1, area, "Rexburg");
     const dispatcher = await agentFor("dispatcher");
     await locate(dispatcher);
     await build(dispatcher);
@@ -205,7 +205,7 @@ test("changing an area's city after a route was built flags it, and finding the 
     assert.doesNotMatch(fresh.text, /have changed since/);
     assert.match(fresh.text, /Map Links/);
 
-    await Area.setCity(pool, area, "Ammon");
+    await Area.setCity(pool, 1, area, "Ammon");
 
     const cleared = await dispatcher.get(PAGE);
     assert.match(cleared.text, /map points have changed since this route was built/);
@@ -316,7 +316,7 @@ test("with the option off, tentative jobs are left off the route, not looked up,
 });
 
 test("with the option on, tentative jobs are on the route, marked, and counted", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     await booked(1);
     const penciled = await booked(2);
     await makeTentative(penciled.id);
@@ -334,7 +334,7 @@ test("with the option on, tentative jobs are on the route, marked, and counted",
 });
 
 test("turning the option off after a route was built flags the route as out of date", async () => {
-    await AppSetting.set(pool, "allow_tentative_booking", "on", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "on", null);
     const penciled = await booked(1);
     await makeTentative(penciled.id);
     const dispatcher = await agentFor("dispatcher");
@@ -342,7 +342,7 @@ test("turning the option off after a route was built flags the route as out of d
     await build(dispatcher);
     assert.doesNotMatch((await dispatcher.get(PAGE)).text, /have changed since/);
 
-    await AppSetting.set(pool, "allow_tentative_booking", "off", null);
+    await AppSetting.set(pool, 1, "allow_tentative_booking", "off", null);
 
     const page = await dispatcher.get(PAGE);
     assert.match(page.text, /includes tentative jobs, and booking customers who have not confirmed is turned off/);

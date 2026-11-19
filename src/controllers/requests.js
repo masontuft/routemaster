@@ -26,7 +26,7 @@ async function formData(req, extra = {}) {
     const selected = properties.find((property) => {
         return property.id === Number(values.propertyId);
     }) ?? properties[0] ?? null;
-    const days = selected ? await Area.daysForProperty(db, selected.id, todayString()) : [];
+    const days = selected ? await Area.daysForProperty(db, companyOf(req), selected.id, todayString()) : [];
     return {
         properties, selected, days: labelled(days), types, today: todayString(), errors: [], values: {}, ...extra,
     };
@@ -79,7 +79,7 @@ export async function create(req, res) {
     } else if (property) {
         // The list on the page is a convenience; this is the rule. When the area has days, any date outside them is
         // refused. When it has none (no area, or no upcoming days) the date is only a wish and staff pick the day.
-        const days = await Area.daysForProperty(db, property.id, todayString());
+        const days = await Area.daysForProperty(db, companyOf(req), property.id, todayString());
 
         if (days.length > 0 && !days.includes(preferredDate)) {
             errors.push("Choose one of the available days.");
@@ -108,7 +108,7 @@ export async function show(req, res) {
 // The area's upcoming days, plus the day already on the request, so changing only the notes still works after a
 // day has been taken off the list. An empty list means any date may be asked for.
 async function editDays(req, request) {
-    const days = await Area.daysForProperty(req.app.locals.db, request.property_id, todayString());
+    const days = await Area.daysForProperty(req.app.locals.db, companyOf(req), request.property_id, todayString());
 
     if (days.length === 0) {
         return days;
@@ -137,7 +137,7 @@ export async function update(req, res) {
     let dateError = validatePreferredDate(preferredDate);
 
     if (!dateError && preferredDate !== request.preferred_day) {
-        const days = await Area.daysForProperty(req.app.locals.db, request.property_id, todayString());
+        const days = await Area.daysForProperty(req.app.locals.db, companyOf(req), request.property_id, todayString());
 
         if (days.length > 0 && !days.includes(preferredDate)) {
             dateError = "Choose one of the available days.";

@@ -63,9 +63,9 @@ async function customerWithProperty(name = "Ann Lee", phone = "208-555-0101", st
 
 // Customers pick from their area's days, so a property needs an area with days before a request can be made.
 async function giveArea(propertyId, days, name = "Oakwood") {
-    const areaId = await Area.create(pool, name) ?? (await pool.query("SELECT id FROM subdivisions LIMIT 1")).rows[0].id;
+    const areaId = await Area.create(pool, 1, name) ?? (await pool.query("SELECT id FROM subdivisions LIMIT 1")).rows[0].id;
     await pool.query("UPDATE properties SET subdivision_id = $2 WHERE id = $1", [propertyId, areaId]);
-    await Area.addDays(pool, areaId, days);
+    await Area.addDays(pool, 1, areaId, days);
     return areaId;
 }
 

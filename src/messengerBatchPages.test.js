@@ -35,7 +35,7 @@ beforeEach(async () => {
     app?.locals.sessionStore.close();
     app = createApp({ pool, sessionSecret: "test-secret" });
     server = await listen(app);
-    areaId = await Area.create(pool, "Oakwood");
+    areaId = await Area.create(pool, 1, "Oakwood");
 });
 after(async () => {
     server?.close();
@@ -147,7 +147,7 @@ test("staging shows a deep link once, makes no magic link, and the link opens th
 
 test("only that area's customers are staged", async () => {
     await customerIn(areaId, "Ann Lee", "208-555-0101");
-    const other = await Area.create(pool, "Pine Hills");
+    const other = await Area.create(pool, 1, "Pine Hills");
     await customerIn(other, "Bo Kim", "208-555-0102");
     const dispatcher = await agentFor("dispatcher");
     await stage(dispatcher);

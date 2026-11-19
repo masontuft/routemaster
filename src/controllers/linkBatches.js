@@ -4,11 +4,12 @@ import { notFound } from "../utils/errors.js";
 import { normalizePhone } from "../utils/normalize.js";
 import { toCsv } from "../utils/csv.js";
 import { parseId, todayString, validateLinkBatch, DEFAULT_LINK_MESSAGE } from "../utils/validation.js";
+import { companyOf } from "../utils/company.js";
 
 // Every page here carries names, phones or live links, so none may be cached or replayed.
 async function formPage(req, res, { values, errors = [], status = 200 }) {
     const db = req.app.locals.db;
-    const areas = await Area.list(db, todayString());
+    const areas = await Area.list(db, companyOf(req), todayString());
     const preview = values.areaId ? await LinkBatch.preview(db, values.areaId, values) : null;
     res.set("Cache-Control", "no-store");
     res.status(status).render("staff/link-batch-new", {
@@ -101,6 +102,6 @@ export async function renderResults(req, res, { template, days, sections }) {
 }
 
 export async function renderResult(req, res, { areaId, template, days, result }) {
-    const area = await Area.find(req.app.locals.db, areaId);
+    const area = await Area.find(req.app.locals.db, companyOf(req), areaId);
     await renderResults(req, res, { template, days, sections: [{ areaName: area.name, ...result }] });
 }
