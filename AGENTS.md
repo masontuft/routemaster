@@ -69,5 +69,8 @@ Agents share context through the channels below. Use the matching skill for deta
   - Script: `generate schema` (placeholder)
 
   Both are placeholders. They may differ per project, so confirm them with Mason before relying on them.
+- **ERD** (`erd-sync`): A change that adds, drops or alters a table, column or foreign key updates every copy of the ERD in the same pull request.
+  - Run `pnpm erd` (it needs `TEST_DATABASE_URL`). `src/schemaDocs.test.js` fails if `docs/architecture/database-erd.md` or `docs/architecture/RouteMaster-Database-Schema.md` drift from the migrations.
+  - Update the [FigJam copy](https://www.figma.com/board/PDGlQhPAX41nlZqXnY9Iop) and the "made on" date next to its link in `database-erd.md`. No test checks the board, so a session without Figma access records the gap in the ledger and the pull request instead of calling the sync done.
 - **Supabase MCP** (`.mcp.json`): A read-only connection to the live Supabase project, for docs, logs, advisors and looking at schema and data. Do not remove `read_only=true` from its URL. Schema changes still go through `migrations/` and a pull request, never through the MCP. Mason authenticates it himself with `claude /mcp`.
 - **Server and cloud agents:** They cannot reach Mason's local Postgres. Rely on CI for database tests. Record any database step you could not verify in the ledger so the next local agent picks it up.
