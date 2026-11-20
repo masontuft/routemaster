@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildMermaid, readSchema, writeDiagramBlock } from "../src/db/erd.js";
-import { testDb } from "../src/test/db.js";
+import { testDb } from "../tests/helpers/db.js";
 
 const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "docs", "architecture", "database-erd.md");
 const db = testDb("erdgenerate");

@@ -35,7 +35,7 @@ ALTER TABLE service_requests ADD CONSTRAINT service_requests_matched_or_unmatche
 -- Backfill. The match keys are worked out here in SQL, because a migration cannot call the JavaScript in
 -- src/utils. These functions follow normalizePersonName, normalizePhone and normalizeAddress, apart from letters
 -- with accents, which are kept as they are. A key that differs only means the same person typing the same details
--- later gets a second lead, which staff can still match by hand. src/db/leadBackfill.test.js compares the two.
+-- later gets a second lead, which staff can still match by hand. tests/db/leadBackfill.test.js compares the two.
 CREATE FUNCTION pg_temp.squash(value TEXT) RETURNS TEXT LANGUAGE sql IMMUTABLE AS $$
     SELECT trim(regexp_replace(regexp_replace(lower(COALESCE(value, '')), '[^a-z0-9 ]', ' ', 'g'), '\s+', ' ', 'g'))
 $$;

@@ -1,8 +1,8 @@
 # Test Strategy
 
-Decided in [ADR 0011](../adr/0011-testing-and-ci.md). The runner and the feature test files under `src/` exist. The areas they cover are listed in the [test plan](test-plan.md).
+Decided in [ADR 0011](../adr/0011-testing-and-ci.md). The runner and the feature test files under `tests/` (which mirrors `src/`) exist. The areas they cover are listed in the [test plan](test-plan.md).
 
-- Runner: `node:test` with `node:assert`; supertest for HTTP. Files are named `*.test.js`.
+- Runner: `node:test` with `node:assert`; supertest for HTTP. Files are named `*.test.js` and live in `tests/`, mirroring `src/`; the database helper is `tests/helpers/db.js`.
 - Rule: any time we add a major feature, there needs to be a test file associated.
 - Database: tests run only against `TEST_DATABASE_URL`. The guard refuses to run when that URL is missing, is not a Postgres URL, or names the same host, port, and database as `DATABASE_URL`.
 - End-to-end: Playwright later, once the app starts in a repeatable test mode.

@@ -38,6 +38,7 @@ The standing rule in `AGENTS.md` was Jest for unit and integration tests. The pr
 - `node:test` is stable. Its coverage flag and watch mode are marked experimental. `mock.module` is listed in the API index, but whether it needs a flag was not confirmed. Plan to mock little.
 - Server or cloud agents cannot reach Mason's local Postgres. They rely on CI for database tests and record unverified database steps in the ledger for the next local agent. An instructor-hosted database as an optional test target is a roadmap item.
 - HTTP tests import supertest as `import request from "supertest"` under `node:test`.
+- Update (issue 70): test files moved out of `src/` into a top-level `tests/` folder that mirrors `src/`. The database helper is `tests/helpers/db.js` and the fixtures are in `tests/fixtures/`. Older ADRs still name the old `src/...test.js` paths; read them as the same path under `tests/`.
 - Playwright's `webServer` option was not read yet.
 - The runner, ESLint, the database guard, the HTTP tests, the CI workflow, and the Postgres 16 service container exist. Runs of that workflow on `main` have completed successfully. Playwright and the boot smoke test are not implemented yet.
 
