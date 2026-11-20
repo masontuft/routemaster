@@ -52,7 +52,7 @@ Floors, the shared palette, and anti-slop rules are in `ui-design-foundations`. 
 
 ## Testing
 
-- Use Node's built-in test runner (`node:test`) for unit and integration tests, with supertest for HTTP tests. Test files are named `*.test.js`. Tests run only against the database named by `TEST_DATABASE_URL`, never against `DATABASE_URL`. See `docs/adr/0011-testing-and-ci.md`.
+- Use Node's built-in test runner (`node:test`) for unit and integration tests, with supertest for HTTP tests. Test files are named `*.test.js` and live in `tests/`, which mirrors `src/` (`src/utils/money.js` is tested by `tests/utils/money.test.js`). The shared database helper is `tests/helpers/db.js` and fixtures are in `tests/fixtures/`. Tests run only against the database named by `TEST_DATABASE_URL`, never against `DATABASE_URL`. See `docs/adr/0011-testing-and-ci.md`.
 - Keep tests easy to run in a CI/CD pipeline: end-to-end tests for critical user flows, linting, and an automated build on every merge.
 - Every major code change must come with a matching test file. The agent judges what counts as major.
 
@@ -61,7 +61,7 @@ Floors, the shared palette, and anti-slop rules are in `ui-design-foundations`. 
 Agents share context through the channels below. Use the matching skill for details.
 
 - **Ledger** (`ai-ledger-handoff`): After each segment of work, append an entry to your own file, `ledger/<agent>_YYYY-MM-DD.md`, with Changed, Why, Decisions and Open / next. At the start of a session, or after an agent switch or lost context, read every file in `ledger/` from the last 3 days before working. If there are none, widen the window to 7 days, then 14.
-- **Process doc** (`docs/process/customer-lifecycle.md`): The end-to-end customer process, import through route. A change that adds, removes or renames a page in that process, or changes who may do a step or a rule, updates this file in the same pull request and adds a line to its "Changes to the process" table. `src/processDoc.test.js` fails when its paths drift from the routes.
+- **Process doc** (`docs/process/customer-lifecycle.md`): The end-to-end customer process, import through route. A change that adds, removes or renames a page in that process, or changes who may do a step or a rule, updates this file in the same pull request and adds a line to its "Changes to the process" table. `tests/processDoc.test.js` fails when its paths drift from the routes.
 - **Message channel** (`agent-message-bus`): Not used right now. It may become a future feature, so do not set up or post to a `messages` table unless Mason says to.
 - **Schema file** (`schema-snapshot`): Read the schema snapshot file before querying the live database. Run the script that generates it to refresh it.
 
@@ -70,7 +70,7 @@ Agents share context through the channels below. Use the matching skill for deta
 
   Both are placeholders. They may differ per project, so confirm them with Mason before relying on them.
 - **ERD** (`erd-sync`): A change that adds, drops or alters a table, column or foreign key updates every copy of the ERD in the same pull request.
-  - Run `pnpm erd` (it needs `TEST_DATABASE_URL`). `src/schemaDocs.test.js` fails if `docs/architecture/database-erd.md` or `docs/architecture/RouteMaster-Database-Schema.md` drift from the migrations.
+  - Run `pnpm erd` (it needs `TEST_DATABASE_URL`). `tests/schemaDocs.test.js` fails if `docs/architecture/database-erd.md` or `docs/architecture/RouteMaster-Database-Schema.md` drift from the migrations.
   - Update the [FigJam copy](https://www.figma.com/board/PDGlQhPAX41nlZqXnY9Iop) and the "made on" date next to its link in `database-erd.md`. No test checks the board, so a session without Figma access records the gap in the ledger and the pull request instead of calling the sync done.
 - **Supabase MCP** (`.mcp.json`): A read-only connection to the live Supabase project, for docs, logs, advisors and looking at schema and data. Do not remove `read_only=true` from its URL. Schema changes still go through `migrations/` and a pull request, never through the MCP. Mason authenticates it himself with `claude /mcp`.
 - **Server and cloud agents:** They cannot reach Mason's local Postgres. Rely on CI for database tests. Record any database step you could not verify in the ledger so the next local agent picks it up.

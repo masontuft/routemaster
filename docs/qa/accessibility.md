@@ -28,4 +28,4 @@ Links and outlined buttons use the text token, not the brand token, because the 
 
 ## Heading case
 
-`src/views/headings.test.js` checks every static heading, button label and legend in the views against modified Chicago case. Headings that contain dynamic values are not checked.
+`tests/views/headings.test.js` checks every static heading, button label and legend in the views against modified Chicago case. Headings that contain dynamic values are not checked.

@@ -7,7 +7,7 @@ This is the end-to-end process as the app does it today: how a customer gets ont
 ## How to keep this current
 
 - **Change the process, change this file in the same pull request.** Any work that adds, removes or renames a page in the steps below, or changes who may do a step, a rule, or a status, updates this file.
-- **A test enforces the paths.** `src/processDoc.test.js` fails if a page path written in backticks here is not a real route, and if a route under the process areas listed in that test is missing from this file. When it fails, fix the doc, or fix the route if the doc was right.
+- **A test enforces the paths.** `tests/processDoc.test.js` fails if a page path written in backticks here is not a real route, and if a route under the process areas listed in that test is missing from this file. When it fails, fix the doc, or fix the route if the doc was right.
 - **Write what is true, not what is planned.** Planned work goes in the [roadmap](../product/roadmap.md). Anything not built is marked as a gap.
 - **Update the date above** only after re-reading the steps against the code, not when only a typo is fixed.
 - **Record the change** in the list at the bottom.
