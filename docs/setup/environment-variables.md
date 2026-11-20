@@ -15,3 +15,9 @@ Names only. Never commit values. Production hosting is in [ADR 0010](../adr/0010
 | `GOOGLE_MAPS_API_KEY` | Optional. When set, addresses are looked up with Google first, then OpenStreetMap Nominatim. Without it only Nominatim is used, at one lookup a second. Never commit the value. | `src/server.js` |
 | `SERVICE_STATE` | Optional. A state such as `ID`, added to each address before a lookup, because properties store a city and ZIP but no state. | `src/server.js` |
 | `ROUTE_START_ADDRESS` | Optional. The address a route starts from, shown as the default on the Route Builder page. Staff can change it for a day. | `src/server.js` |
+
+## Email Provider
+
+App email is planned for password resets, email verification, and notifications. Resend is the chosen provider. Email sending is not implemented yet, so there are no Resend environment variables to configure and no mail dependency has been added.
+
+For initial testing, Resend's onboarding test sender can send only to the Resend account owner's email address. Mason confirmed on 2026-11-20 that `routemaster.com` is authenticated and verified with Resend. The intended display sender is `Info@routemaster.com`; it can be used once app sending is implemented. Keep any future Resend API key in the deployment environment or a local, git-ignored `.env`; never commit it.
