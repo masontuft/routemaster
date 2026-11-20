@@ -1,6 +1,6 @@
 # Test Plan
 
-Covered by `*.test.js` files: the test-database guard, authentication (register, login, logout, wrong password, CSRF, session fixation, session stored in Postgres), authorization (visitor, customer, dispatcher, and owner against the staff, admin, request, review, and message routes, including denied cases), validation on the forms those tests post, the request workflow and `status_history`, reviews, contact, migrations, money parsing, the spreadsheet fetch and `.xlsx` parse modules (`src/import/`), and the error page for a thrown error (`src/app.test.js`).
+Covered by `*.test.js` files: the test-database guard, authentication (register, login, logout, wrong password, CSRF, session fixation, session stored in Postgres), authorization (visitor, customer, dispatcher, and owner against the staff, admin, request, review, and message routes, including denied cases), validation on the forms those tests post, the request workflow and `status_history`, reviews, contact, migrations, money parsing, the spreadsheet fetch and `.xlsx` parse modules (`src/import/`), and the error page for a thrown error (`tests/app.test.js`).
 
 Not covered yet:
 
