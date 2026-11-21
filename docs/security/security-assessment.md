@@ -19,8 +19,9 @@ Stored in Postgres: customer names, phones, and addresses; password hashes; sess
 | CSRF | `csrf-sync` synchronizer token. `src/app.js` runs `src/middleware/csrf.js` on every request. The token is read from the `_csrf` field. A post without a token returns 403 in tests. |
 | Session fixation | Session ID regenerated at register and login; tested |
 | Link tokens | 32 random bytes, only the SHA-256 hash stored, expiring and revocable; GET changes nothing; tested |
+| Password-reset tokens | Signed, expire after 30 minutes, are bound to the user's current email and password hash, and do not change state on GET. A successful reset changes the hash and invalidates the token, then ends every session. |
 | Request ownership | Every customer query filters by the session's customer id; another customer's request returns 404; tested |
-| Account enumeration | Same message for unknown email and wrong password; tested for the message, not for response timing |
+| Account enumeration | Login uses the same message for unknown email and wrong password; password-reset requests use a generic response for every address. Timing has not been assessed. |
 
 ## Open
 

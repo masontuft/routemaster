@@ -51,6 +51,26 @@ export function validatePasswordChange(body) {
     return { current, password, errors };
 }
 
+export function validateResetPassword(body) {
+    const password = String(body.password ?? "");
+    const confirm = String(body.confirm ?? "");
+    const errors = [];
+
+    if (password.length < 8) {
+        errors.push("The new password must be at least 8 characters.");
+    }
+
+    if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) {
+        errors.push(`The new password must be at most ${MAX_PASSWORD_BYTES} bytes.`);
+    }
+
+    if (password !== confirm) {
+        errors.push("The new passwords do not match.");
+    }
+
+    return { password, errors };
+}
+
 export function validateRegistration(body) {
     const email = normalizeEmail(body.email);
     const password = String(body.password ?? "");

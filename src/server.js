@@ -1,6 +1,7 @@
 import createApp from "./app.js";
 import { createGeocoder } from "./geocoding/geocoder.js";
 import { createPool } from "./db/pool.js";
+import { createEmailSender } from "./email/resend.js";
 import { missingEnvVariables, sessionSecretProblem } from "./utils/env.js";
 
 const port = Number(process.env.PORT) || 3000;
@@ -25,6 +26,11 @@ const app = createApp({
     geocode: createGeocoder({ apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "" }),
     serviceState: process.env.SERVICE_STATE ?? "",
     routeStartAddress: process.env.ROUTE_START_ADDRESS ?? "",
+    emailSender: createEmailSender({
+        apiKey: process.env.PASSWORD_RESET_RESEND_API_KEY,
+        from: process.env.EMAIL_FROM,
+    }),
+    appBaseUrl: process.env.APP_BASE_URL ?? "",
 });
 
 // Bind all interfaces: Render's proxy reaches the container over the network, not loopback.
