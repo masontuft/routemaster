@@ -39,6 +39,7 @@
     "express-rate-limit": "^8.7.2",
     "express-session": "^1.19.0",
     "pg": "^8.23.1",
-    "qrcode-generator": "^2.0.4"
+    "qrcode-generator": "^2.0.4",
+    "resend": "^6.39.0"
   }
 }
