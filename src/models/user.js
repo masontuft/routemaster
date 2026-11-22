@@ -11,6 +11,11 @@ export async function findById(pool, id) {
     return rows[0] ?? null;
 }
 
+export async function findByIdForUpdate(client, id) {
+    const { rows } = await client.query(`${SELECT_USER} WHERE users.id = $1 FOR UPDATE OF users`, [id]);
+    return rows[0] ?? null;
+}
+
 // Changes a login's email. The email is already validated and lower-cased. Returns true, false for a user that does not
 // exist, or "taken" when another login, in any company, has it: an email is one login in one company.
 export async function setEmail(pool, id, email) {
@@ -32,13 +37,16 @@ export async function setPasswordHash(pool, id, passwordHash) {
     return result.rowCount === 1;
 }
 
-// Ends every session of the user except the one named, so a stolen or forgotten login stops working when the password
-// changes. A session is a row of the session table whose data holds the user id. Returns how many it ended.
-export async function endOtherSessions(pool, id, keepSid) {
-    const result = await pool.query(
-        `DELETE FROM "session" WHERE sess->'user'->>'id' = $1 AND sid <> $2`,
-        [String(id), keepSid],
-    );
+// Ends every session of the user except the one named, or all of them when keepSid is omitted. A session is a row of
+// the session table whose data holds the user id. Returns how many it ended.
+export async function endOtherSessions(pool, id, keepSid = null) {
+    const result = keepSid
+        ? await pool.query(
+            `DELETE FROM "session" WHERE sess->'user'->>'id' = $1 AND sid <> $2`,
+            [String(id), keepSid],
+        )
+        : await pool.query(`DELETE FROM "session" WHERE sess->'user'->>'id' = $1`, [String(id)]);
+
     return result.rowCount;
 }
 

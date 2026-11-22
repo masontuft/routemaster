@@ -2,7 +2,7 @@
 
 Mason approves each new dependency first. Install with pnpm and commit the lockfile; CI uses a frozen install.
 
-Installed dependencies: `express`, `ejs`, `pg`, `express-session`, `connect-pg-simple`, `bcrypt`, `csrf-sync`, `express-rate-limit`, and `exceljs` 4.4.0 ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
+Installed dependencies: `express`, `ejs`, `pg`, `express-session`, `connect-pg-simple`, `bcrypt`, `csrf-sync`, `express-rate-limit`, `resend`, and `exceljs` 4.4.0 ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
 
 Installed devDependencies: `eslint`, `@eslint/js`, `@stylistic/eslint-plugin`, and `supertest`.
 

@@ -31,6 +31,8 @@ import errorHandler from "./middleware/errorHandler.js";
 import { isProduction } from "./utils/env.js";
 import { fetchPublicGoogleSheet } from "./import/googleSheet.js";
 import { createGeocoder } from "./geocoding/geocoder.js";
+import { createPasswordResetController } from "./controllers/passwordReset.js";
+import { createEmailSender } from "./email/resend.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -45,6 +47,8 @@ export default function createApp({
     geocode = createGeocoder(),
     serviceState = "",
     routeStartAddress = "",
+    emailSender = createEmailSender(),
+    appBaseUrl = "",
     devReload,
     devReloadBootId,
 } = {}) {
@@ -90,7 +94,10 @@ export default function createApp({
     app.use(publicContext);
     app.use(routes);
     const limit = rateLimit({ windowMs: 15 * 60 * 1000, max: rateLimitMax });
-    app.use(authRoutes(limit));
+    const passwordReset = createPasswordResetController({
+        emailSender, appBaseUrl, tokenSecret: sessionSecret, nodeEnv: process.env.NODE_ENV,
+    });
+    app.use(authRoutes(limit, passwordReset));
     app.use(accountRoutes(limit));
     app.use(requestRoutes);
     app.use(staffRoutes);

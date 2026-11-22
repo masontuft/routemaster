@@ -37,7 +37,10 @@ export async function register(req, res) {
 }
 
 export function showLogin(req, res) {
-    res.render("login", { title: "Log In", errors: [], email: "" });
+    res.render("login", {
+        title: "Log In", errors: [], email: "",
+        notice: req.query["password-reset"] === "1" ? "Your password was reset. Sign in with the new password." : null,
+    });
 }
 
 export async function login(req, res) {
@@ -51,6 +54,7 @@ export async function login(req, res) {
             title: "Log In",
             errors: ["Invalid email or password."],
             email,
+            notice: null,
         });
     }
 
