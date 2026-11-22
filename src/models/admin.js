@@ -7,6 +7,7 @@ import * as AuditLog from "./auditLog.js";
 export async function listUsers(pool, companyId) {
     const { rows } = await pool.query(
         `SELECT users.id, users.email, roles.name AS role,
+                (users.password_hash IS NULL AND roles.name IN ('owner', 'dispatcher')) AS needs_invite,
                 to_char(users.created_at, 'YYYY-MM-DD') AS created
          FROM users JOIN roles ON roles.id = users.role_id
          WHERE users.company_id = $1
@@ -25,13 +26,15 @@ export async function listRoles(pool) {
 
 // An owner changes the login email of a user of their own company. Returns { ok: true } or { error } where error is one
 // of: not_found (no such user, or one of another company), self (use the account page), no_login (a customer who signs
-// in by link has no email) or taken. The password is not asked for, because it is someone else's login; the user keeps
-// their password, and an email is not enough to take an account over while nothing sends a reset.
+// in by link has no email) or taken. The password is not asked for, because it is someone else's login. A pending
+// staff invitation can have its address corrected; the old token is bound to the old email and will no longer work.
 export async function changeEmail(pool, companyId, id, email, actingUserId) {
     // One transaction, so the change and its audit row stand or fall together.
     return withTransaction(pool, async (client) => {
         const { rows } = await client.query(
-            "SELECT id, email, password_hash FROM users WHERE id = $1 AND company_id = $2 FOR UPDATE",
+            `SELECT users.id, users.email, users.password_hash, roles.name AS role
+             FROM users JOIN roles ON roles.id = users.role_id
+             WHERE users.id = $1 AND users.company_id = $2 FOR UPDATE OF users`,
             [id, companyId],
         );
 
@@ -43,7 +46,9 @@ export async function changeEmail(pool, companyId, id, email, actingUserId) {
             return { error: "self" };
         }
 
-        if (!rows[0].email || !rows[0].password_hash) {
+        const pendingStaff = !rows[0].password_hash && ["owner", "dispatcher"].includes(rows[0].role);
+
+        if (!rows[0].email || (!rows[0].password_hash && !pendingStaff)) {
             return { error: "no_login" };
         }
 
@@ -75,8 +80,20 @@ export async function createStaff(pool, companyId, actingUserId, { email, passwo
             companyId, actorId: actingUserId, action: "user_created", targetId: user.id,
             details: { email, role: roleName },
         });
-        return user;
+        return { ...user, password_hash: passwordHash };
     });
+}
+
+export async function findPendingStaffInvite(pool, companyId, id) {
+    const { rows } = await pool.query(
+        `SELECT users.id, users.email, users.password_hash, roles.name AS role, users.company_id AS "companyId"
+         FROM users JOIN roles ON roles.id = users.role_id
+         WHERE users.id = $1 AND users.company_id = $2 AND users.password_hash IS NULL
+             AND roles.name IN ('owner', 'dispatcher')`,
+        [id, companyId],
+    );
+
+    return rows[0] ?? null;
 }
 
 // Returns { ok: true } or { error } where error is one of: not_found, self, no_login, role, last_owner.
@@ -86,7 +103,8 @@ export async function changeRole(pool, companyId, id, roleName, actingUserId) {
     return withTransaction(pool, async (client) => {
         const owners = await client.query(
             `SELECT users.id FROM users JOIN roles ON roles.id = users.role_id
-             WHERE roles.name = 'owner' AND users.company_id = $1 FOR UPDATE OF users`,
+             WHERE roles.name = 'owner' AND users.company_id = $1 AND users.password_hash IS NOT NULL
+             FOR UPDATE OF users`,
             [companyId],
         );
         const target = await client.query(

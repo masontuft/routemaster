@@ -1,0 +1,18 @@
+<%- include("../partials/head") %>
+<h1>Invite Staff</h1>
+<p>We’ll email them a link to set their password. The link expires after seven days.</p>
+<%- include("../partials/errors") %>
+<form method="post" action="/admin/users/invite">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" value="<%= values.email %>" required maxlength="254">
+    <label for="role">Role</label>
+    <select id="role" name="role">
+        <% ["dispatcher", "owner"].forEach((name) => { %>
+            <option value="<%= name %>"<%= name === values.role ? " selected" : "" %>><%= name %></option>
+        <% }); %>
+    </select>
+    <button type="submit">Create and Send Invitation</button>
+</form>
+<p><a href="/admin/users">Back to Users</a></p>
+<%- include("../partials/foot") %>

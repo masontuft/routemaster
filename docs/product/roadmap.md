@@ -16,6 +16,7 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 - Rebooking last season's customers ([ADR 0014](../adr/0014-rebooking-and-tentative-bookings.md)): a list of customers served in an earlier year who have not booked this year, links for just those customers (for one area or all areas), and, as an owner option, booking unconfirmed customers as tentative. See [the process doc](../process/customer-lifecycle.md).
 - Person name rules ([ADR 0016](../adr/0016-person-name-rules.md)): joint names are handled automatically; a "last, first" order, a business, a rental or a one-word name are flagged for staff at import.
 - Sending customer links in bulk through Sprinkler Messenger ([ADR 0015](../adr/0015-messenger-handoff-api.md), [spec](../integrations/sprinkler-messenger.md)): staff stage a batch in Routemaster, the Messenger app opens the link, shows the count and an editable message, and texts one customer at a time (the dispatcher taps Send for each, an iOS rule), then reports who was texted back. Routemaster is the record of who was texted. Shipped and tested in production (Mason, 2026-11-18).
+- App email through Resend: password resets and staff invitations use separate sending keys. An owner invites staff from `/admin/users/invite`; the invitee sets a password from a seven-day link that expires after use. Configure the sender and keys in the environment. Email-change confirmation remains on the roadmap.
 - Bulk customer links by area, and import from a public Google Sheet link ([ADR 0009](../adr/0009-spreadsheet-import-and-sync.md)).
 
 ## Now
@@ -24,8 +25,7 @@ Routemaster is a partner app to Sprinkler Messenger. Messenger sends the texts, 
 
 ## Next
 
-- Email sending from the app. Resend is the chosen provider, and `routemaster.com` is verified. This pull request adds the Resend sender and uses `PASSWORD_RESET_RESEND_API_KEY` for password-reset messages; configure the key, sender and app origin through environment variables. Remaining: confirm login email changes, then email a new staff user or company owner a link to set their own password. Emailing customer links from the app itself stays under Later.
-- Forgot password. Built in this pull request: a generic request response, a 30-minute signed link, and a reset that ends all existing sessions. It is wanted before a second company's owner depends on a password.
+- Email-change confirmation. An owner changing someone's login email should confirm that the recipient controls the new address before the change takes effect.
 - Record that a customer replied by phone. The app records that a link was made, not that the customer answered a call or text.
 - Property type: mark each property as a residence, a rental or a second home. A customer with several properties usually lives at one and is the landlord of the rest. Today the customer's first property (the lowest id) decides which area owns them when links are made for all areas, and that is only a stand-in for "the residence". A type would let the app pick the residence, and let rebooking tell a homeowner from a landlord. Open question: how it is captured, since the import sheet has no such column.
 - Service frequency per company: the rebooking list treats a customer served earlier this year as booked, which suits a once-a-year service. A company that serves twice a year would need a setting for how many visits a year, so the list shows who is due for another.

@@ -1,5 +1,6 @@
 <%- include("../partials/head") %>
 <h1>New Staff User</h1>
+<p><a href="/admin/users/invite">Send an email invitation instead</a></p>
 <%- include("../partials/errors") %>
 <form method="post" action="/admin/users">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
