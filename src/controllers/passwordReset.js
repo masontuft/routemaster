@@ -7,20 +7,9 @@ import {
     createPasswordResetToken, readEmailActionClaims, verifyPasswordResetToken,
 } from "../utils/emailActionToken.js";
 import { normalizeEmail, parseId, validateNewEmail, validateResetPassword } from "../utils/validation.js";
-import { isProduction } from "../utils/env.js";
+import { makeEmailActionUrl } from "../utils/emailActionUrl.js";
 
 const GENERIC_NOTICE = "If an account matches that email address and email sending is available, reset instructions will be sent shortly.";
-
-function makeResetUrl(appBaseUrl, token, nodeEnv) {
-    const base = new URL(appBaseUrl);
-
-    if (!new Set(["http:", "https:"]).has(base.protocol) || base.username || base.password
-        || base.search || base.hash || base.pathname !== "/" || (isProduction(nodeEnv) && base.protocol !== "https:")) {
-        throw new Error("The app base URL is invalid for password reset links.");
-    }
-
-    return new URL(`/reset-password/${encodeURIComponent(token)}`, base).toString();
-}
 
 function renderResetForm(res, { errors = [], token = "", status = 200, invalid = false } = {}) {
     res.set("Cache-Control", "no-store").set("Referrer-Policy", "no-referrer");
@@ -69,7 +58,7 @@ export function createPasswordResetController({ emailSender, appBaseUrl, tokenSe
                 let url;
 
                 try {
-                    url = makeResetUrl(appBaseUrl, token, nodeEnv);
+                    url = makeEmailActionUrl(appBaseUrl, "/reset-password", token, nodeEnv);
                 } catch {
                     console.error("Password reset email could not be sent because the app URL is not configured correctly.");
                 }

@@ -6,6 +6,7 @@ import { notFound } from "../utils/errors.js";
 import { parseId, validateNewEmail, validateRegistration } from "../utils/validation.js";
 import { parsePriceCents } from "../utils/money.js";
 import { companyOf } from "../utils/company.js";
+import { sendStaffInvitation } from "./staffInvitation.js";
 
 const STAFF_ROLES = ["owner", "dispatcher"];
 
@@ -16,14 +17,17 @@ const ROLE_ERRORS = {
     last_owner: "There must always be at least one owner.",
 };
 
-async function renderUsers(req, res, { errors = [], status = 200 } = {}) {
+async function renderUsers(req, res, { errors = [], notice = null, status = 200 } = {}) {
     const db = req.app.locals.db;
     const [users, roles] = await Promise.all([Admin.listUsers(db, companyOf(req)), Admin.listRoles(db)]);
-    res.status(status).render("admin/users", { title: "Users", users, roles, errors });
+    res.status(status).render("admin/users", { title: "Users", users, roles, errors, notice });
 }
 
 export async function listUsers(req, res) {
-    await renderUsers(req, res);
+    const notice = req.query.invite === "sent"
+        ? "The invitation email was sent."
+        : req.query.invite === "resent" ? "The invitation email was sent again." : null;
+    await renderUsers(req, res, { notice });
 }
 
 const EMAIL_ERRORS = {
@@ -103,6 +107,72 @@ export async function createUser(req, res) {
     }
 
     res.redirect("/admin/users");
+}
+
+export function showInviteUser(req, res) {
+    res.set("Cache-Control", "no-store");
+    res.render("admin/user-invite", { title: "Invite Staff", errors: [], values: { email: "", role: "dispatcher" } });
+}
+
+export async function inviteUser(req, res) {
+    const { email, errors } = validateNewEmail(req.body);
+    const role = String(req.body.role ?? "");
+    const config = req.app.locals.staffInviteConfig;
+
+    if (!STAFF_ROLES.includes(role)) {
+        errors.push("Choose a staff role.");
+    }
+
+    if (errors.length === 0 && (!config.emailSender?.configured || !config.appBaseUrl || !config.tokenSecret)) {
+        errors.push("Staff invitation email is not configured. No user was created.");
+    }
+
+    if (errors.length > 0) {
+        return res.status(400).render("admin/user-invite", {
+            title: "Invite Staff", errors, values: { email, role },
+        });
+    }
+
+    const user = await Admin.createStaff(req.app.locals.db, companyOf(req), req.session.user.id, {
+        email, passwordHash: null, roleName: role,
+    });
+
+    if (!user) {
+        return res.status(400).render("admin/user-invite", {
+            title: "Invite Staff", errors: ["That email is already registered."], values: { email, role },
+        });
+    }
+
+    const sent = await sendStaffInvitation(req, user);
+
+    if (!sent.ok) {
+        return renderUsers(req, res, {
+            errors: ["The staff account was created, but the invitation email could not be sent. Use Resend Invitation on that account to try again."],
+            status: 502,
+        });
+    }
+
+    res.redirect("/admin/users?invite=sent");
+}
+
+export async function resendInvite(req, res) {
+    const id = parseId(req.params.id);
+    const user = id ? await Admin.findPendingStaffInvite(req.app.locals.db, companyOf(req), id) : null;
+
+    if (!user) {
+        throw notFound();
+    }
+
+    const sent = await sendStaffInvitation(req, user);
+
+    if (!sent.ok) {
+        const message = sent.error === "not_configured"
+            ? "Staff invitation email is not configured."
+            : "The invitation email could not be sent. Please try again.";
+        return renderUsers(req, res, { errors: [message], status: 502 });
+    }
+
+    res.redirect("/admin/users?invite=resent");
 }
 
 export async function listServiceTypes(req, res) {

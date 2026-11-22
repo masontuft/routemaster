@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import routes from "./routes/index.js";
 import authRoutes from "./routes/auth.js";
+import staffInvitationRoutes from "./routes/staffInvitation.js";
 import requestRoutes from "./routes/requests.js";
 import staffRoutes from "./routes/staff.js";
 import adminRoutes from "./routes/admin.js";
@@ -32,6 +33,7 @@ import { isProduction } from "./utils/env.js";
 import { fetchPublicGoogleSheet } from "./import/googleSheet.js";
 import { createGeocoder } from "./geocoding/geocoder.js";
 import { createPasswordResetController } from "./controllers/passwordReset.js";
+import { createStaffInvitationController } from "./controllers/staffInvitation.js";
 import { createEmailSender } from "./email/resend.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +50,7 @@ export default function createApp({
     serviceState = "",
     routeStartAddress = "",
     emailSender = createEmailSender(),
+    inviteEmailSender = createEmailSender(),
     appBaseUrl = "",
     devReload,
     devReloadBootId,
@@ -70,6 +73,12 @@ export default function createApp({
     app.locals.geocode = geocode;
     app.locals.serviceState = serviceState;
     app.locals.routeStart = routeStartAddress;
+    app.locals.staffInviteConfig = {
+        emailSender: inviteEmailSender,
+        appBaseUrl,
+        tokenSecret: sessionSecret,
+        nodeEnv: process.env.NODE_ENV,
+    };
     app.locals.devReload = devReload ?? !isProduction();
     app.locals.devReloadBootId = devReloadBootId ?? Date.now().toString();
 
@@ -97,7 +106,9 @@ export default function createApp({
     const passwordReset = createPasswordResetController({
         emailSender, appBaseUrl, tokenSecret: sessionSecret, nodeEnv: process.env.NODE_ENV,
     });
+    const staffInvitation = createStaffInvitationController({ tokenSecret: sessionSecret });
     app.use(authRoutes(limit, passwordReset));
+    app.use(staffInvitationRoutes(limit, staffInvitation));
     app.use(accountRoutes(limit));
     app.use(requestRoutes);
     app.use(staffRoutes);

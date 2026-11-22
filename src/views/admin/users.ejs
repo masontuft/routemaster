@@ -1,7 +1,9 @@
 <%- include("../partials/head") %>
 <h1>Users</h1>
+<% if (notice) { %><p role="status"><%= notice %></p><% } %>
 <%- include("../partials/errors") %>
 <p><a href="/admin/users/new">Add Staff User</a></p>
+<p><a href="/admin/users/invite">Invite Staff by Email</a></p>
 <div class="table-scroll" role="region" aria-label="Users" tabindex="0">
 <table>
     <thead><tr><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
@@ -13,6 +15,13 @@
                 <td><%= row.created %></td>
                 <td>
                     <% if (row.email && row.id !== locals.user.id) { %>
+                        <% if (row.needs_invite) { %>
+                            <form method="post" action="/admin/users/<%= row.id %>/invite">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button type="submit">Resend Invitation</button>
+                            </form>
+                            <span>Invitation pending</span>
+                        <% } %>
                         <form method="post" action="/admin/users/<%= row.id %>/role">
                             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <select name="role" aria-label="Role for <%= row.email %>">

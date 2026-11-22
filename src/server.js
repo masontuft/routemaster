@@ -30,6 +30,10 @@ const app = createApp({
         apiKey: process.env.PASSWORD_RESET_RESEND_API_KEY,
         from: process.env.EMAIL_FROM,
     }),
+    inviteEmailSender: createEmailSender({
+        apiKey: process.env.INVITE_RESEND_API_KEY,
+        from: process.env.EMAIL_FROM,
+    }),
     appBaseUrl: process.env.APP_BASE_URL ?? "",
 });
 

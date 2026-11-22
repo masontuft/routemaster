@@ -1,0 +1,17 @@
+<%- include("partials/head") %>
+<h1>Set Up Your Account</h1>
+<% if (invalid) { %>
+    <p role="status">This invitation link is invalid, expired, or already used. Ask your company administrator to send another invitation.</p>
+    <p><a href="/login">Back to Log In</a></p>
+<% } else { %>
+    <%- include("partials/errors") %>
+    <form method="post" action="/staff-invite/<%= encodeURIComponent(token) %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label for="password">New Password</label>
+        <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
+        <label for="confirm">Confirm New Password</label>
+        <input id="confirm" name="confirm" type="password" required minlength="8" autocomplete="new-password">
+        <button type="submit">Set Password</button>
+    </form>
+<% } %>
+<%- include("partials/foot") %>
