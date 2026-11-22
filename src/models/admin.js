@@ -103,7 +103,8 @@ export async function changeRole(pool, companyId, id, roleName, actingUserId) {
     return withTransaction(pool, async (client) => {
         const owners = await client.query(
             `SELECT users.id FROM users JOIN roles ON roles.id = users.role_id
-             WHERE roles.name = 'owner' AND users.company_id = $1 FOR UPDATE OF users`,
+             WHERE roles.name = 'owner' AND users.company_id = $1 AND users.password_hash IS NOT NULL
+             FOR UPDATE OF users`,
             [companyId],
         );
         const target = await client.query(

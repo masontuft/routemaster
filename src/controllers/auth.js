@@ -37,9 +37,14 @@ export async function register(req, res) {
 }
 
 export function showLogin(req, res) {
-    const notice = req.query["password-reset"] === "1"
-        ? "Your password was reset. Sign in with the new password."
-        : req.query.invite === "accepted" ? "Your account is ready. Sign in with your new password." : null;
+    let notice = null;
+
+    if (req.query["password-reset"] === "1") {
+        notice = "Your password was reset. Sign in with the new password.";
+    } else if (req.query.invite === "accepted") {
+        notice = "Your account is ready. Sign in with your new password.";
+    }
+
     res.render("login", {
         title: "Log In", errors: [], email: "",
         notice,
