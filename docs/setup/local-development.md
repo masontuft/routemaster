@@ -38,3 +38,7 @@ pnpm start
 Tests use only the database in `TEST_DATABASE_URL`. See [ADR 0011](../adr/0011-testing-and-ci.md). Each test file makes and drops its own schema inside that database, so `pnpm seed:test` data in the `public` schema is not touched by `pnpm test`.
 
 To create the database the first time: `createdb routemaster_test`.
+
+## Resend MCP in Codex
+
+The Resend MCP server is registered in Codex at the official endpoint `https://mcp.resend.com/mcp` and uses OAuth. Future agents can use that account-level Codex connection when available; do not add OAuth credentials, tokens, or private callback URLs to this repository. The MCP connection is for Resend tooling and does not configure email sending in the Routemaster app. See [email provider setup](environment-variables.md#email-provider) for the app's provider status and sender limitations.

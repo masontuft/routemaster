@@ -22,6 +22,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Person name rules ([ADR 0016](docs/adr/0016-person-name-rules.md)). Customers are saved and matched under a new key, so "Sam & Ruth Example" and "Sam and Ruth Example" are one customer, "O'Brien" is "obrien", and Jr and Sr stay apart. The import preview cleans each name: a rental note is taken out, a name that needs a person (a relative's note, a business, a number, last name first) is skipped with its reason until the sheet is fixed, and a one-word name only warns. `pnpm names:renormalize` recomputes stored keys (a dry run unless given `--apply`) and must be run after deploying. No schema change.
 
 ### Changed
+- Tests moved out of `src/` into a top-level `tests/` folder that mirrors it (issue 70): `src/utils/money.test.js` is now `tests/utils/money.test.js`. The database helper moved to `tests/helpers/db.js` and the spreadsheet fixture to `tests/fixtures/tiny.xlsx`. No behavior change. The suite is one test shorter only because `src/test/db.js` was being run as if it were a test.
 - Docs now say the Sprinkler Messenger bulk send is shipped and tested in production (Mason, 2026-11-18): the roadmap moves it to Built recently, known limitations, the process doc and the spec describe what works and what its limits are, and [ADR 0015](docs/adr/0015-messenger-handoff-api.md) is Accepted. The roadmap's email entry now covers email only, since texting goes through Messenger.
 
 ### Fixed

@@ -1,5 +1,5 @@
 // Reads the shape of a schema and draws it as a Mermaid entity relationship diagram. The diagram in
-// docs/architecture/database-erd.md is made by this code from the migrations, and src/schemaDocs.test.js fails
+// docs/architecture/database-erd.md is made by this code from the migrations, and tests/schemaDocs.test.js fails
 // when the two drift apart, so the picture cannot go stale quietly. Run `pnpm erd` to rewrite it.
 
 // Tables with no relationship to another table are left out, so bookkeeping tables such as
