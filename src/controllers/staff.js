@@ -8,7 +8,8 @@ import * as AccessLink from "../models/accessLink.js";
 import { notFound, forbidden } from "../utils/errors.js";
 import { editableFields, refusedFields } from "../utils/permissions.js";
 import {
-    parseId, validatePreferredDate, validateProperty, validateCustomerEdit, validatePropertyEdit, todayString,
+    parseId, validatePreferredDate, validateProperty, validateCustomerEdit, validatePropertyEdit, validateAreaName,
+    todayString,
 } from "../utils/validation.js";
 import { STATUSES, allowedNext } from "../utils/transitions.js";
 import { companyOf } from "../utils/company.js";
@@ -292,16 +293,32 @@ export async function updateProperty(req, res) {
     }
 
     const { values, errors } = validatePropertyEdit(req.body, editableFields("property", role));
+    const db = req.app.locals.db;
+    const typedArea = String(req.body.newAreaName ?? "").trim();
 
-    if (values.subdivisionId && !await Area.find(req.app.locals.db, companyOf(req), values.subdivisionId)) {
+    // A typed name replaces the list choice, so the list choice is only checked when no name was typed.
+    if (typedArea !== "") {
+        errors.push(...validateAreaName(typedArea).errors);
+    } else if (values.subdivisionId && !await Area.find(db, companyOf(req), values.subdivisionId)) {
         errors.push("Choose an area from the list.");
     }
 
-    if (errors.length > 0) {
-        return propertyEditPage(req, res, { property, values: { ...property, ...values }, errors, status: 400 });
+    // The area is made only once everything else in the form is valid, so a bad ZIP leaves no stray area behind.
+    if (errors.length === 0 && typedArea !== "") {
+        values.subdivisionId = await Area.create(db, companyOf(req), typedArea);
+
+        if (values.subdivisionId === null) {
+            errors.push("An area with that name already exists. Choose it from the list.");
+        }
     }
 
-    await Property.update(req.app.locals.db, companyOf(req), property.id, values);
+    if (errors.length > 0) {
+        return propertyEditPage(req, res, {
+            property, values: { ...property, ...values, newAreaName: typedArea }, errors, status: 400,
+        });
+    }
+
+    await Property.update(db, companyOf(req), property.id, values);
     res.redirect(303, `/staff/customers/${property.customer_id}`);
 }
 

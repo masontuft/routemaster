@@ -14,6 +14,7 @@ const EDITABLE = {
         zip: ["owner", "dispatcher"],
         notes: ["owner", "dispatcher"],
         subdivisionId: ["owner", "dispatcher"],
+        newAreaName: ["owner", "dispatcher"],
     },
 };
 
