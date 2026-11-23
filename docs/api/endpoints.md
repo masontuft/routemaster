@@ -51,7 +51,7 @@ A visitor is redirected to `/login`. A customer gets a 403. Every POST needs the
 | GET | `/staff/customers/:id` | | Properties, requests and links |
 | GET, POST | `/staff/customers/:id/edit` | `name`, `phone`, `email` | Owner edits all three; a dispatcher edits phone and email. A posted field the role may not change is a 403 and nothing is saved |
 | POST | `/staff/customers/:id/properties` | `street`, `city`, `zip` | Add a property; the city is required for one made by hand |
-| GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes`, `subdivisionId` | Owner edits all five; a dispatcher edits city, ZIP, notes and the area (blank clears it). A blank city or ZIP is allowed |
+| GET, POST | `/staff/properties/:id/edit` | `street`, `city`, `zip`, `notes`, `subdivisionId`, `newAreaName` | Owner edits all five; a dispatcher edits city, ZIP, notes and the area (blank clears it). A blank city or ZIP is allowed. A non-blank `newAreaName` makes an area in the company and puts the property in it, replacing `subdivisionId`; a name that is invalid or already an area is a 400 and nothing is saved |
 | GET | `/staff/link-batches/new` | `areaId`, `includeActive` (optional) | Choose an area and see how many links a batch would make, skip or list as having no usable phone. Makes nothing. No-store |
 | GET | `/staff/day-board` | owner, dispatcher | `day` (optional, `YYYY-MM-DD`, default today) | Requests waiting for that day, those already booked for it, and days with waiting requests |
 | POST | `/staff/day-board/schedule` | owner, dispatcher | `day` (today or later), `requestIds` (one or many, at most 200) | Book each ticked Requested job for the day; others are counted as skipped |
