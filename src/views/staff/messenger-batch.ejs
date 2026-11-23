@@ -1,10 +1,28 @@
 <%- include("../partials/head") %>
 <h1>Messenger Batch <%= batch.id %></h1>
+<%- include("../partials/errors") %>
 <p><a href="/staff/messenger-batches">All batches</a></p>
 <p><%= batch.sent %> of <%= batch.total %> sent, <%= batch.failed %> failed, <%= batch.skipped %> skipped,
     <%= batch.total - batch.sent - batch.failed - batch.skipped %> not yet reported. Staged by
     <%= batch.created_by_email ?? "a removed user" %>. <%= batch.fetched_at ? "Messenger has opened it." : "Messenger has not opened it yet." %></p>
 <p>"Sent" means the phone's messaging app took the text. It does not mean the customer received it.</p>
+<% const unreported = batch.total - batch.sent - batch.failed - batch.skipped; %>
+<% const notSent = batch.total - batch.sent; %>
+<% if (notSent > 0) { %>
+    <h2>Stage Again</h2>
+    <p>This makes a new batch, with a new link, for the <%= notSent %> <%= notSent === 1 ? "customer" : "customers" %> not marked sent
+        (failed, skipped and not yet reported), with the same message. This batch's link stops opening.</p>
+    <form method="post" action="/staff/messenger-batches/<%= batch.id %>/stage-again">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% if (unreported > 0) { %>
+            <p><strong>Warning:</strong> <%= unreported %> <%= unreported === 1 ? "customer is" : "customers are" %> still "not yet reported".
+                If Messenger sent those texts but the results never came back, staging again will text them twice.
+                Check the phone's messaging app first.</p>
+            <label><input type="checkbox" name="confirmUnreported" value="1" required> I checked, and the customers not yet reported were not texted</label>
+        <% } %>
+        <button type="submit">Stage Again</button>
+    </form>
+<% } %>
 <table>
     <thead>
         <tr><th>Customer</th><th>Status</th><th>Sent</th><th>Error</th></tr>

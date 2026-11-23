@@ -32,45 +32,109 @@ function messageFor(template, name, link) {
 // A batch belongs to a company (ADR 0018). A customer id that is not one of that company's customers is left out and
 // counted, the same as an id that is not a customer at all.
 export async function stage(pool, companyId, { createdBy, customerIds, messageTemplate, days }) {
-    const ids = [...new Set(customerIds)];
+    return withTransaction(pool, (client) => {
+        return insertBatch(client, companyId, { createdBy, customerIds, messageTemplate, days });
+    });
+}
 
+// The body of stage, on a client the caller already holds, so stageAgain can write more in the same transaction.
+async function insertBatch(client, companyId, { createdBy, customerIds, messageTemplate, days }) {
+    const ids = [...new Set(customerIds)];
+    const { rows } = await client.query(
+        "SELECT id, phone FROM customers WHERE id = ANY($1::int[]) AND company_id = $2 ORDER BY id",
+        [ids, companyId],
+    );
+    const eligible = rows.filter((customer) => {
+        return hasUsablePhone(customer.phone);
+    });
+
+    if (eligible.length === 0) {
+        return { error: "empty", noPhone: ids.length };
+    }
+
+    if (eligible.length > MAX_BATCH) {
+        return { error: "too_many", count: eligible.length };
+    }
+
+    const token = generateToken();
+    const batch = await client.query(
+        `INSERT INTO messenger_batches
+             (created_by, token_hash, message_template, link_days, fetch_expires_at, results_expires_at,
+              company_id)
+         VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5), now() + make_interval(hours => $6), $7)
+         RETURNING id`,
+        [createdBy ?? null, hashToken(token), messageTemplate, days, FETCH_MINUTES, RESULTS_HOURS, companyId],
+    );
+    const batchId = batch.rows[0].id;
+
+    await client.query(
+        `INSERT INTO messenger_batch_recipients (batch_id, customer_id)
+         SELECT $1, unnest($2::int[])`,
+        [batchId, eligible.map((customer) => {
+            return customer.id;
+        })],
+    );
+
+    return { batchId, token, staged: eligible.length, noPhone: ids.length - eligible.length };
+}
+
+// Stages a new batch for everyone in an earlier batch who is not marked sent (pending, failed or skipped), with the
+// same message and link lifetime, for when the first batch's link was lost or never opened in time. The old token is
+// never stored, so the old batch cannot be reopened; a new batch gets a new token and its own windows.
+// A "pending" recipient is one Messenger never reported on. If Messenger sent the text and its report never arrived,
+// staging again texts that customer twice, so the caller must pass confirmUnreported: true when any are pending, and
+// gets { error: "needs_confirmation", unreported } otherwise. The old batch's row is locked, so two requests cannot
+// both stage it, and its fetch window is closed in the same transaction, so only the new link can open the people left.
+// Results still post to the old batch until its results window ends; "sent" stays final there.
+// not_found for an id that is not this company's batch, and "empty" when nobody is left to text.
+export async function stageAgain(pool, companyId, batchId, { createdBy, confirmUnreported = false }) {
     return withTransaction(pool, async (client) => {
-        const { rows } = await client.query(
-            "SELECT id, phone FROM customers WHERE id = ANY($1::int[]) AND company_id = $2 ORDER BY id",
-            [ids, companyId],
+        const found = await client.query(
+            `SELECT id, message_template, link_days FROM messenger_batches
+             WHERE id = $1 AND company_id = $2
+             FOR UPDATE`,
+            [batchId, companyId],
         );
-        const eligible = rows.filter((customer) => {
-            return hasUsablePhone(customer.phone);
+
+        if (found.rows.length === 0) {
+            return { error: "not_found" };
+        }
+
+        const old = found.rows[0];
+        const { rows: left } = await client.query(
+            `SELECT customer_id, status FROM messenger_batch_recipients
+             WHERE batch_id = $1 AND status <> 'sent'
+             ORDER BY id`,
+            [old.id],
+        );
+        const unreported = left.filter((row) => {
+            return row.status === "pending";
+        }).length;
+
+        if (unreported > 0 && !confirmUnreported) {
+            return { error: "needs_confirmation", unreported };
+        }
+
+        const staged = await insertBatch(client, companyId, {
+            createdBy,
+            customerIds: left.map((row) => {
+                return row.customer_id;
+            }),
+            messageTemplate: old.message_template,
+            days: old.link_days,
         });
 
-        if (eligible.length === 0) {
-            return { error: "empty", noPhone: ids.length };
+        if (staged.error) {
+            return staged;
         }
 
-        if (eligible.length > MAX_BATCH) {
-            return { error: "too_many", count: eligible.length };
-        }
-
-        const token = generateToken();
-        const batch = await client.query(
-            `INSERT INTO messenger_batches
-                 (created_by, token_hash, message_template, link_days, fetch_expires_at, results_expires_at,
-                  company_id)
-             VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5), now() + make_interval(hours => $6), $7)
-             RETURNING id`,
-            [createdBy ?? null, hashToken(token), messageTemplate, days, FETCH_MINUTES, RESULTS_HOURS, companyId],
-        );
-        const batchId = batch.rows[0].id;
-
+        // LEAST, so a window that already ended is never reopened.
         await client.query(
-            `INSERT INTO messenger_batch_recipients (batch_id, customer_id)
-             SELECT $1, unnest($2::int[])`,
-            [batchId, eligible.map((customer) => {
-                return customer.id;
-            })],
+            "UPDATE messenger_batches SET fetch_expires_at = LEAST(fetch_expires_at, now()) WHERE id = $1",
+            [old.id],
         );
 
-        return { batchId, token, staged: eligible.length, noPhone: ids.length - eligible.length };
+        return { ...staged, fromBatchId: old.id, days: old.link_days };
     });
 }
 

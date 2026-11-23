@@ -178,3 +178,120 @@ test("sent is final, and a token cannot change another batch's recipients", asyn
     ]);
     assert.strictEqual(status.rows[0].status, "pending");
 });
+
+async function recipientStatuses(batchId) {
+    const { rows } = await pool.query(
+        `SELECT customers.name, recipients.status FROM messenger_batch_recipients AS recipients
+         JOIN customers ON customers.id = recipients.customer_id
+         WHERE recipients.batch_id = $1 ORDER BY customers.name`,
+        [batchId],
+    );
+    return rows.map((row) => {
+        return `${row.name}:${row.status}`;
+    });
+}
+
+test("stage again takes everyone not sent, copies the message and days, and makes a new token", async () => {
+    const [ann, bob] = await twoCustomers();
+    const cy = await Customer.create(pool, 1, { name: "Cy Fox", phone: "208-555-0103" });
+    const first = await stageFor([ann, bob, cy], { messageTemplate: "Custom {name} {link}", days: 14 });
+    const fetched = await MessengerBatch.fetchBatch(pool, first.token, ORIGIN);
+    const byName = Object.fromEntries(fetched.recipients.map((recipient) => {
+        return [recipient.customerName, recipient.recipientId];
+    }));
+    await MessengerBatch.recordResults(pool, first.token, [
+        { recipientId: byName["Ann Lee"], status: "sent" },
+        { recipientId: byName["Bob Ray"], status: "skipped" },
+    ]);
+
+    const again = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+
+    assert.strictEqual(again.staged, 2);
+    assert.notStrictEqual(again.batchId, first.batchId);
+    assert.notStrictEqual(again.token, first.token);
+    assert.strictEqual(again.fromBatchId, first.batchId);
+    assert.strictEqual(again.days, 14);
+    assert.deepStrictEqual(await recipientStatuses(again.batchId), ["Bob Ray:pending", "Cy Fox:pending"]);
+    const fresh = await MessengerBatch.fetchBatch(pool, again.token, ORIGIN);
+    assert.match(fresh.recipients[0].message, /^Custom Bob Ray https:\/\/example\.test\/l\//);
+    const row = await pool.query("SELECT link_days, created_by FROM messenger_batches WHERE id = $1", [again.batchId]);
+    assert.strictEqual(row.rows[0].link_days, 14);
+    assert.strictEqual(row.rows[0].created_by, userId);
+});
+
+test("stage again closes the old batch's fetch window but still accepts its results", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    const fetched = await MessengerBatch.fetchBatch(pool, first.token, ORIGIN);
+    await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId, confirmUnreported: true });
+
+    assert.strictEqual((await MessengerBatch.fetchBatch(pool, first.token, ORIGIN)).error, "not_found");
+    const late = await MessengerBatch.recordResults(pool, first.token, [
+        { recipientId: fetched.recipients[0].recipientId, status: "sent" },
+    ]);
+    assert.strictEqual(late.updated, 1);
+});
+
+test("stage again does not reopen a fetch window that already ended", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    await age("fetch_expires_at");
+    const before = await pool.query("SELECT fetch_expires_at FROM messenger_batches WHERE id = $1", [first.batchId]);
+    await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId, confirmUnreported: true });
+    const after = await pool.query("SELECT fetch_expires_at FROM messenger_batches WHERE id = $1", [first.batchId]);
+
+    assert.deepStrictEqual(after.rows[0].fetch_expires_at, before.rows[0].fetch_expires_at);
+});
+
+test("stage again asks for confirmation while any recipient was never reported, and changes nothing until it has it", async () => {
+    const [ann, bob] = await twoCustomers();
+    const first = await stageFor([ann, bob]);
+    const refused = await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId });
+
+    assert.deepStrictEqual(refused, { error: "needs_confirmation", unreported: 2 });
+    const count = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(count.rows[0].n, 1);
+    assert.notStrictEqual((await MessengerBatch.fetchBatch(pool, first.token, ORIGIN)).error, "not_found", "the old window is untouched");
+});
+
+test("stage again needs no confirmation when every recipient not sent is known failed or skipped", async () => {
+    const [ann, bob] = await twoCustomers();
+    const first = await stageFor([ann, bob]);
+    const fetched = await MessengerBatch.fetchBatch(pool, first.token, ORIGIN);
+    await MessengerBatch.recordResults(pool, first.token, [
+        { recipientId: fetched.recipients[0].recipientId, status: "failed", error: "no signal" },
+        { recipientId: fetched.recipients[1].recipientId, status: "skipped" },
+    ]);
+    const again = await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId });
+
+    assert.strictEqual(again.staged, 2);
+});
+
+test("stage again refuses a batch where everyone was sent, an unknown batch and another company's batch", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    const fetched = await MessengerBatch.fetchBatch(pool, first.token, ORIGIN);
+    await MessengerBatch.recordResults(pool, first.token, [{ recipientId: fetched.recipients[0].recipientId, status: "sent" }]);
+
+    assert.strictEqual((await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId })).error, "empty");
+    assert.strictEqual((await MessengerBatch.stageAgain(pool, 1, 999999, { createdBy: userId })).error, "not_found");
+    await pool.query("INSERT INTO companies (id, name, slug) VALUES (2, 'Other Co', 'other-co')");
+    assert.strictEqual((await MessengerBatch.stageAgain(pool, 2, first.batchId, { createdBy: userId })).error, "not_found");
+    const count = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(count.rows[0].n, 1);
+});
+
+test("stage again leaves out a customer who has since lost their phone number, and nothing changes when none are left", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    await pool.query("UPDATE customers SET phone = NULL WHERE id = $1", [ann]);
+
+    const again = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+
+    assert.strictEqual(again.error, "empty");
+    assert.notStrictEqual((await MessengerBatch.fetchBatch(pool, first.token, ORIGIN)).error, "not_found");
+});
