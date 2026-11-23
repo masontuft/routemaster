@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "test": "node --env-file-if-exists=.env --test",
     "migrate": "node --env-file-if-exists=.env scripts/migrate.js",
+    "migrate:test": "node --env-file-if-exists=.env scripts/migrate-test.js",
     "names:renormalize": "node --env-file=.env scripts/renormalize-customer-names.js",
     "seed": "node --env-file=.env scripts/seed-users.js",
     "dev:test": "node scripts/dev-on-test-db.js",
