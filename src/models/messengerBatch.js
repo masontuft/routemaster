@@ -83,8 +83,9 @@ async function insertBatch(client, companyId, { createdBy, customerIds, messageT
 // never stored, so the old batch cannot be reopened; a new batch gets a new token and its own windows.
 // A "pending" recipient is one Messenger never reported on. If Messenger sent the text and its report never arrived,
 // staging again texts that customer twice, so the caller must pass confirmUnreported: true when any are pending, and
-// gets { error: "needs_confirmation", unreported } otherwise. The old batch's row is locked, so two requests cannot
-// both stage it, and its fetch window is closed in the same transaction, so only the new link can open the people left.
+// gets { error: "needs_confirmation", unreported } otherwise. The old batch's row is locked, so two requests run one
+// after the other, but both can succeed and make two batches. Its fetch window is closed in the same transaction, so
+// the old link cannot open the people left.
 // Results still post to the old batch until its results window ends; "sent" stays final there.
 // not_found for an id that is not this company's batch, and "empty" when nobody is left to text.
 export async function stageAgain(pool, companyId, batchId, { createdBy, confirmUnreported = false }) {
