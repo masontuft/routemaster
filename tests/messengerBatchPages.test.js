@@ -455,9 +455,9 @@ test("after staging again, the old batch links to the new one and has no form, a
     const old = await dispatcher.get(`/staff/messenger-batches/${id}`);
     const fresh = await dispatcher.get(`/staff/messenger-batches/${id + 1}`);
 
-    assert.match(old.text, new RegExp(`Staged again as <a href="/staff/messenger-batches/${id + 1}">batch ${id + 1}</a>`));
+    assert.match(old.text, new RegExp(`Staged again as\\s+<a href="/staff/messenger-batches/${id + 1}">batch ${id + 1}</a>`));
     assert.ok(!old.text.includes("stage-again"));
-    assert.match(fresh.text, new RegExp(`Staged again from <a href="/staff/messenger-batches/${id}">batch ${id}</a>`));
+    assert.match(fresh.text, new RegExp(`Staged again from\\s+<a href="/staff/messenger-batches/${id}">batch ${id}</a>`));
     assert.match(fresh.text, /stage-again/, "the new batch can be staged again if its link is lost");
 });
 

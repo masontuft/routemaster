@@ -34,7 +34,7 @@ test("the first submit goes ahead and a second one is cancelled", () => {
     assert.strictEqual(cancelled, true);
 });
 
-test("the button is disabled after the first submit's own click, not during it, and the second submit is cancelled", () => {
+test("the button is disabled after the first click, not during it, and a second submit is cancelled", () => {
     const form = fakeForm();
     const button = { disabled: false };
     const queued = [];

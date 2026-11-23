@@ -6,12 +6,14 @@
     <%= batch.total - batch.sent - batch.failed - batch.skipped %> not yet reported. Staged by
     <%= batch.created_by_email ?? "a removed user" %>. <%= batch.fetched_at ? "Messenger has opened it." : "Messenger has not opened it yet." %></p>
 <% if (batch.restaged_from) { %>
-    <p>Staged again from <a href="/staff/messenger-batches/<%= batch.restaged_from %>">batch <%= batch.restaged_from %></a>.</p>
+    <p>Staged again from
+        <a href="/staff/messenger-batches/<%= batch.restaged_from %>">batch <%= batch.restaged_from %></a>.</p>
 <% } %>
 <% if (batch.restaged_as) { %>
-    <p>Staged again as <a href="/staff/messenger-batches/<%= batch.restaged_as %>">batch <%= batch.restaged_as %></a>. This
-        batch's link no longer opens. Results Messenger still reports for this batch are kept here, and are not copied to
-        batch <%= batch.restaged_as %>.</p>
+    <p>Staged again as
+        <a href="/staff/messenger-batches/<%= batch.restaged_as %>">batch <%= batch.restaged_as %></a>.
+        This batch's link no longer opens. Results Messenger still reports for this batch are kept here, and are not
+        copied to batch <%= batch.restaged_as %>.</p>
 <% } %>
 <p>"Sent" means the phone's messaging app took the text. It does not mean the customer received it.</p>
 <% const unreported = batch.total - batch.sent - batch.failed - batch.skipped; %>
