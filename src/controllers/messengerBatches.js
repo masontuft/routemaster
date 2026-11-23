@@ -21,7 +21,8 @@ async function formPage(req, res, { values, errors = [], status = 200 }) {
 
 // The page after staging. The token exists only in this response, as for a magic link, so refreshing the page that
 // posted here would stage a second batch.
-function renderCreated(res, { staged, areaName, days, noPhone = 0, skippedActive = 0 }) {
+// fromBatchId is set when the batch was staged again from an earlier one, and then there is no area to name.
+function renderCreated(res, { staged, areaName = null, fromBatchId = null, days, noPhone = 0, skippedActive = 0 }) {
     const deepLink = `sprinklermessenger://batch/${staged.token}`;
     // Expo Go cannot open the custom scheme, so development also gets its own form of the link.
     const expoLink = isProduction() ? null : expoGoLink(staged.token);
@@ -30,6 +31,7 @@ function renderCreated(res, { staged, areaName, days, noPhone = 0, skippedActive
     res.render("staff/messenger-batch-created", {
         title: "Batch Staged",
         areaName,
+        fromBatchId,
         batchId: staged.batchId,
         staged: staged.staged,
         noPhone,
@@ -124,6 +126,11 @@ export async function index(req, res) {
     res.render("staff/messenger-batches", { title: "Messenger Batches", batches });
 }
 
+function renderShow(res, batch, { errors = [], status = 200 } = {}) {
+    res.set("Cache-Control", "no-store");
+    res.status(status).render("staff/messenger-batch", { title: `Messenger Batch ${batch.id}`, batch, errors });
+}
+
 export async function show(req, res) {
     const id = parseId(req.params.id);
     const batch = id ? await MessengerBatch.find(req.app.locals.db, companyOf(req), id) : null;
@@ -132,6 +139,37 @@ export async function show(req, res) {
         throw notFound();
     }
 
-    res.set("Cache-Control", "no-store");
-    res.render("staff/messenger-batch", { title: `Messenger Batch ${batch.id}`, batch });
+    renderShow(res, batch);
+}
+
+// Stages a new batch for everyone in this one who is not marked sent. Customers Messenger never reported on may have
+// been texted already, so the form's checkbox must be ticked when there are any, and the model refuses without it.
+export async function stageAgain(req, res) {
+    const db = req.app.locals.db;
+    const id = parseId(req.params.id);
+    const staged = id ? await MessengerBatch.stageAgain(db, companyOf(req), id, {
+        createdBy: req.session.user.id, confirmUnreported: req.body.confirmUnreported === "1",
+    }) : { error: "not_found" };
+
+    if (staged.error === "not_found") {
+        throw notFound();
+    }
+
+    if (staged.error) {
+        // A batch holds at most MAX_BATCH recipients, so "too_many" cannot come back here. Anything not named is a bug,
+        // and says so as an error rather than showing staff a wrong reason.
+        const reasons = {
+            needs_confirmation: "Tick the box to confirm that the customers not yet reported were not texted, then stage again.",
+            empty: "Nobody in that batch can be texted again. Everyone was sent, or has no usable phone.",
+        };
+
+        if (!reasons[staged.error]) {
+            throw new Error(`Unexpected stage again result: ${staged.error}`);
+        }
+
+        const batch = await MessengerBatch.find(db, companyOf(req), id);
+        return renderShow(res, batch, { errors: [reasons[staged.error]], status: 400 });
+    }
+
+    renderCreated(res, { staged, fromBatchId: staged.fromBatchId, days: staged.days });
 }

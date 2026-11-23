@@ -2,8 +2,12 @@
 <h1>Batch Staged</h1>
 <p><strong>Open this link on your phone now.</strong> It is shown only on this page. If you leave or refresh it, it
     cannot be shown again, and reloading would stage a second batch.</p>
-<p><%= staged %> <%= staged === 1 ? "customer" : "customers" %> staged from <%= areaName %> (batch <%= batchId %>), each
-    link good for <%= days %> days once made.</p>
+<p><%= staged %> <%= staged === 1 ? "customer" : "customers" %> staged <%= fromBatchId ? `again from batch ${fromBatchId}` : `from ${areaName}` %>
+    (batch <%= batchId %>), each link good for <%= days %> days once made.</p>
+<% if (fromBatchId) { %>
+    <p>Batch <%= fromBatchId %>'s link no longer opens. If Messenger already texted anyone in it and never reported
+        back, this batch will text them again, so look at each customer before you send.</p>
+<% } %>
 <p><a href="<%= deepLink %>">Open in Messenger</a></p>
 <label for="deep-link">Link to Copy</label>
 <input id="deep-link" type="text" readonly value="<%= deepLink %>" size="70">

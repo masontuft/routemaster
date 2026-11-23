@@ -305,3 +305,130 @@ test("starting from a link batch whose links are all revoked stages nothing", as
     assert.match(res.text, /Nobody in that batch can be texted/);
     assert.strictEqual((await pool.query("SELECT count(*)::int AS n FROM messenger_batches")).rows[0].n, 0);
 });
+
+const againPath = (id) => {
+    return `/staff/messenger-batches/${id}/stage-again`;
+};
+
+async function stagedBatch(dispatcher) {
+    await customerIn(areaId, "Ann Lee", "208-555-0101");
+    await customerIn(areaId, "Bo Kim", "208-555-0102", "2 Elm St");
+    const staged = await stage(dispatcher);
+    const { rows } = await pool.query("SELECT id FROM messenger_batches ORDER BY id DESC LIMIT 1");
+    return { token: deepLinkOf(staged), id: rows[0].id };
+}
+
+test("a batch with nothing reported shows the stage again form with the double-text warning and a required box", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    const page = await dispatcher.get(`/staff/messenger-batches/${id}`);
+
+    assert.match(page.text, /0 of 2 sent, 0 failed, 0 skipped,\s+2 not yet reported/);
+    assert.match(page.text, new RegExp(`action="/staff/messenger-batches/${id}/stage-again"`));
+    assert.match(page.text, /2 customers are still "not yet reported"/);
+    assert.match(page.text, /will text them twice/);
+    assert.match(page.text, /name="confirmUnreported" value="1" required/);
+});
+
+test("staging again without the box ticked is refused and stages nothing", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id, token } = await stagedBatch(dispatcher);
+    const res = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), {});
+
+    assert.strictEqual(res.status, 400);
+    assert.match(res.text, /Tick the box/);
+    const count = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(count.rows[0].n, 1);
+    assert.strictEqual((await request(app).get(`/api/messenger/batches/${token}`)).status, 200);
+});
+
+test("staging again with the box ticked shows a new deep link once, and the old link stops opening", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id, token } = await stagedBatch(dispatcher);
+    const res = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, new RegExp(`2 customers staged again from batch ${id}`));
+    assert.match(res.text, /will text them again/);
+    const fresh = deepLinkOf(res);
+    assert.notStrictEqual(fresh, token);
+    assert.strictEqual((await request(app).get(`/api/messenger/batches/${token}`)).status, 404);
+    const api = await request(app).get(`/api/messenger/batches/${fresh}`);
+    assert.strictEqual(api.status, 200);
+    assert.strictEqual(api.body.recipients.length, 2);
+    assert.ok(!res.headers["cache-control"].includes("public"));
+});
+
+test("when every recipient not sent is known failed, the form has no warning or box", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id, token } = await stagedBatch(dispatcher);
+    const fetched = await request(app).get(`/api/messenger/batches/${token}`);
+    await MessengerBatch.recordResults(pool, token, fetched.body.recipients.map((recipient) => {
+        return { recipientId: recipient.recipientId, status: "failed", error: "no signal" };
+    }));
+    const page = await dispatcher.get(`/staff/messenger-batches/${id}`);
+
+    assert.match(page.text, /stage-again/);
+    assert.ok(!page.text.includes("confirmUnreported"));
+    const res = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), {});
+    assert.strictEqual(res.status, 200);
+    assert.match(res.text, /2 customers staged again/);
+});
+
+test("a batch where everyone was sent has no stage again form, and a forged post is refused", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id, token } = await stagedBatch(dispatcher);
+    const fetched = await request(app).get(`/api/messenger/batches/${token}`);
+    await MessengerBatch.recordResults(pool, token, fetched.body.recipients.map((recipient) => {
+        return { recipientId: recipient.recipientId, status: "sent" };
+    }));
+    const page = await dispatcher.get(`/staff/messenger-batches/${id}`);
+
+    assert.ok(!page.text.includes("stage-again"));
+    const res = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+    assert.strictEqual(res.status, 400);
+    assert.match(res.text, /Nobody in that batch can be texted again/);
+});
+
+test("stage again refuses an unknown batch, a missing csrf token and a customer account", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+
+    assert.strictEqual((await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(999), { confirmUnreported: "1" })).status, 404);
+    assert.strictEqual((await send(dispatcher, `/staff/messenger-batches/${id}`, againPath("abc"), { confirmUnreported: "1" })).status, 404);
+    assert.strictEqual((await dispatcher.post(againPath(id)).type("form").send({ confirmUnreported: "1" })).status, 403);
+    const customer = await agentFor("customer");
+    assert.strictEqual((await customer.post(againPath(id)).type("form").send({})).status, 403);
+    const count = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(count.rows[0].n, 1);
+});
+
+test("stage again cannot reach another company's batch", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    await pool.query("INSERT INTO companies (name, slug) VALUES ('Second Co', 'second-co')");
+    const other = await pool.query("SELECT id FROM companies WHERE slug = 'second-co'");
+    await pool.query("UPDATE messenger_batches SET company_id = $1 WHERE id = $2", [other.rows[0].id, id]);
+
+    assert.strictEqual((await send(dispatcher, "/staff/messenger-batches", againPath(id), { confirmUnreported: "1" })).status, 404);
+});
+
+test("stage again answers with an error, not a wrong reason, for a result the page does not know", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    // A batch cannot normally hold more than the limit; force it to reach the "too_many" the model can return.
+    await pool.query(
+        `INSERT INTO customers (name, phone, company_id, name_normalized)
+         SELECT 'Extra ' || n, '208555' || lpad(n::text, 4, '0'), 1, 'extra' || n FROM generate_series(1, $1::int) AS n`,
+        [MessengerBatch.MAX_BATCH],
+    );
+    await pool.query(
+        `INSERT INTO messenger_batch_recipients (batch_id, customer_id)
+         SELECT $1, id FROM customers WHERE name LIKE 'Extra %'`,
+        [id],
+    );
+    const res = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+
+    assert.strictEqual(res.status, 500);
+    assert.ok(!res.text.includes("Nobody in that batch can be texted again"));
+});
