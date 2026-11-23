@@ -74,6 +74,7 @@ test("applies the real migrations in order and records them", async () => {
         "032_company_import_mapping_key.sql",
         "033_company_contract.sql",
         "034_create_audit_log.sql",
+        "035_messenger_batch_restaged_from.sql",
     ]);
 
     const roles = await pool.query("SELECT name FROM roles ORDER BY id");
@@ -487,6 +488,7 @@ test("033 keeps every existing row in its company", async () => {
         assert.deepStrictEqual(await runMigrations(pool, realMigrations), [
             "033_company_contract.sql",
             "034_create_audit_log.sql",
+            "035_messenger_batch_restaged_from.sql",
         ]);
 
         for (const table of ["customers", "app_settings", "subdivisions", "service_types"]) {

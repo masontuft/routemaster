@@ -48,6 +48,7 @@ erDiagram
     customers ||--o{ messenger_batch_recipients : "customer_id"
     messenger_batches ||--o{ messenger_batch_recipients : "batch_id"
     companies ||--o{ messenger_batches : "company_id"
+    messenger_batches |o--o| messenger_batches : "restaged_from"
     users |o--o{ messenger_batches : "created_by"
     customers ||--o{ properties : "customer_id"
     import_batches |o--o{ properties : "import_batch_id"
@@ -137,6 +138,7 @@ erDiagram
         int4 id PK
         int4 created_by FK "nullable"
         int4 company_id FK
+        int4 restaged_from FK "nullable"
     }
     properties {
         int4 id PK

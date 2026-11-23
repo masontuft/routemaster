@@ -38,7 +38,7 @@ export async function stage(pool, companyId, { createdBy, customerIds, messageTe
 }
 
 // The body of stage, on a client the caller already holds, so stageAgain can write more in the same transaction.
-async function insertBatch(client, companyId, { createdBy, customerIds, messageTemplate, days }) {
+async function insertBatch(client, companyId, { createdBy, customerIds, messageTemplate, days, restagedFrom = null }) {
     const ids = [...new Set(customerIds)];
     const { rows } = await client.query(
         "SELECT id, phone FROM customers WHERE id = ANY($1::int[]) AND company_id = $2 ORDER BY id",
@@ -60,10 +60,11 @@ async function insertBatch(client, companyId, { createdBy, customerIds, messageT
     const batch = await client.query(
         `INSERT INTO messenger_batches
              (created_by, token_hash, message_template, link_days, fetch_expires_at, results_expires_at,
-              company_id)
-         VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5), now() + make_interval(hours => $6), $7)
+              company_id, restaged_from)
+         VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5), now() + make_interval(hours => $6), $7, $8)
          RETURNING id`,
-        [createdBy ?? null, hashToken(token), messageTemplate, days, FETCH_MINUTES, RESULTS_HOURS, companyId],
+        [createdBy ?? null, hashToken(token), messageTemplate, days, FETCH_MINUTES, RESULTS_HOURS, companyId,
+            restagedFrom],
     );
     const batchId = batch.rows[0].id;
 
@@ -84,10 +85,14 @@ async function insertBatch(client, companyId, { createdBy, customerIds, messageT
 // A "pending" recipient is one Messenger never reported on. If Messenger sent the text and its report never arrived,
 // staging again texts that customer twice, so the caller must pass confirmUnreported: true when any are pending, and
 // gets { error: "needs_confirmation", unreported } otherwise. The old batch's row is locked, so two requests run one
-// after the other, but both can succeed and make two batches. Its fetch window is closed in the same transaction, so
-// the old link cannot open the people left.
+// after the other, and the second finds the first's batch through restaged_from and gets { error: "already_staged",
+// batchId } instead of making another (a double click, a refresh of the page that posted, a second tab). UNIQUE on
+// restaged_from backs that up in the database. A batch can be staged again only once, but the new batch can itself be
+// staged again if its link is lost. The old fetch window is closed in the same transaction, so the old link cannot
+// open the people left.
 // Results still post to the old batch until its results window ends; "sent" stays final there.
-// not_found for an id that is not this company's batch, and "empty" when nobody is left to text.
+// not_found for an id that is not this company's batch, "already_staged" when it was staged again before, and "empty"
+// when nobody is left to text.
 export async function stageAgain(pool, companyId, batchId, { createdBy, confirmUnreported = false }) {
     return withTransaction(pool, async (client) => {
         const found = await client.query(
@@ -102,6 +107,12 @@ export async function stageAgain(pool, companyId, batchId, { createdBy, confirmU
         }
 
         const old = found.rows[0];
+        const earlier = await client.query("SELECT id FROM messenger_batches WHERE restaged_from = $1", [old.id]);
+
+        if (earlier.rows.length > 0) {
+            return { error: "already_staged", batchId: earlier.rows[0].id };
+        }
+
         const { rows: left } = await client.query(
             `SELECT customer_id, status FROM messenger_batch_recipients
              WHERE batch_id = $1 AND status <> 'sent'
@@ -123,6 +134,7 @@ export async function stageAgain(pool, companyId, batchId, { createdBy, confirmU
             }),
             messageTemplate: old.message_template,
             days: old.link_days,
+            restagedFrom: old.id,
         });
 
         if (staged.error) {
@@ -276,6 +288,8 @@ export async function recordResults(pool, token, results) {
 export async function list(pool, companyId, { id = null, limit = 50 } = {}) {
     const { rows } = await pool.query(
         `SELECT batches.id, batches.created_at, batches.fetched_at, batches.fetch_expires_at, batches.results_expires_at,
+                batches.restaged_from,
+                (SELECT next.id FROM messenger_batches AS next WHERE next.restaged_from = batches.id) AS restaged_as,
                 users.email AS created_by_email,
                 count(recipients.id)::int AS total,
                 (count(*) FILTER (WHERE recipients.status = 'sent'))::int AS sent,
