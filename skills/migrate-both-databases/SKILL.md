@@ -14,5 +14,3 @@ A migration is not applied until it has run against the test database and agains
 5. **Say what you could not do.** Server and cloud agents cannot reach Mason's local Postgres. Write it under "Open / next" in the ledger so the next local agent runs `pnpm migrate:test`.
 
 The script name, the environment variable and the production command differ per project, so confirm them with Mason before relying on them. The real values for this repo are in `AGENTS.md`.
-
-> "make sure that when doing production migrations we also run test DB migrations"
