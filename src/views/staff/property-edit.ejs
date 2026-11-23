@@ -15,14 +15,22 @@
     <input id="zip" name="zip" value="<%= values.zip || "" %>" maxlength="10">
     <label for="subdivisionId">Area</label>
     <select id="subdivisionId" name="subdivisionId">
-        <option value="">No area</option>
+        <option value="">No area/Other</option>
         <% areas.forEach((area) => { %>
             <option value="<%= area.id %>" <%= Number("subdivisionId" in values ? values.subdivisionId : values.subdivision_id) === area.id ? "selected" : "" %>><%= area.name %></option>
         <% }); %>
     </select>
+    <% if (editable.includes("newAreaName")) { %>
+        <div data-new-area>
+            <label for="newAreaName">New Area</label>
+            <input id="newAreaName" name="newAreaName" value="<%= values.newAreaName || "" %>" maxlength="80" aria-describedby="newAreaHint">
+            <p id="newAreaHint">Type a name to make a new area and put this property in it. Leave it blank to keep No area/Other.</p>
+        </div>
+    <% } %>
     <label for="notes">Notes</label>
     <textarea id="notes" name="notes" maxlength="500"><%= values.notes || "" %></textarea>
     <button type="submit">Save Property</button>
 </form>
 <p><a href="/staff/customers/<%= property.customer_id %>">Back to Customer</a></p>
+<script type="module" src="/js/propertyArea.js"></script>
 <%- include("../partials/foot") %>
