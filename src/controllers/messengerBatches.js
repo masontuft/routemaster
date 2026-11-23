@@ -156,11 +156,19 @@ export async function stageAgain(req, res) {
     }
 
     if (staged.error) {
+        // A batch holds at most MAX_BATCH recipients, so "too_many" cannot come back here. Anything not named is a bug,
+        // and says so as an error rather than showing staff a wrong reason.
+        const reasons = {
+            needs_confirmation: "Tick the box to confirm that the customers not yet reported were not texted, then stage again.",
+            empty: "Nobody in that batch can be texted again. Everyone was sent, or has no usable phone.",
+        };
+
+        if (!reasons[staged.error]) {
+            throw new Error(`Unexpected stage again result: ${staged.error}`);
+        }
+
         const batch = await MessengerBatch.find(db, companyOf(req), id);
-        const message = staged.error === "needs_confirmation"
-            ? "Tick the box to confirm that the customers not yet reported were not texted, then stage again."
-            : "Nobody in that batch can be texted again. Everyone was sent, or has no usable phone.";
-        return renderShow(res, batch, { errors: [message], status: 400 });
+        return renderShow(res, batch, { errors: [reasons[staged.error]], status: 400 });
     }
 
     renderCreated(res, { staged, fromBatchId: staged.fromBatchId, days: staged.days });

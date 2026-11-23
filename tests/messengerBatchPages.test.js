@@ -412,3 +412,23 @@ test("stage again cannot reach another company's batch", async () => {
 
     assert.strictEqual((await send(dispatcher, "/staff/messenger-batches", againPath(id), { confirmUnreported: "1" })).status, 404);
 });
+
+test("stage again answers with an error, not a wrong reason, for a result the page does not know", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    // A batch cannot normally hold more than the limit; force it to reach the "too_many" the model can return.
+    await pool.query(
+        `INSERT INTO customers (name, phone, company_id, name_normalized)
+         SELECT 'Extra ' || n, '208555' || lpad(n::text, 4, '0'), 1, 'extra' || n FROM generate_series(1, $1::int) AS n`,
+        [MessengerBatch.MAX_BATCH],
+    );
+    await pool.query(
+        `INSERT INTO messenger_batch_recipients (batch_id, customer_id)
+         SELECT $1, id FROM customers WHERE name LIKE 'Extra %'`,
+        [id],
+    );
+    const res = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+
+    assert.strictEqual(res.status, 500);
+    assert.ok(!res.text.includes("Nobody in that batch can be texted again"));
+});
