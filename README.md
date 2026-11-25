@@ -53,4 +53,4 @@ See [docs/product/known-limitations.md](docs/product/known-limitations.md).
 
 [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md).
 
-Setup test: run `npm install` before `pnpm dev`.
+Setup: run `pnpm install` before `pnpm dev`.
