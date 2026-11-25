@@ -329,6 +329,7 @@ RouteMaster Database Schema
 | `fetched_at` | `timestamptz` |  Nullable |
 | `created_at` | `timestamptz` |  |
 | `company_id` | `int4` |  |
+| `restaged_from` | `int4` |  Nullable, Unique |
 
 ## Table `messenger_batch_recipients`
 

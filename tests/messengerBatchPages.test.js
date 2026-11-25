@@ -432,3 +432,42 @@ test("stage again answers with an error, not a wrong reason, for a result the pa
     assert.strictEqual(res.status, 500);
     assert.ok(!res.text.includes("Nobody in that batch can be texted again"));
 });
+
+test("a second post for the same batch is refused with where the first went, and makes no batch", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    const first = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+    const second = await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+
+    assert.strictEqual(first.status, 200);
+    assert.strictEqual(second.status, 409);
+    assert.match(second.text, new RegExp(`Batch ${id + 1} was already staged from this batch`));
+    assert.match(second.text, new RegExp(`stage again from batch ${id + 1}`));
+    assert.ok(!second.text.includes("sprinklermessenger://"));
+    const count = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(count.rows[0].n, 2);
+});
+
+test("after staging again, the old batch links to the new one and has no form, and the new one links back", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    await send(dispatcher, `/staff/messenger-batches/${id}`, againPath(id), { confirmUnreported: "1" });
+    const old = await dispatcher.get(`/staff/messenger-batches/${id}`);
+    const fresh = await dispatcher.get(`/staff/messenger-batches/${id + 1}`);
+
+    assert.match(old.text, new RegExp(`Staged again as\\s+<a href="/staff/messenger-batches/${id + 1}">batch ${id + 1}</a>`));
+    assert.ok(!old.text.includes("stage-again"));
+    assert.match(fresh.text, new RegExp(`Staged again from\\s+<a href="/staff/messenger-batches/${id}">batch ${id}</a>`));
+    assert.match(fresh.text, /stage-again/, "the new batch can be staged again if its link is lost");
+});
+
+test("the stage again form is marked so the browser posts it once, and loads the script that does that", async () => {
+    const dispatcher = await agentFor("dispatcher");
+    const { id } = await stagedBatch(dispatcher);
+    const page = await dispatcher.get(`/staff/messenger-batches/${id}`);
+
+    assert.match(page.text, /action="\/staff\/messenger-batches\/\d+\/stage-again" data-once/);
+    assert.match(page.text, /<script type="module" src="\/js\/submitOnce\.js"><\/script>/);
+    const script = await dispatcher.get("/js/submitOnce.js");
+    assert.strictEqual(script.status, 200);
+});

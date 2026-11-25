@@ -225,7 +225,9 @@ test("stage again closes the old batch's fetch window but still accepts its resu
     const [ann] = await twoCustomers();
     const first = await stageFor([ann]);
     const fetched = await MessengerBatch.fetchBatch(pool, first.token, ORIGIN);
-    await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId, confirmUnreported: true });
+    await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
 
     assert.strictEqual((await MessengerBatch.fetchBatch(pool, first.token, ORIGIN)).error, "not_found");
     const late = await MessengerBatch.recordResults(pool, first.token, [
@@ -239,7 +241,9 @@ test("stage again does not reopen a fetch window that already ended", async () =
     const first = await stageFor([ann]);
     await age("fetch_expires_at");
     const before = await pool.query("SELECT fetch_expires_at FROM messenger_batches WHERE id = $1", [first.batchId]);
-    await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId, confirmUnreported: true });
+    await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
     const after = await pool.query("SELECT fetch_expires_at FROM messenger_batches WHERE id = $1", [first.batchId]);
 
     assert.deepStrictEqual(after.rows[0].fetch_expires_at, before.rows[0].fetch_expires_at);
@@ -294,4 +298,99 @@ test("stage again leaves out a customer who has since lost their phone number, a
 
     assert.strictEqual(again.error, "empty");
     assert.notStrictEqual((await MessengerBatch.fetchBatch(pool, first.token, ORIGIN)).error, "not_found");
+});
+
+test("stage again records its source, and a second try for the same source gets already_staged and makes nothing", async () => {
+    const [ann, bob] = await twoCustomers();
+    const first = await stageFor([ann, bob]);
+    const again = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+    const twice = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+
+    assert.deepStrictEqual(twice, { error: "already_staged", batchId: again.batchId });
+    const rows = await pool.query("SELECT id, restaged_from FROM messenger_batches ORDER BY id");
+    assert.deepStrictEqual(rows.rows, [
+        { id: first.batchId, restaged_from: null },
+        { id: again.batchId, restaged_from: first.batchId },
+    ]);
+});
+
+test("the already staged check comes before the confirmation check", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    const again = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+    const refresh = await MessengerBatch.stageAgain(pool, 1, first.batchId, { createdBy: userId });
+
+    assert.deepStrictEqual(refresh, { error: "already_staged", batchId: again.batchId });
+});
+
+test("two requests at once make one new batch, and the other is told which", async () => {
+    const [ann, bob] = await twoCustomers();
+    const first = await stageFor([ann, bob]);
+    const results = await Promise.all([1, 2].map(() => {
+        return MessengerBatch.stageAgain(pool, 1, first.batchId, {
+            createdBy: userId, confirmUnreported: true,
+        });
+    }));
+    const made = results.filter((result) => {
+        return !result.error;
+    });
+    const refused = results.filter((result) => {
+        return result.error === "already_staged";
+    });
+
+    assert.strictEqual(made.length, 1);
+    assert.strictEqual(refused.length, 1);
+    assert.strictEqual(refused[0].batchId, made[0].batchId);
+    const count = await pool.query("SELECT count(*)::int AS n FROM messenger_batches");
+    assert.strictEqual(count.rows[0].n, 2);
+});
+
+test("a new batch whose link was lost can itself be staged again", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    const second = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+    const third = await MessengerBatch.stageAgain(pool, 1, second.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+
+    assert.strictEqual(third.fromBatchId, second.batchId);
+    assert.notStrictEqual(third.batchId, second.batchId);
+});
+
+test("the database itself refuses a second batch for the same source", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+
+    await assert.rejects(pool.query(
+        `INSERT INTO messenger_batches (token_hash, message_template, link_days, fetch_expires_at, results_expires_at,
+                                        company_id, restaged_from)
+         VALUES (repeat('a', 64), 'x {link}', 30, now(), now(), 1, $1)`,
+        [first.batchId],
+    ), { code: "23505" });
+});
+
+test("list and find say which batch a batch was staged from and as", async () => {
+    const [ann] = await twoCustomers();
+    const first = await stageFor([ann]);
+    const again = await MessengerBatch.stageAgain(pool, 1, first.batchId, {
+        createdBy: userId, confirmUnreported: true,
+    });
+    const old = await MessengerBatch.find(pool, 1, first.batchId);
+    const fresh = await MessengerBatch.find(pool, 1, again.batchId);
+
+    assert.strictEqual(old.restaged_from, null);
+    assert.strictEqual(old.restaged_as, again.batchId);
+    assert.strictEqual(fresh.restaged_from, first.batchId);
+    assert.strictEqual(fresh.restaged_as, null);
 });

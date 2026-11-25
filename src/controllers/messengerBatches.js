@@ -155,11 +155,26 @@ export async function stageAgain(req, res) {
         throw notFound();
     }
 
+    // Staged again before (a double click, a refresh, another tab): the first batch's link was shown once, on a page
+    // the browser may have dropped, so say where it is and how to get a new one. 409 because the request is fine and
+    // the state is not.
+    if (staged.error === "already_staged") {
+        const batch = await MessengerBatch.find(db, companyOf(req), id);
+        return renderShow(res, batch, {
+            status: 409,
+            errors: [
+                `Batch ${staged.batchId} was already staged from this batch, so another was not made. Its link is shown`
+                + ` only once, when it is made. If you lost it, stage again from batch ${staged.batchId}.`,
+            ],
+        });
+    }
+
     if (staged.error) {
         // A batch holds at most MAX_BATCH recipients, so "too_many" cannot come back here. Anything not named is a bug,
         // and says so as an error rather than showing staff a wrong reason.
         const reasons = {
-            needs_confirmation: "Tick the box to confirm that the customers not yet reported were not texted, then stage again.",
+            needs_confirmation: "Tick the box to confirm that the customers not yet reported were not texted,"
+                + " then stage again.",
             empty: "Nobody in that batch can be texted again. Everyone was sent, or has no usable phone.",
         };
 

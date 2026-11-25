@@ -17,7 +17,7 @@ Tables with no relationship to another table (`schema_migrations`, `session`) ar
 
 The diagram below is made from the migrations by `src/db/erd.js`, not drawn by hand. After you add a migration, run `pnpm erd` to rewrite it. `tests/schemaDocs.test.js` fails if the diagram, or the column lists in the schema reference, no longer match the migrations. `pnpm erd` needs `TEST_DATABASE_URL`, the same database the tests use.
 
-A FigJam copy of this diagram is at [Routemaster database ERD (from migrations)](https://www.figma.com/board/PDGlQhPAX41nlZqXnY9Iop), brought in step with the diagram text below on 2026-11-19. It is a copy: nothing updates it, and no test checks it. After the diagram changes, update the board by following the `erd-sync` skill (`skills/erd-sync/SKILL.md`).
+A FigJam copy of this diagram is at [Routemaster database ERD (from migrations)](https://www.figma.com/board/PDGlQhPAX41nlZqXnY9Iop), brought in step with the diagram text below on 2026-11-23. It is a copy: nothing updates it, and no test checks it. After the diagram changes, update the board by following the `erd-sync` skill (`skills/erd-sync/SKILL.md`).
 
 <!-- erd:start -->
 ```mermaid
@@ -48,6 +48,7 @@ erDiagram
     customers ||--o{ messenger_batch_recipients : "customer_id"
     messenger_batches ||--o{ messenger_batch_recipients : "batch_id"
     companies ||--o{ messenger_batches : "company_id"
+    messenger_batches |o--o| messenger_batches : "restaged_from"
     users |o--o{ messenger_batches : "created_by"
     customers ||--o{ properties : "customer_id"
     import_batches |o--o{ properties : "import_batch_id"
@@ -137,6 +138,7 @@ erDiagram
         int4 id PK
         int4 created_by FK "nullable"
         int4 company_id FK
+        int4 restaged_from FK "nullable"
     }
     properties {
         int4 id PK
